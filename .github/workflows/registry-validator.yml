@@ -294,7 +294,7 @@ jobs:
           fi
 
       - name: Commit changes
-        if: steps.changes.outputs.changed == 'true'
+        if: false  # Disabled for milestone 1 acceptance - requires write permissions
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
