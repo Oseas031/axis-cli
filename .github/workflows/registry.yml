@@ -3,14 +3,14 @@
 # Managed by Meta-Workflow
 
 workflows:
-  # Documentation Workflows
+  # Deprecated Documentation Workflows
   - id: wf-doc-001
     name: CI/CD Quality Improvement Workflow
     version: 1.0.0
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508103000"
-    status: active
+    status: deprecated
     category: documentation
     type: process
     triggers:
@@ -18,17 +18,18 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: workflow/ci-cd-quality-improvement-workflow.md
-    documentation: workflow/ci-cd-quality-improvement-workflow.md
+    file: docs/deprecated/ci-cd-quality-improvement-workflow.md
+    documentation: docs/deprecated/ci-cd-quality-improvement-workflow.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T10:30:00Z
-    updated_at: 2026-05-08T10:30:00Z
+    updated_at: 2026-05-08T12:35:00Z
     metrics:
       success_rate: 1.0
       avg_duration: 0s
       last_execution: null
+    note: "Moved to deprecated on 2026-05-08"
 
   - id: wf-doc-002
     name: Software Engineering Paradigm Workflow Improvement
@@ -36,7 +37,7 @@ workflows:
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508103500"
-    status: active
+    status: deprecated
     category: documentation
     type: process
     triggers:
@@ -44,17 +45,18 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: workflow/software-engineering-paradigm-workflow-improvement.md
-    documentation: workflow/software-engineering-paradigm-workflow-improvement.md
+    file: docs/deprecated/software-engineering-paradigm-workflow-improvement.md
+    documentation: docs/deprecated/software-engineering-paradigm-workflow-improvement.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T10:35:00Z
-    updated_at: 2026-05-08T10:35:00Z
+    updated_at: 2026-05-08T12:35:00Z
     metrics:
       success_rate: 1.0
       avg_duration: 0s
       last_execution: null
+    note: "Moved to deprecated on 2026-05-08"
 
   - id: wf-doc-003
     name: Comprehensive Automation Workflows Architecture
@@ -62,7 +64,7 @@ workflows:
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508104000"
-    status: active
+    status: deprecated
     category: documentation
     type: architecture
     triggers:
@@ -70,19 +72,20 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: workflow/comprehensive-automation-workflows.md
-    documentation: workflow/comprehensive-automation-workflows.md
+    file: docs/deprecated/comprehensive-automation-workflows.md
+    documentation: docs/deprecated/comprehensive-automation-workflows.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T10:40:00Z
-    updated_at: 2026-05-08T10:40:00Z
+    updated_at: 2026-05-08T12:35:00Z
     metrics:
       success_rate: 1.0
       avg_duration: 0s
       last_execution: null
+    note: "Moved to deprecated on 2026-05-08"
 
-  - id: wf-doc-005
+  - id: wf-doc-006
     name: Document Audit
     version: 1.0.0
     semver: "1.0.0"
@@ -104,7 +107,7 @@ workflows:
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T12:00:00Z
-    updated_at: 2026-05-08T12:00:00Z
+    updated_at: 2026-05-08T12:35:00Z
     metrics:
       success_rate: 1.0
       avg_duration: 0s
@@ -186,7 +189,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/dev-workflow.yml
-    documentation: workflow/dev-workflow.md
+    documentation: .github/workflows/dev-workflow.yml
     owner: "dev-team"
     reviewers:
       - "tech-lead"
@@ -269,7 +272,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/security-workflow.yml
-    documentation: workflow/security-workflow.md
+    documentation: .github/workflows/security-workflow.yml
     owner: "security-team"
     reviewers:
       - "tech-lead"
@@ -298,7 +301,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/cd-workflow.yml
-    documentation: workflow/cd-workflow.md
+    documentation: /cd-worklow.mdd
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -315,7 +318,7 @@ workflows:
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508110000"
-    status: active
+    status: deprecated
     category: documentation
     type: automation
     triggers:
@@ -324,17 +327,17 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/ci.yml
-    documentation: workflow/docs-workflow.md
+    documentation: .github/workflows/ci.yml
     owner: "docs-team"
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T11:00:00Z
-    updated_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-08T12:35:00Z
     metrics:
       success_rate: null
       avg_duration: null
       last_execution: null
-    note: "Integrated into CI workflow as 'docs' job"
+    note: "Deprecated - docs job is now part of CI workflow (wf-ci)"
 
   - id: wf-monitoring
     name: Monitoring Workflow
@@ -352,7 +355,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/monitoring-workflow.yml
-    documentation: workflow/monitoring-workflow.md
+    documentation: .github/workflows/monitoring-workflow.yml
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -361,6 +364,59 @@ workflows:
     metrics:
       success_rate: null
       avg_duration: null
+      last_execution: null
+
+  - id: wf-release
+    name: Release Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508120000"
+    status: active
+    category: cd
+    type: automation
+    triggers:
+      - push: {tags: ['v*']}
+    dependencies:
+      - wf-ci
+    implicit_dependencies: []
+    dependents: []
+    file: .github/workflows/release.yml
+    documentation: .github/workflows/release.yml
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T12:00:00Z
+    updated_at: 2026-05-08T12:35:00Z
+    metrics:
+      success_rate: null
+      avg_duration: null
+      last_execution: null
+
+  - id: wf-occams
+    name: Occam's Razor Architecture Simplification
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508120000"
+    status: active
+    category: documentation
+    type: architecture
+    triggers:
+      - manual
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: workflow/occams-razor-architecture-simplification.md
+    documentation: workflow/occams-razor-architecture-simplification.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T12:00:00Z
+    updated_at: 2026-05-08T12:35:00Z
+    metrics:
+      success_rate: 1.0
+      avg_duration: 0s
       last_execution: null
 
 # Workflow Categories
@@ -420,4 +476,5 @@ type_values:
   - value: dispatcher
     description: Workflow dispatcher/router
   - value: automation
+    description: Automated execution workflow
     description: Automated execution workflow
