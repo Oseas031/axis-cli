@@ -56,8 +56,11 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 	defer o.mu.Unlock()
 
 	if !o.running {
-		return fmt.Errorf("orchestrator is not running")
+		return fmt.Errorf("orchestrator is already shut down")
 	}
+
+	// Mark as started to prevent duplicate starts
+	o.running = false
 
 	// Start the task execution loop
 	go o.runTaskLoop(ctx)
@@ -75,9 +78,12 @@ func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 			// Task submitted, process immediately
 		default:
 			// No notification, check periodically
+			o.mu.Lock()
 			if !o.lifecycleManager.IsRunning() {
+				o.mu.Unlock()
 				return
 			}
+			o.mu.Unlock()
 
 			task, err := o.scheduler.GetNextTask()
 			if err != nil {

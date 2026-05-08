@@ -33,7 +33,7 @@ func NewDispatcher(contractExec contractexec.ContractExecutor, humanExec humanex
 
 // Dispatch dispatches a task to the appropriate executor
 func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, d.timeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, d.timeout)
 	defer cancel()
 
 	resultChan := make(chan *types.TaskResult, 1)
@@ -56,13 +56,13 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 	}()
 
 	select {
-	case <-ctx.Done():
+	case <-timeoutCtx.Done():
 		return &types.TaskResult{
 			TaskID:    task.TaskID,
 			Status:    types.TaskStatusFailed,
 			Error:     "task execution timed out",
 			Completed: time.Now(),
-		}, ctx.Err()
+		}, timeoutCtx.Err()
 	case result := <-resultChan:
 		return result, nil
 	case err := <-errChan:

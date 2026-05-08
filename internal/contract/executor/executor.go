@@ -77,6 +77,9 @@ func (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string
 			}
 
 			if len(field.Enum) > 0 {
+				if field.Type != types.FieldTypeString {
+					return fmt.Errorf("field %s has enum values but type is not string", field.Name)
+				}
 				if strValue, ok := value.(string); ok {
 					if !e.isEnumValid(strValue, field.Enum) {
 						return fmt.Errorf("field %s value %s is not in allowed enum values %v", field.Name, strValue, field.Enum)

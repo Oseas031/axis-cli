@@ -26,7 +26,6 @@ type SchedulerImpl struct {
 	taskMap    map[string]*types.AgentTask
 	stateStore shared_layer.StateStore
 	lifecycle  LifecycleChecker
-	running    bool
 }
 
 // LifecycleChecker defines the interface to check if the system is running
@@ -41,7 +40,6 @@ func NewScheduler(stateStore shared_layer.StateStore, lifecycle LifecycleChecker
 		taskMap:    make(map[string]*types.AgentTask),
 		stateStore: stateStore,
 		lifecycle:  lifecycle,
-		running:    true,
 	}
 }
 
