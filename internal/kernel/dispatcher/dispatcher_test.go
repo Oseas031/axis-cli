@@ -54,7 +54,7 @@ func TestDispatcher_Dispatch(t *testing.T) {
 	}
 
 	if result == nil {
-		t.Error("Result should not be nil")
+		t.Fatal("Result should not be nil")
 	}
 
 	if result.TaskID != task.TaskID {
@@ -93,7 +93,7 @@ func TestDispatcher_DispatchInvalidInput(t *testing.T) {
 
 	// Should return result with error status
 	if result == nil {
-		t.Error("Result should not be nil")
+		t.Fatal("Result should not be nil")
 	}
 
 	if result.Status != types.TaskStatusFailed {
