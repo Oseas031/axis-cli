@@ -7,22 +7,22 @@ on:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/workflows/registry.yml'
+      - '.github/registry.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/workflows/registry.yml'
+      - '.github/registry.yml'
 
 jobs:
   validate-registry:
     name: Validate Registry
     runs-on: ubuntu-latest
     if: |
-      contains(github.event.head_commit.modified, '.github/workflows/registry.yml') ||
-      contains(github.event.pull_request.changed_files, '.github/workflows/registry.yml')
+      contains(github.event.head_commit.modified, '.github/registry.yml') ||
+      contains(github.event.pull_request.changed_files, '.github/registry.yml')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
           import os
           import glob
 
-          with open('.github/workflows/registry.yml', 'r') as f:
+          with open('.github/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           required_fields = ['id', 'name', 'version', 'status', 'category', 'file']

@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [ main, develop ]
     paths:
-      - '.github/workflows/registry.yml'
+      - '.github/registry.yml'
       - '.github/workflows/*.yml'
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
           import os
           import glob
 
-          with open('.github/workflows/registry.yml', 'r') as f:
+          with open('.github/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           # Check required fields
@@ -101,7 +101,7 @@ jobs:
           import os
           import glob
 
-          with open('.github/workflows/registry.yml', 'r') as f:
+          with open('.github/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           # Get all registered workflow files
@@ -112,8 +112,7 @@ jobs:
           # Get all actual workflow files
           actual_files = set()
           for file in glob.glob('.github/workflows/*.yml'):
-              if file != '.github/workflows/registry.yml':
-                  actual_files.add(file)
+              actual_files.add(file)
 
           # Check for unregistered workflows
           for file in actual_files - registered_files:
@@ -133,7 +132,7 @@ jobs:
           import yaml
           from collections import defaultdict
 
-          with open('.github/workflows/registry.yml', 'r') as f:
+          with open('.github/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           # Build dependency graph
@@ -180,7 +179,7 @@ jobs:
           import yaml
           from datetime import datetime
 
-          with open('.github/workflows/registry.yml', 'r') as f:
+          with open('.github/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           active_count = 0
@@ -231,7 +230,7 @@ jobs:
           import yaml
           from collections import defaultdict
 
-          with open('.github/workflows/registry.yml', 'r') as f:
+          with open('.github/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           # Group workflows by category
@@ -278,7 +277,7 @@ jobs:
                   f.write('\n')
 
               f.write('\n## 相关文档\n\n')
-              f.write('- [工作流注册表](../.github/workflows/registry.yml) - 完整的工作流元数据\n')
+              f.write('- [工作流注册表](../.github/registry.yml) - 完整的工作流元数据\n')
               f.write('- [Meta-Workflow 管理](meta-workflow-management.md) - 工作流管理系统\n')
 
           print("✅ Workflow index generated")

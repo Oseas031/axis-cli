@@ -8,13 +8,13 @@ import glob
 
 # Check if registry.yml is being modified
 result = subprocess.run(['git', 'diff', '--cached', '--name-only'], capture_output=True, text=True)
-if '.github/workflows/registry.yml' not in result.stdout:
+if '.github/registry.yml' not in result.stdout:
     sys.exit(0)
 
 print("Validating registry.yml...")
 
 try:
-    with open('.github/workflows/registry.yml', 'r') as f:
+    with open('.github/registry.yml', 'r') as f:
         registry = yaml.safe_load(f)
 
     # Check required fields
