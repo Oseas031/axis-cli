@@ -301,7 +301,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/cd-workflow.yml
-    documentation: /cd-worklow.mdd
+    documentation: .github/workflows/cd-workflow.yml
     owner: "devops-team"
     reviewers:
       - "tech-lead"
