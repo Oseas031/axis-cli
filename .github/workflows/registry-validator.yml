@@ -169,7 +169,7 @@ jobs:
           echo "# Workflow Registry Health Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Total workflows: ${{ len(registry.get('workflows', [])) }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Total workflows: $(python3 -c "import yaml; print(len(yaml.safe_load(open('.github/workflows/registry.yml')).get('workflows', [])))")" >> $GITHUB_STEP_SUMMARY
           echo "- Active workflows: $active_count" >> $GITHUB_STEP_SUMMARY
           echo "- Deprecated workflows: $deprecated_count" >> $GITHUB_STEP_SUMMARY
           echo "- Last validated: $(date -Iseconds)" >> $GITHUB_STEP_SUMMARY
