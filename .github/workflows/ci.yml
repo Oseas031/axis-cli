@@ -139,29 +139,3 @@ jobs:
         with:
           name: ${{ matrix.binary_name }}
           path: ${{ matrix.binary_name }}
-
-  docs:
-    name: Generate Documentation
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Generate API documentation
-        run: |
-          mkdir -p docs/api
-          go doc -all . > docs/api/index.txt
-          echo "Documentation generated at docs/api/index.txt"
-
-      - name: Upload documentation artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation
-          path: docs/api/
-          retention-days: 7
