@@ -153,14 +153,11 @@ jobs:
         with:
           go-version: '1.26'
 
-      - name: Install godoc
-        run: go install golang.org/x/tools/cmd/godoc@latest
-
       - name: Generate API documentation
         run: |
           mkdir -p docs/api
-          godoc -html -all . > docs/api/index.html
-          echo "Documentation generated at docs/api/index.html"
+          go doc -all . > docs/api/index.txt
+          echo "Documentation generated at docs/api/index.txt"
 
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v4
