@@ -60,5 +60,10 @@ func validateSLA(task *types.AgentTask) error {
 			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s=%q for task %s must be a non-negative integer", types.SLAKeyMaxRetries, v, task.TaskID))
 		}
 	}
+	if v, ok := task.Metadata[types.SLAKeyFailureClass]; ok {
+		if v == "" {
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s for task %s must be non-empty if present", types.SLAKeyFailureClass, task.TaskID))
+		}
+	}
 	return nil
 }

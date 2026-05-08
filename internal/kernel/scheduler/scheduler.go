@@ -199,12 +199,15 @@ func (s *SchedulerImpl) GetReadyTasks(limit int) ([]*types.AgentTask, error) {
 	return readyTasks, nil
 }
 
-// areDependenciesCompleted checks if all dependencies are completed
+// areDependenciesCompleted checks if all dependencies are done (completed or failed).
 func (s *SchedulerImpl) areDependenciesCompleted(dependencies []string) bool {
 	for _, depID := range dependencies {
 		task, exists := s.taskMap[depID]
 		if !exists {
 			return false
+		}
+		if task.Status == types.TaskStatusFailed {
+			continue
 		}
 		if task.Status != types.TaskStatusCompleted {
 			return false

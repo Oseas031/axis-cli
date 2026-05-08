@@ -85,8 +85,9 @@ type AgentContract struct {
 
 // SLA metadata keys stored in AgentTask.Metadata
 const (
-	SLAKeyTimeoutMs  = "sla.timeout_ms"
-	SLAKeyMaxRetries = "sla.max_retries"
+	SLAKeyTimeoutMs    = "sla.timeout_ms"
+	SLAKeyMaxRetries   = "sla.max_retries"
+	SLAKeyFailureClass = "sla.failure_class"
 )
 
 // ErrorCode is a stable machine-readable error identifier.
@@ -97,6 +98,7 @@ const (
 	ErrTaskNotFound         ErrorCode = "TASK_NOT_FOUND"
 	ErrTaskAlreadyExists    ErrorCode = "TASK_ALREADY_EXISTS"
 	ErrDependencyCycle      ErrorCode = "DEPENDENCY_CYCLE"
+	ErrDependencyNotReady   ErrorCode = "DEPENDENCY_NOT_READY"
 	ErrContractNotFound     ErrorCode = "CONTRACT_NOT_FOUND"
 	ErrContractInputInvalid ErrorCode = "CONTRACT_INPUT_INVALID"
 	ErrTaskTimeout          ErrorCode = "TASK_TIMEOUT"

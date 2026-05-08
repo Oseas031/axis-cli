@@ -79,26 +79,21 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 	}
 }
 
-// executeTask executes a task based on its contract type
+// executeTask executes a task by routing through the contract executor.
 func (d *DispatcherImpl) executeTask(task *types.AgentTask) (*types.TaskResult, error) {
-	// For milestone 1, we use contract executor for validation
-	// In future milestones, this would route to different executors based on contract type
-
-	// Validate input
-	if err := d.contractExecutor.ValidateInput(task.ContractID, task.Input); err != nil {
+	execResult, err := d.contractExecutor.Execute(task.ContractID, task.Input)
+	if err != nil {
 		return &types.TaskResult{
 			TaskID:    task.TaskID,
 			Status:    types.TaskStatusFailed,
-			Error:     fmt.Sprintf("input validation failed: %v", err),
+			Error:     execResult.Error,
 			Completed: time.Now(),
 		}, err
 	}
 
-	// For milestone 1, we return a simple success result
-	// In future milestones, this would execute the actual agent logic
 	return &types.TaskResult{
 		TaskID:    task.TaskID,
-		Output:    map[string]any{"status": "completed", "message": "task executed successfully"},
+		Output:    execResult.Output,
 		Status:    types.TaskStatusCompleted,
 		Completed: time.Now(),
 	}, nil

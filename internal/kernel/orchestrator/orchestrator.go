@@ -16,6 +16,7 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
 	"github.com/axis-cli/axis/internal/kernel/scheduler"
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
+	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -44,6 +45,7 @@ func NewOrchestrator() *Orchestrator {
 	lifecycleManager := lifecycle.NewLifecycleManager()
 	sched := scheduler.NewScheduler(stateStore, lifecycleManager)
 	contractExec := contractexec.NewContractExecutor()
+	contractExec.SetProvider(provider.NewMockModelProvider())
 	humanExec := humanexec.NewHumanExecutor()
 	dispatch := dispatcher.NewDispatcher(contractExec, humanExec)
 	admissionValidator := admission.NewAdmissionValidator(contractExec)

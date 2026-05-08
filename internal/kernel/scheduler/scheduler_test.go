@@ -391,10 +391,15 @@ func TestScheduler_AreDependenciesCompleted_FailedDep(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetReadyTasks failed: %v", err)
 	}
+	found := false
 	for _, task := range tasks {
 		if task.TaskID == "child" {
-			t.Error("Task with failed dependency should not be ready")
+			found = true
+			break
 		}
+	}
+	if !found {
+		t.Error("Task with failed dependency should be ready (failed = done)")
 	}
 }
 

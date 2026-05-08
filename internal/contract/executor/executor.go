@@ -2,9 +2,11 @@
 package executor
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
+	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -20,6 +22,7 @@ type ContractExecutor interface {
 type ContractExecutorImpl struct {
 	mu        sync.RWMutex
 	contracts map[string]*types.AgentContract
+	provider  provider.ModelProvider
 }
 
 // NewContractExecutor creates a new contract executor
@@ -43,7 +46,14 @@ func (e *ContractExecutorImpl) RegisterContract(contract *types.AgentContract) e
 	return nil
 }
 
-// Execute executes a contract with input validation
+// SetProvider sets the model provider for execution.
+func (e *ContractExecutorImpl) SetProvider(p provider.ModelProvider) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.provider = p
+}
+
+// Execute executes a contract: validates input, runs the provider, validates output.
 func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) (*types.ExecutionResult, error) {
 	if err := e.ValidateInput(contractID, input); err != nil {
 		return &types.ExecutionResult{
@@ -51,8 +61,28 @@ func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) 
 		}, err
 	}
 
-	// In milestone 1, we just validate and return a placeholder result
-	// Actual execution will be handled by the dispatcher
+	e.mu.RLock()
+	p := e.provider
+	e.mu.RUnlock()
+
+	if p != nil {
+		req := &provider.ModelRequest{ContractID: contractID, Input: input}
+		resp, err := p.Execute(context.Background(), req)
+		if err != nil {
+			return &types.ExecutionResult{
+				Error: fmt.Sprintf("provider execution failed: %v", err),
+			}, err
+		}
+		if err := e.ValidateOutput(contractID, resp.Output); err != nil {
+			return &types.ExecutionResult{
+				Error: fmt.Sprintf("output validation failed: %v", err),
+			}, err
+		}
+		return &types.ExecutionResult{
+			Output: resp.Output,
+		}, nil
+	}
+
 	return &types.ExecutionResult{
 		Output: map[string]any{"status": "validated"},
 	}, nil
