@@ -11,11 +11,13 @@ Agent 原生调度系统 - 为 AI Agent 提供统一任务调度能力
 - ⏳ 正在进行里程碑1验收
 
 ## 文档阅读顺序（必须按顺序）
-1. HANDOVER.md - 项目交接文档（当前进度）
-2. docs/QUICKSTART.md - 快速入门
-3. WHITEPAPER.md - 项目定义
-4. docs/milestones/milestone1-checklist.md - 里程碑1目标
-5. docs/milestone1-acceptance-using-existing-workflows.md - 验收方案
+1. docs/current-progress.md - 当前工作进度（必须首先阅读）
+2. HANDOVER.md - 项目交接文档（当前进度）
+3. docs/daily-retrospective-2026-05-08.md - 最新复盘
+4. docs/QUICKSTART.md - 快速入门
+5. WHITEPAPER.md - 项目定义
+6. docs/milestones/milestone1-checklist.md - 里程碑1目标
+7. docs/milestone1-acceptance-using-existing-workflows.md - 验收方案
 
 ## 设计原则
 奥卡姆剃刀：最小可行，只实现验证核心概念所需的最小功能集
@@ -46,6 +48,28 @@ Agent 原生调度系统 - 为 AI Agent 提供统一任务调度能力
 
 ## 已知问题
 - ✅ staticcheck ST1003：shared_layer 包名包含下划线 - 已修复（2026-05-08）
+
+## Claude Code 工作流衔接
+
+### 接手工作流
+1. 读取 `docs/current-progress.md` 了解当前工作进度
+2. 读取 `docs/daily-retrospective-YYYY-MM-DD.md` 了解最新复盘
+3. 检查 `.github/workflows/registry.yml` 了解工作流状态
+4. 检查 GitHub Actions 了解 CI/CD 状态
+5. 更新记忆系统加载项目上下文
+
+### 交接工作流
+1. 更新 `docs/current-progress.md` 记录工作进度
+2. 创建每日复盘文档
+3. 更新 `HANDOVER.md` 和 `AGENT_INSTRUCTIONS.md`
+4. 提交并推送所有变更
+5. 确保 CI/CD 通过
+
+### 重要文档
+- `docs/current-progress.md` - 当前工作进度（必须首先阅读）
+- `docs/claude-code-workflow-continuity-guide.md` - 工作流衔接指南
+- `HANDOVER.md` - 项目交接文档
+- `docs/daily-retrospective-YYYY-MM-DD.md` - 最新复盘
 
 ## 开发优先级
 1. 完成里程碑1验收（使用现有工作流）
