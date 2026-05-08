@@ -83,10 +83,24 @@
 - ✅ 编排器 busy-wait 模式修复
 - ✅ 契约执行器线程安全修复
 - ✅ CLI nil指针风险修复
-- ✅ 编排器 Start 逻辑错误修复
+- ✅ 编排器 Start 逻辑错误修复（状态检查和设置逻辑反转）
 - ✅ 生命周期检查的 mutex 保护
 - ✅ 契约执行器枚举验证修复
 - ✅ 分发器 context shadowing 修复
+- ✅ 编排器 Shutdown 任务清理（添加任务循环通知）
+- ✅ registry.yml 文件路径错误修复（5处）
+- ✅ security-workflow.yml nancy 工具移除（Git认证问题）
+- ✅ pr-check-workflow.yml gocyclo 安装命令更新
+- ✅ ci.yml registry 验证条件修复（事件类型检查）
+- ✅ registry-validator.yml Python/bash 混用语法修复
+- ✅ registry-validator.yml workflow['file'] 访问安全检查
+- ✅ registry-validator.yml git push 认证修复
+- ✅ registry-validator.yml GitHub Actions bot 权限问题（禁用自动推送）
+- ✅ pr-check-workflow.yml 硬编码分支修复（使用 github.base_ref）
+- ✅ monitoring-workflow.yml github-script workflow 属性修复（workflow_run）
+- ✅ monitoring-workflow.yml 依赖检查脚本修复（jq 过滤）
+- ✅ monitoring-workflow.yml benchmark 检查修复（空结果处理）
+- ✅ pre-commit-hook.py 错误处理增强（subprocess 捕获）
 
 ### 文档（已完成）
 - ✅ 里程碑1检查清单（docs/milestones/milestone1-checklist.md）
@@ -103,11 +117,9 @@
 ## 当前待处理任务
 
 ### 立即待处理
-- ⏳ 观察文档审查工作流执行结果
-- ⏳ 观察工作流注册表验证器执行结果
-- ⏳ 处理 release.yml 与 cd-workflow 重复问题（本周）
-- ⏳ 创建PR触发PR Quality Check和Security workflows
+- ⏳ 观察工作流执行结果（milestone1-acceptance分支）
 - ⏳ 生成里程碑1验收报告
+- ⏳ 处理 release.yml 与 cd-workflow 重复问题（本周）
 
 ### 已知问题
 - ✅ staticcheck ST1003：shared_layer 包名包含下划线 - 已修复（2026-05-08）
@@ -132,13 +144,20 @@ axis-cli/
 │   │   ├── scheduler/    # 调度器
 │   │   ├── dispatcher/   # 分发器
 │   │   ├── lifecycle/    # 生命周期管理
+│   │   ├── orchestrator/ # 编排器
 │   │   └── sharedlayer/ # 共享状态存储
 │   ├── contract/        # 契约层
 │   │   └── executor/    # 契约执行器
 │   └── human/           # Human-as-a-Function
 │       └── executor/    # Human 执行器
+├── scripts/             # 工具脚本
+│   ├── pre-commit-hook.py # Pre-commit 验证脚本
+│   └── install-hooks.sh  # Hook 安装脚本
 ├── docs/                 # 文档
 ├── configs/              # 配置文件
+├── .github/              # GitHub 配置
+│   ├── workflows/        # GitHub Actions 工作流
+│   └── registry.yml      # 工作流注册表
 ├── go.mod               # Go 模块定义
 └── README.md            # 项目说明
 ```
@@ -252,6 +271,6 @@ axis-cli/
 
 ---
 
-**交接时间**：2026-05-08 12:54
-**交接状态**：里程碑1核心功能已完成，CI/CD已建立，工作流改造完成，文档系统完善
-**下一步行动**：处理 release.yml 重复问题，完成里程碑1验收
+**交接时间**：2026-05-08 13:43
+**交接状态**：里程碑1核心功能已完成，CI/CD已建立，工作流改造完成，文档系统完善，代码审查和bug修复完成
+**下一步行动**：观察工作流执行结果，生成里程碑1验收报告
