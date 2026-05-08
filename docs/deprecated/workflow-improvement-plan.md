@@ -40,7 +40,7 @@
           name: go fmt
           entry: gofmt
           language: system
-          args: [-s, -l, .]
+          args: [-s, -w, .]
           pass_filenames: false
           
         - id: go-vet
@@ -63,18 +63,11 @@
           
         - id: package-naming
           name: package naming check
-          entry: bash
+          entry: go
           language: system
           args:
-            - -c
-            - |
-              for dir in $(find . -type d -name "internal/*"); do
-                pkg=$(basename "$dir")
-                if [[ "$pkg" =~ _ ]]; then
-                  echo "Package name $pkg contains underscore, not allowed"
-                  exit 1
-                fi
-              done
+            - run
+            - scripts/check-package-naming/main.go
   ```
 
 **步骤 1.2: 创建 pre-commit 安装脚本**
@@ -137,8 +130,8 @@
 #### 实施步骤
 
 **步骤 2.1: 创建依赖检查脚本**
-- 文件: `scripts/check-dependencies.sh`
-- 内容:
+- 文件: `scripts/check-dependencies.sh` (Linux/macOS) 和 `scripts/check-dependencies.ps1` (Windows)
+- Linux/macOS 内容:
   ```bash
   #!/bin/bash
   # Check Go toolchain and dependency compatibility
@@ -162,6 +155,30 @@
   go list -m -versions golang.org/x/tools 2>/dev/null || echo "Unable to check"
   
   echo "Dependency check completed"
+  ```
+- Windows 内容:
+  ```powershell
+  # Check Go toolchain and dependency compatibility
+  
+  Write-Host "Checking Go version..."
+  go version
+  
+  Write-Host "Checking for deprecated tools..."
+  
+  # Check godoc
+  if (Get-Command godoc -ErrorAction SilentlyContinue) {
+      if (godoc -help 2>&1 | Select-String "\-html") {
+          Write-Host "✓ godoc -html is supported"
+      } else {
+          Write-Host "✗ godoc -html is deprecated, use go doc instead"
+          exit 1
+      }
+  }
+  
+  Write-Host "Checking golang.org/x/tools version..."
+  go list -m -versions golang.org/x/tools 2>$null; if ($?) { Write-Host "Unable to check" }
+  
+  Write-Host "Dependency check completed"
   ```
 
 **步骤 2.2: 在 CI Workflow 中添加检查**
@@ -269,6 +286,7 @@
       if err != nil {
           t.Fatalf("Failed to start orchestrator: %v", err)
       }
+      defer orch.Shutdown(ctx)
       
       contract := &types.AgentContract{
           ContractID: "test-contract",
@@ -297,15 +315,28 @@
           t.Fatalf("Failed to submit task: %v", err)
       }
       
-      // Wait for task completion
-      time.Sleep(1 * time.Second)
+      // Wait for task completion with polling
+      timeout := time.After(5 * time.Second)
+      ticker := time.NewTicker(100 * time.Millisecond)
+      defer ticker.Stop()
       
+      for {
+          select {
+          case <-timeout:
+              t.Fatalf("Task did not complete within timeout")
+          case <-ticker.C:
+              status := orch.GetTaskStatus("task-1")
+              if status == types.TaskStatusCompleted || status == types.TaskStatusFailed {
+                  goto done
+              }
+          }
+      }
+      
+  done:
       status := orch.GetTaskStatus("task-1")
       if status != types.TaskStatusCompleted && status != types.TaskStatusFailed {
           t.Errorf("Task status should be completed or failed, got %s", status)
       }
-      
-      orch.Shutdown(ctx)
   }
   ```
 
