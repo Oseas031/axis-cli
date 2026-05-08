@@ -86,18 +86,24 @@ func (s *SchedulerImpl) Submit(task *types.AgentTask) error {
 
 // detectCircularDependencies checks for circular dependencies using DFS
 func (s *SchedulerImpl) detectCircularDependencies(taskID string, dependencies []string, visited map[string]bool) error {
+	// Mark current task as visited to detect if it appears in its own dependency chain
+	visited[taskID] = true
+
 	for _, dep := range dependencies {
 		if visited[dep] {
 			return fmt.Errorf("circular dependency involving task %s", dep)
 		}
 		visited[dep] = true
 		if task, exists := s.taskMap[dep]; exists {
-			if err := s.detectCircularDependencies(taskID, task.Dependencies, visited); err != nil {
+			if err := s.detectCircularDependencies(dep, task.Dependencies, visited); err != nil {
 				return err
 			}
 		}
 		delete(visited, dep)
 	}
+
+	// Clean up current task from visited
+	delete(visited, taskID)
 	return nil
 }
 
