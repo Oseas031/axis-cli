@@ -49,6 +49,10 @@ jobs:
                   if field not in workflow:
                       errors.append(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
 
+              # Skip further validation if required fields are missing
+              if 'id' not in workflow or 'file' not in workflow:
+                  continue
+
               # Check for duplicate IDs
               if workflow['id'] in workflow_ids:
                   errors.append(f"❌ Duplicate workflow ID: {workflow['id']}")

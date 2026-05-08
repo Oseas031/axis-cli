@@ -21,7 +21,8 @@ jobs:
     name: Validate Registry
     runs-on: ubuntu-latest
     if: |
-      contains(github.event.head_commit.modified, '.github/workflows/registry.yml')
+      contains(github.event.head_commit.modified, '.github/workflows/registry.yml') ||
+      contains(github.event.pull_request.changed_files, '.github/workflows/registry.yml')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -50,14 +51,21 @@ jobs:
           errors = []
 
           for workflow in registry.get('workflows', []):
+              # Check required fields
               for field in required_fields:
                   if field not in workflow:
                       errors.append(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
 
+              # Skip further validation if required fields are missing
+              if 'id' not in workflow or 'file' not in workflow:
+                  continue
+
+              # Check for duplicate IDs
               if workflow['id'] in workflow_ids:
                   errors.append(f"❌ Duplicate workflow ID: {workflow['id']}")
               workflow_ids.add(workflow['id'])
 
+              # Check if file exists with better error messages
               if not os.path.exists(workflow['file']):
                   errors.append(f"❌ Workflow file does not exist: {workflow['file']}")
                   if workflow['file'].startswith('docs/deprecated/'):
@@ -67,6 +75,7 @@ jobs:
                           for s in suggestions[:3]:
                               errors.append(f"   - {s}")
 
+              # Check if documentation exists with better error messages
               if 'documentation' in workflow and not os.path.exists(workflow['documentation']):
                   errors.append(f"❌ Documentation file does not exist: {workflow['documentation']}")
                   if workflow['documentation'].startswith('/'):
