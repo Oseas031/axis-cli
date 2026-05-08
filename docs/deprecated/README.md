@@ -19,6 +19,13 @@
 ### protocols/
 - call-human-spec-DRAFT.md - Call Human协议规范，里程碑1不需要
 
+### workflow/
+- ci-cd-quality-improvement-workflow.md - 早期 CI/CD 设置过程，当前 CI/CD 已完成
+- comprehensive-automation-workflows.md - 7 个核心工作流架构设计，已被简化
+- entry-workflow.md - 工作流调度器设计，过度设计不符合奥卡姆剃刀
+- software-engineering-paradigm-workflow-improvement.md - 理论化的 CI/CD 改进，与实际需求脱节
+- workflow-improvement-plan.md - 工作流改进计划，高优先级问题已修复
+
 ## 当前文档
 
 请阅读以下当前文档：

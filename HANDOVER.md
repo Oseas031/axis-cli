@@ -88,16 +88,12 @@
 ## 当前待处理任务
 
 ### 立即待处理
-- ⏳ 观察CI workflow执行结果（用户正在推送代码到GitHub）
-- ⏳ 修复 staticcheck ST1003（包名下划线：sharedlayer → sharedlayer）
+- ⏳ 观察CI workflow执行结果
 - ⏳ 创建PR触发PR Quality Check和Security workflows
 - ⏳ 生成里程碑1验收报告
 
 ### 已知问题
-- ⚠️ staticcheck ST1003：sharedlayer 包名包含下划线，需要改为 sharedlayer
-  - 需要重命名目录：internal/kernel/sharedlayer → internal/kernel/sharedlayer
-  - 更新所有引用路径
-  - 受影响文件：scheduler.go, scheduler_test.go, orchestrator.go
+- ✅ staticcheck ST1003：shared_layer 包名包含下划线 - 已修复（2026-05-08）
 
 ### 下一步行动
 1. 使用现有工作流完成里程碑1验收（不创建新工作流）

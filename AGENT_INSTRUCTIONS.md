@@ -7,8 +7,8 @@ Agent 原生调度系统 - 为 AI Agent 提供统一任务调度能力
 - ✅ 里程碑1核心功能已完成
 - ✅ CI/CD流水线已建立
 - ✅ 工作流改造完成
+- ✅ staticcheck ST1003 已修复
 - ⏳ 正在进行里程碑1验收
-- ⚠️ 待修复 staticcheck ST1003 错误
 
 ## 文档阅读顺序（必须按顺序）
 1. HANDOVER.md - 项目交接文档（当前进度）
@@ -40,16 +40,12 @@ Agent 原生调度系统 - 为 AI Agent 提供统一任务调度能力
 - cmd/axis - CLI 客户端
 
 ## 当前待处理任务
-1. 观察CI workflow执行结果（用户正在推送代码到GitHub）
-2. 修复 staticcheck ST1003（包名下划线：sharedlayer → sharedlayer）
-3. 创建PR触发PR Quality Check和Security workflows
-4. 生成里程碑1验收报告
+1. 观察CI workflow执行结果
+2. 创建PR触发PR Quality Check和Security workflows
+3. 生成里程碑1验收报告
 
 ## 已知问题
-- ⚠️ staticcheck ST1003：sharedlayer 包名包含下划线，需要改为 sharedlayer
-  - 需要重命名目录：internal/kernel/sharedlayer → internal/kernel/sharedlayer
-  - 更新所有引用路径
-  - 受影响文件：scheduler.go, scheduler_test.go, orchestrator.go
+- ✅ staticcheck ST1003：shared_layer 包名包含下划线 - 已修复（2026-05-08）
 
 ## 开发优先级
 1. 完成里程碑1验收（使用现有工作流）
