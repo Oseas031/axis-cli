@@ -1,0 +1,46 @@
+run:
+  timeout: 5m
+  tests: true
+  build-tags: []
+  modules-download-mode: readonly
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - gocyclo
+    - gosec
+    - revive
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  
+  gosec:
+    excludes:
+      - G104  # Errors unhandled
+  
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+        disabled: false
+        arguments:
+          - sayRepetitiveInsteadOfStutters
+      - name: var-naming
+        severity: warning
+        disabled: false
+        arguments:
+          - [^Test]
+          - ""
+          - ""
+          - false

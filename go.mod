@@ -1,8 +1,10 @@
 module github.com/axis-cli/axis
 
-go 1.21
+go 1.26
+
+require github.com/spf13/cobra v1.8.0
 
 require (
-	// 核心模块零外部依赖，仅使用 Go 标准库
-	// 可选模块依赖将在里程碑 2 引入
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 )

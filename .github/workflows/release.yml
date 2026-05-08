@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Build Linux
+        run: GOOS=linux GOARCH=amd64 go build -v -o axis-linux-amd64 cmd/axis/main.go
+
+      - name: Build Windows
+        run: GOOS=windows GOARCH=amd64 go build -v -o axis-windows-amd64.exe cmd/axis/main.go
+
+      - name: Build macOS
+        run: GOOS=darwin GOARCH=amd64 go build -v -o axis-darwin-amd64 cmd/axis/main.go
+
+      - name: Generate checksums
+        run: |
+          sha256sum axis-linux-amd64 > axis-linux-amd64.sha256
+          sha256sum axis-windows-amd64.exe > axis-windows-amd64.exe.sha256
+          sha256sum axis-darwin-amd64 > axis-darwin-amd64.sha256
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: Release ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            axis-linux-amd64
+            axis-linux-amd64.sha256
+            axis-windows-amd64.exe
+            axis-windows-amd64.exe.sha256
+            axis-darwin-amd64
+            axis-darwin-amd64.sha256
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

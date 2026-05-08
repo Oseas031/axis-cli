@@ -1,10 +1,15 @@
-# DAG 并行调度策略设计
+# DAG 并行调度策略设计（里程碑1简化版）
 
 ## 设计目标
 
 构建 DAG 有向无环图并行调度模型，主 Agent 基于任务依赖关系生成全流程 DAG 图，无依赖的任务 100% 并行执行，有依赖的任务流水线化执行，总耗时从「各环节时长之和」压缩为「最长关键路径的单环节时长」。
 
-## 1. 核心概念
+## 里程碑1设计原则（奥卡姆剃刀）
+- **最小可行**：只实现基础DAG构建 + 拓扑排序 + 简单层级并行
+- **渐进增强**：条件依赖、软依赖、资源感知调度在后续里程碑添加
+- **聚焦核心**：里程碑1聚焦于"DAG依赖管理 + 基础并行"的可行性验证
+
+## 1. 核心概念（里程碑1简化版）
 
 ### 1.1 DAG 调度原理
 
@@ -26,21 +31,11 @@
 - 理论加速比 = 串行总耗时 / 关键路径耗时
 - 实际加速比受限于并行度和资源约束
 
-### 1.2 关键路径
+**里程碑1暂不包含**：
+- ❌ 关键路径计算
+- ❌ 资源感知调度
 
-**定义**：DAG 中从起点到终点的最长路径，决定了整个任务的最短完成时间。
-
-**计算方法**：动态规划
-```
-dist[node] = max(dist[dep] + duration[node]) for all dep in dependencies
-```
-
-**用途**：
-- 预估任务总耗时
-- 识别瓶颈任务
-- 优化资源分配
-
-## 2. DAG 数据结构
+## 2. DAG 数据结构（里程碑1简化版）
 
 ### 2.1 DAG 图
 
@@ -54,9 +49,6 @@ type DAGGraph struct {
 
     // 拓扑层级（缓存）
     levels [][]*DAGNode
-
-    // 关键路径（缓存）
-    criticalPath []*DAGNode
 
     // 读写锁
     mu sync.RWMutex
@@ -78,9 +70,6 @@ type DAGNode struct {
     // 节点状态
     State NodeState `json:"state"`
 
-    // 预估执行时长
-    EstimatedDuration time.Duration `json:"estimated_duration"`
-
     // 实际执行时长
     ActualDuration time.Duration `json:"actual_duration,omitempty"`
 
@@ -92,9 +81,6 @@ type DAGNode struct {
 
     // 错误信息
     Error *ExecutionError `json:"error,omitempty"`
-
-    // 元数据
-    Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type DAGEdge struct {
@@ -106,28 +92,6 @@ type DAGEdge struct {
 
     // 目标节点 ID
     To string `json:"to"`
-
-    // 边类型
-    Type EdgeType `json:"type"`
-
-    // 条件（可选，用于条件依赖）
-    Condition *EdgeCondition `json:"condition,omitempty"`
-}
-
-type EdgeType string
-
-const (
-    EdgeTypeHard     EdgeType = "hard"     // 强依赖（必须等待）
-    EdgeTypeSoft     EdgeType = "soft"     // 弱依赖（可跳过）
-    EdgeTypeConditional EdgeType = "conditional" // 条件依赖
-)
-
-type EdgeCondition struct {
-    // 条件表达式
-    Expression string `json:"expression"`
-
-    // 条件参数
-    Params map[string]interface{} `json:"params"`
 }
 
 type NodeState string
@@ -138,12 +102,16 @@ const (
     NodeStateRunning   NodeState = "running"    // 执行中
     NodeStateCompleted NodeState = "completed"  // 已完成
     NodeStateFailed    NodeState = "failed"     // 失败
-    NodeStateSkipped   NodeState = "skipped"    // 已跳过
-    NodeStateCancelled NodeState = "cancelled"  // 已取消
 )
 ```
 
-### 2.2 DAG 构建器
+**里程碑1暂不包含**：
+- ❌ 预估执行时长（EstimatedDuration）
+- ❌ 边类型（EdgeType：硬依赖、软依赖、条件依赖）
+- ❌ 边条件（EdgeCondition）
+- ❌ 节点状态 Skipped、Cancelled
+
+### 2.2 DAG 构建器（简化版）
 
 ```go
 type DAGBuilder struct {
@@ -159,20 +127,19 @@ func NewDAGBuilder() *DAGBuilder {
     }
 }
 
-func (b *DAGBuilder) AddNode(task *AgentTask, estimatedDuration time.Duration) error {
+func (b *DAGBuilder) AddNode(task *AgentTask) error {
     node := &DAGNode{
-        ID:                 task.ID,
-        Task:               task,
-        Dependencies:       []string{},
-        Dependents:         []string{},
-        State:              NodeStatePending,
-        EstimatedDuration:  estimatedDuration,
+        ID:           task.ID,
+        Task:         task,
+        Dependencies: []string{},
+        Dependents:   []string{},
+        State:        NodeStatePending,
     }
     b.graph.nodes[task.ID] = node
     return nil
 }
 
-func (b *DAGBuilder) AddEdge(fromID, toID string, edgeType EdgeType, condition *EdgeCondition) error {
+func (b *DAGBuilder) AddEdge(fromID, toID string) error {
     // 检查节点是否存在
     if _, ok := b.graph.nodes[fromID]; !ok {
         return fmt.Errorf("node %s not found", fromID)
@@ -183,11 +150,9 @@ func (b *DAGBuilder) AddEdge(fromID, toID string, edgeType EdgeType, condition *
 
     // 添加边
     edge := &DAGEdge{
-        ID:        fmt.Sprintf("%s->%s", fromID, toID),
-        From:      fromID,
-        To:        toID,
-        Type:      edgeType,
-        Condition: condition,
+        ID:   fmt.Sprintf("%s->%s", fromID, toID),
+        From: fromID,
+        To:   toID,
     }
     b.graph.edges[fromID] = append(b.graph.edges[fromID], edge)
 
@@ -209,14 +174,16 @@ func (b *DAGBuilder) Build() (*DAGGraph, error) {
         return nil, err
     }
 
-    // 计算关键路径
-    b.calculateCriticalPath()
-
     return b.graph, nil
 }
 ```
 
-## 3. DAG 调度器
+**里程碑1简化**：
+- AddNode 移除 estimatedDuration 参数
+- AddEdge 移除 edgeType 和 condition 参数
+- Build 移除 calculateCriticalPath 调用
+
+## 3. DAG 调度器（里程碑1简化版）
 
 ### 3.1 调度器接口
 
@@ -227,42 +194,33 @@ type DAGScheduler interface {
 
     // 取消调度
     Cancel(scheduleID string) error
-
-    // 获取调度状态
-    GetStatus(scheduleID string) (*ScheduleStatus, error)
-
-    // 注册资源管理器
-    RegisterResourceManager(rm ResourceManager) error
-
-    // 设置失败策略
-    SetFailureStrategy(strategy FailureStrategy) error
 }
 ```
 
-### 3.2 调度器实现
+### 3.2 调度器实现（简化版）
 
 ```go
 type DAGSchedulerImpl struct {
-    executor        TaskExecutor
-    resourceMgr     ResourceManager
-    failureStrategy FailureStrategy
-    stateStore      StateStore
-    metrics         MetricsCollector
-    mu              sync.RWMutex
+    executor   TaskExecutor
+    stateStore StateStore
+    mu         sync.RWMutex
 }
 
-func NewDAGScheduler(executor TaskExecutor, rm ResourceManager) *DAGSchedulerImpl {
+func NewDAGScheduler(executor TaskExecutor) *DAGSchedulerImpl {
     return &DAGSchedulerImpl{
-        executor:        executor,
-        resourceMgr:     rm,
-        failureStrategy: StrategyFailFast,
-        stateStore:      NewMemoryStateStore(),
-        metrics:         NewPrometheusMetrics(),
+        executor:   executor,
+        stateStore: NewMemoryStateStore(),
     }
 }
 ```
 
-### 3.3 核心调度算法
+**里程碑1简化**：
+- 移除 ResourceManager
+- 移除 FailureStrategy（默认快速失败）
+- 移除 MetricsCollector
+- 移除 GetStatus、RegisterResourceManager、SetFailureStrategy 方法
+
+### 3.3 核心调度算法（简化版）
 
 ```go
 func (s *DAGSchedulerImpl) Schedule(graph *DAGGraph) (*ScheduleResult, error) {
@@ -278,29 +236,17 @@ func (s *DAGSchedulerImpl) Schedule(graph *DAGGraph) (*ScheduleResult, error) {
 
     // 按拓扑层级调度
     for levelIdx, level := range graph.levels {
-        s.metrics.LevelStarted(scheduleID, levelIdx, len(level))
-
         // 执行当前层级的所有节点
         levelResult := s.executeLevel(ctx, level)
         result.LevelResults = append(result.LevelResults, levelResult)
 
-        // 检查失败策略
+        // 快速失败：任一任务失败立即停止
         if levelResult.HasFailure() {
-            switch s.failureStrategy {
-            case StrategyFailFast:
-                cancel()
-                result.Status = ScheduleStatusFailed
-                result.Error = levelResult.FirstError()
-                return result, result.Error
-            case StrategyContinue:
-                // 继续执行下一层级
-            case StrategyBestEffort:
-                // 跳过依赖失败节点的任务
-                s.markSkippedNodes(graph, levelResult.FailedNodes())
-            }
+            cancel()
+            result.Status = ScheduleStatusFailed
+            result.Error = levelResult.FirstError()
+            return result, result.Error
         }
-
-        s.metrics.LevelCompleted(scheduleID, levelIdx, levelResult.Duration)
     }
 
     result.EndTime = time.Now()
@@ -315,33 +261,6 @@ func (s *DAGSchedulerImpl) Schedule(graph *DAGGraph) (*ScheduleResult, error) {
 
 func (s *DAGSchedulerImpl) executeLevel(ctx context.Context, nodes []*DAGNode) *LevelResult {
     result := &LevelResult{
-        StartTime: time.Now(),
-    }
-
-    // 资源感知的批次大小
-    batchSize := s.calculateBatchSize(nodes)
-
-    // 分批执行
-    for i := 0; i < len(nodes); i += batchSize {
-        end := min(i+batchSize, len(nodes))
-        batch := nodes[i:end]
-
-        batchResult := s.executeBatch(ctx, batch)
-        result.Merge(batchResult)
-
-        // 如果快速失败且有错误，立即返回
-        if s.failureStrategy == StrategyFailFast && batchResult.HasFailure() {
-            break
-        }
-    }
-
-    result.EndTime = time.Now()
-    result.Duration = result.EndTime.Sub(result.StartTime)
-    return result
-}
-
-func (s *DAGSchedulerImpl) executeBatch(ctx context.Context, nodes []*DAGNode) *BatchResult {
-    result := &BatchResult{
         StartTime: time.Now(),
     }
 
@@ -428,39 +347,13 @@ func (s *DAGSchedulerImpl) executeNode(ctx context.Context, node *DAGNode) *Node
 }
 ```
 
-### 3.4 资源感知调度
+**里程碑1简化**：
+- 移除资源感知调度（calculateBatchSize）
+- 移除分批执行（executeBatch）
+- 移除多种失败策略（只保留快速失败）
+- 移除指标收集（metrics）
 
-```go
-func (s *DAGSchedulerImpl) calculateBatchSize(nodes []*DAGNode) int {
-    // 获取可用资源
-    availableSlots := s.resourceMgr.AvailableSlots()
-
-    // 计算每个节点的资源需求
-    totalRequired := 0
-    for _, node := range nodes {
-        totalRequired += s.estimateResourceRequirement(node)
-    }
-
-    // 批次大小受限于可用资源
-    batchSize := min(len(nodes), availableSlots)
-
-    // 如果总需求超过可用资源，按比例缩减
-    if totalRequired > availableSlots {
-        batchSize = (len(nodes) * availableSlots) / totalRequired
-    }
-
-    // 至少执行 1 个任务
-    return max(batchSize, 1)
-}
-
-func (s *DAGSchedulerImpl) estimateResourceRequirement(node *DAGNode) int {
-    // 基于任务类型和预估时长估算资源需求
-    // 这里简化为固定值，实际可根据历史数据动态调整
-    return 1
-}
-```
-
-## 4. DAG 算法
+## 4. DAG 算法（里程碑1简化版）
 
 ### 4.1 拓扑排序
 
@@ -554,52 +447,7 @@ func (b *DAGBuilder) detectCycles() error {
 }
 ```
 
-### 4.3 关键路径计算
-
-```go
-func (b *DAGBuilder) calculateCriticalPath() {
-    // 动态规划计算最长路径
-    dist := make(map[string]time.Duration)
-    prev := make(map[string]string)
-
-    // 初始化
-    for id, node := range b.graph.nodes {
-        dist[id] = node.EstimatedDuration
-    }
-
-    // 按拓扑层级更新
-    for _, level := range b.graph.levels {
-        for _, node := range level {
-            for _, depID := range node.Dependencies {
-                if dist[node.ID] < dist[depID]+node.EstimatedDuration {
-                    dist[node.ID] = dist[depID] + node.EstimatedDuration
-                    prev[node.ID] = depID
-                }
-            }
-        }
-    }
-
-    // 找到最长路径的终点
-    var maxID string
-    maxDuration := time.Duration(0)
-    for id, duration := range dist {
-        if duration > maxDuration {
-            maxDuration = duration
-            maxID = id
-        }
-    }
-
-    // 回溯关键路径
-    var path []*DAGNode
-    for id := maxID; id != ""; id = prev[id] {
-        path = append([]*DAGNode{b.graph.nodes[id]}, path...)
-    }
-
-    b.graph.criticalPath = path
-}
-```
-
-### 4.4 拓扑层级计算
+### 4.3 拓扑层级计算
 
 ```go
 func (b *DAGBuilder) calculateLevels() error {
@@ -612,74 +460,10 @@ func (b *DAGBuilder) calculateLevels() error {
 }
 ```
 
-## 5. 失败处理策略
+**里程碑1暂不包含**：
+- ❌ 关键路径计算（calculateCriticalPath）
 
-### 5.1 失败策略类型
-
-```go
-type FailureStrategy string
-
-const (
-    StrategyFailFast   FailureStrategy = "fail_fast"    // 快速失败：任一任务失败立即停止
-    StrategyContinue   FailureStrategy = "continue"    // 继续执行：忽略失败继续执行
-    StrategyBestEffort FailureStrategy = "best_effort" // 尽力而为：跳过依赖失败的任务
-)
-```
-
-### 5.2 失败策略实现
-
-```go
-func (s *DAGSchedulerImpl) handleFailure(node *DAGNode, err error) {
-    switch s.failureStrategy {
-    case StrategyFailFast:
-        // 取消整个调度
-        s.cancelAllNodes()
-
-    case StrategyContinue:
-        // 仅标记当前节点失败，继续执行其他节点
-        node.State = NodeStateFailed
-        node.Error = &ExecutionError{
-            Code:    "TASK_FAILED",
-            Message: err.Error(),
-        }
-
-    case StrategyBestEffort:
-        // 标记当前节点失败，并跳过依赖此节点的任务
-        node.State = NodeStateFailed
-        node.Error = &ExecutionError{
-            Code:    "TASK_FAILED",
-            Message: err.Error(),
-        }
-        s.skipDependentNodes(node)
-    }
-}
-
-func (s *DAGSchedulerImpl) skipDependentNodes(failedNode *DAGNode) {
-    // 递归跳过所有依赖此节点的任务
-    queue := []*DAGNode{failedNode}
-
-    for len(queue) > 0 {
-        node := queue[0]
-        queue = queue[1:]
-
-        for _, depID := range node.Dependents {
-            depNode := s.graph.nodes[depID]
-            if depNode.State == NodeStatePending {
-                depNode.State = NodeStateSkipped
-                depNode.Error = &ExecutionError{
-                    Code:    "SKIPPED_DUE_TO_DEPENDENCY_FAILURE",
-                    Message: fmt.Sprintf("dependency %s failed", node.ID),
-                }
-                queue = append(queue, depNode)
-            }
-        }
-    }
-}
-```
-
-## 6. 调度结果
-
-### 6.1 调度结果结构
+## 5. 调度结果（里程碑1简化版）
 
 ```go
 type ScheduleResult struct {
@@ -706,19 +490,13 @@ type ScheduleResult struct {
 
     // 错误信息
     Error error `json:"error,omitempty"`
-
-    // 元数据
-    Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type ScheduleStatus string
 
 const (
-    ScheduleStatusPending   ScheduleStatus = "pending"
-    ScheduleStatusRunning   ScheduleStatus = "running"
     ScheduleStatusCompleted ScheduleStatus = "completed"
     ScheduleStatusFailed    ScheduleStatus = "failed"
-    ScheduleStatusCancelled ScheduleStatus = "cancelled"
 )
 
 type LevelResult struct {
@@ -734,28 +512,8 @@ type LevelResult struct {
     // 层级耗时
     Duration time.Duration `json:"duration"`
 
-    // 批次结果
-    BatchResults []*BatchResult `json:"batch_results,omitempty"`
-
     // 节点结果
     NodeResults []*NodeResult `json:"node_results,omitempty"`
-
-    // 错误列表
-    Errors []error `json:"errors,omitempty"`
-}
-
-type BatchResult struct {
-    // 开始时间
-    StartTime time.Time `json:"start_time"`
-
-    // 结束时间
-    EndTime time.Time `json:"end_time"`
-
-    // 批次耗时
-    Duration time.Duration `json:"duration"`
-
-    // 节点结果
-    NodeResults []*NodeResult `json:"node_results"`
 
     // 错误列表
     Errors []error `json:"errors,omitempty"`
@@ -779,226 +537,12 @@ type NodeResult struct {
 }
 ```
 
-## 7. 性能优化
+**里程碑1暂不包含**：
+- ❌ BatchResult（批次结果）
+- ❌ Metadata（元数据）
+- ❌ ScheduleStatus Pending、Running、Cancelled
 
-### 7.1 DAG 缓存
-
-```go
-type DAGCache struct {
-    cache map[string]*CachedDAG
-    mu    sync.RWMutex
-    ttl   time.Duration
-}
-
-type CachedDAG struct {
-    Graph      *DAGGraph
-    CachedAt   time.Time
-    AccessTime time.Time
-}
-
-func (c *DAGCache) Get(key string) (*DAGGraph, bool) {
-    c.mu.RLock()
-    defer c.mu.RUnlock()
-
-    cached, ok := c.cache[key]
-    if !ok {
-        return nil, false
-    }
-
-    // 检查 TTL
-    if time.Since(cached.CachedAt) > c.ttl {
-        delete(c.cache, key)
-        return nil, false
-    }
-
-    cached.AccessTime = time.Now()
-    return cached.Graph, true
-}
-
-func (c *DAGCache) Set(key string, graph *DAGGraph) {
-    c.mu.Lock()
-    defer c.mu.Unlock()
-
-    c.cache[key] = &CachedDAG{
-        Graph:      graph,
-        CachedAt:   time.Now(),
-        AccessTime: time.Now(),
-    }
-}
-```
-
-### 7.2 增量调度
-
-```go
-func (s *DAGSchedulerImpl) IncrementalSchedule(existingGraph *DAGGraph, newTasks []*AgentTask) (*ScheduleResult, error) {
-    // 构建增量 DAG
-    builder := NewDAGBuilder()
-
-    // 复用已有节点
-    for id, node := range existingGraph.nodes {
-        if node.State == NodeStateCompleted {
-            continue // 跳过已完成的节点
-        }
-        builder.AddNode(node.Task, node.EstimatedDuration)
-    }
-
-    // 添加新节点
-    for _, task := range newTasks {
-        builder.AddNode(task, s.estimateDuration(task))
-    }
-
-    // 添加新边（基于任务依赖）
-    for _, task := range newTasks {
-        for _, depID := range task.Dependencies {
-            builder.AddEdge(depID, task.ID, EdgeTypeHard, nil)
-        }
-    }
-
-    // 构建新 DAG
-    newGraph, err := builder.Build()
-    if err != nil {
-        return nil, err
-    }
-
-    // 调度新 DAG
-    return s.Schedule(newGraph)
-}
-```
-
-### 7.3 动态重调度
-
-```go
-func (s *DAGSchedulerImpl) Reschedule(scheduleID string, newStrategy FailureStrategy) (*ScheduleResult, error) {
-    // 获取原始调度结果
-    original, err := s.stateStore.Load(scheduleID)
-    if err != nil {
-        return nil, err
-    }
-
-    // 重置未完成的节点
-    for _, node := range original.Graph.nodes {
-        if node.State == NodeStatePending || node.State == NodeStateRunning {
-            node.State = NodeStatePending
-            node.StartTime = nil
-            node.EndTime = nil
-            node.Error = nil
-        }
-    }
-
-    // 更新失败策略
-    s.failureStrategy = newStrategy
-
-    // 重新调度
-    return s.Schedule(original.Graph)
-}
-```
-
-## 8. 可观测性
-
-### 8.1 指标
-
-```go
-type DAGMetrics struct {
-    // 调度指标
-    ScheduleCount          int64
-    ScheduleSuccessCount   int64
-    ScheduleFailureCount   int64
-    ScheduleDuration       prometheus.Histogram
-
-    // 节点指标
-    NodeCount              int64
-    NodeSuccessCount       int64
-    NodeFailureCount       int64
-    NodeSkippedCount       int64
-    NodeDuration           prometheus.Histogram
-
-    // 层级指标
-    LevelCount             int64
-    LevelDuration          prometheus.Histogram
-
-    // 资源指标
-    ConcurrentExecutions   prometheus.Gauge
-    ResourceUtilization    prometheus.Gauge
-}
-```
-
-### 8.2 链路追踪
-
-```go
-func (s *DAGSchedulerImpl) executeNodeWithTracing(ctx context.Context, node *DAGNode) *NodeResult {
-    // 创建 span
-    ctx, span := tracer.Start(ctx, "execute_node",
-        trace.WithAttributes(
-            attribute.String("node_id", node.ID),
-            attribute.String("task_type", node.Task.Type),
-        ),
-    )
-    defer span.End()
-
-    // 执行节点
-    result := s.executeNode(ctx, node)
-
-    // 记录结果
-    if result.Error != nil {
-        span.SetStatus(codes.Error, result.Error.Error())
-        span.RecordError(result.Error)
-    }
-
-    return result
-}
-```
-
-## 9. 与契约层的集成
-
-### 9.1 从契约构建 DAG
-
-```go
-func ContractToDAG(contracts []*AgentContract) (*DAGGraph, error) {
-    builder := NewDAGBuilder()
-
-    // 添加节点
-    for _, contract := range contracts {
-        task := &AgentTask{
-            ID:       contract.ContractID,
-            Contract: contract,
-        }
-        builder.AddNode(task, contract.SLA.Timeout)
-    }
-
-    // 添加边（基于契约依赖）
-    for _, contract := range contracts {
-        for _, dep := range contract.Dependencies {
-            builder.AddEdge(dep.DependencyAgentID, contract.ContractID, EdgeTypeHard, nil)
-        }
-    }
-
-    // 构建 DAG
-    return builder.Build()
-}
-```
-
-### 9.2 DAG 执行结果映射到契约
-
-```go
-func DAGResultToContractExecution(result *ScheduleResult, contractID string) *ContractExecutionResult {
-    node := result.Graph.nodes[contractID]
-
-    return &ContractExecutionResult{
-        ContractID:      contractID,
-        ContractVersion: node.Task.Contract.Version,
-        Status:          mapNodeStateToExecutionStatus(node.State),
-        Output:          node.Task.Result,
-        Error:           node.Error,
-        Duration:        node.ActualDuration,
-        Metadata: map[string]interface{}{
-            "schedule_id": result.ScheduleID,
-            "level_index": getNodeLevel(result.Graph, contractID),
-        },
-    }
-}
-```
-
-## 10. 实施路线图
+## 6. 实施路线图（里程碑1简化版）
 
 ### 里程碑 1：DAG 基础调度
 - [ ] 实现 DAG 图构建
