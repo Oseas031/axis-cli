@@ -92,8 +92,8 @@ jobs:
 
       - name: Generate diff stats
         run: |
-          git diff --stat origin/main...HEAD
-          CHANGED_FILES=$(git diff --name-only origin/main...HEAD | wc -l)
+          git diff --stat origin/${{ github.base_ref }}...HEAD
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
           echo "Changed files: $CHANGED_FILES"
           if [ $CHANGED_FILES -gt 20 ]; then
             echo "⚠️ Large PR: Consider splitting into smaller PRs"

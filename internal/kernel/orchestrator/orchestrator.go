@@ -56,12 +56,12 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	if !o.running {
-		return fmt.Errorf("orchestrator is already shut down")
+	if o.running {
+		return fmt.Errorf("orchestrator is already running")
 	}
 
-	// Mark as started to prevent duplicate starts
-	o.running = false
+	// Mark as running to prevent duplicate starts
+	o.running = true
 
 	// Start the task execution loop
 	go o.runTaskLoop(ctx)
@@ -175,6 +175,13 @@ func (o *Orchestrator) Shutdown(ctx context.Context) error {
 	o.running = false
 	o.mu.Unlock()
 
+	// Notify task loop to stop
+	select {
+	case o.taskSubmitted <- struct{}{}:
+	default:
+	}
+
+	// Wait for lifecycle manager to complete shutdown
 	return o.lifecycleManager.Shutdown(ctx)
 }
 

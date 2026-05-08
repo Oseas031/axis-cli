@@ -107,7 +107,8 @@ jobs:
           # Get all registered workflow files
           registered_files = set()
           for workflow in registry.get('workflows', []):
-              registered_files.add(workflow['file'])
+              if 'file' in workflow:
+                  registered_files.add(workflow['file'])
 
           # Get all actual workflow files
           actual_files = set()
@@ -299,7 +300,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add workflows/README.md
           git commit -m "chore: auto-generate workflow index from registry"
-          git push
+          git push origin HEAD:${{ github.ref }}
 
   summary:
     name: Validation Summary

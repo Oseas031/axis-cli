@@ -7,7 +7,12 @@ import yaml
 import glob
 
 # Check if registry.yml is being modified
-result = subprocess.run(['git', 'diff', '--cached', '--name-only'], capture_output=True, text=True)
+try:
+    result = subprocess.run(['git', 'diff', '--cached', '--name-only'], capture_output=True, text=True, check=True)
+except subprocess.CalledProcessError as e:
+    print(f"❌ Error running git command: {e}")
+    sys.exit(1)
+
 if '.github/registry.yml' not in result.stdout:
     sys.exit(0)
 

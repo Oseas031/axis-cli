@@ -21,8 +21,8 @@ jobs:
     name: Validate Registry
     runs-on: ubuntu-latest
     if: |
-      contains(github.event.head_commit.modified, '.github/registry.yml') ||
-      contains(github.event.pull_request.changed_files, '.github/registry.yml')
+      github.event_name == 'push' && contains(github.event.head_commit.modified, '.github/registry.yml') ||
+      github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, '.github/registry.yml')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
