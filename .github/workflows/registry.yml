@@ -18,8 +18,8 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: docs/deprecated/ci-cd-quality-improvement-workflow.md
-    documentation: docs/deprecated/ci-cd-quality-improvement-workflow.md
+    file: docs/deprecated/workflows/ci-cd-quality-improvement-workflow.md
+    documentation: docs/deprecated/workflows/ci-cd-quality-improvement-workflow.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -45,8 +45,8 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: docs/deprecated/software-engineering-paradigm-workflow-improvement.md
-    documentation: docs/deprecated/software-engineering-paradigm-workflow-improvement.md
+    file: docs/deprecated/workflows/software-engineering-paradigm-workflow-improvement.md
+    documentation: docs/deprecated/workflows/software-engineering-paradigm-workflow-improvement.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -72,8 +72,8 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: docs/deprecated/comprehensive-automation-workflows.md
-    documentation: docs/deprecated/comprehensive-automation-workflows.md
+    file: docs/deprecated/workflows/comprehensive-automation-workflows.md
+    documentation: docs/deprecated/workflows/comprehensive-automation-workflows.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
