@@ -50,9 +50,9 @@ func TestContractExecutor_ValidateInput(t *testing.T) {
 					Required: true,
 				},
 				{
-					Name:  "age",
-					Type:  types.FieldTypeInt,
-					Enum:  []string{"25", "30", "35"},
+					Name: "age",
+					Type: types.FieldTypeInt,
+					Enum: []string{"25", "30", "35"},
 				},
 			},
 		},

@@ -36,16 +36,16 @@ type TaskResult struct {
 
 // TaskState represents the stored state of a task
 type TaskState struct {
-	Task       *AgentTask  `json:"task"`
-	Result     *TaskResult `json:"result,omitempty"`
-	UpdatedAt  time.Time   `json:"updated_at"`
+	Task      *AgentTask  `json:"task"`
+	Result    *TaskResult `json:"result,omitempty"`
+	UpdatedAt time.Time   `json:"updated_at"`
 }
 
 // FieldType represents the type of a field
 type FieldType string
 
 const (
-	FieldTypeString  FieldType = "string"
+	FieldTypeString FieldType = "string"
 	FieldTypeInt    FieldType = "int"
 	FieldTypeFloat  FieldType = "float"
 	FieldTypeBool   FieldType = "bool"
@@ -55,11 +55,11 @@ const (
 
 // FieldDef defines a field in a schema
 type FieldDef struct {
-	Name        string      `json:"name"`
-	Type        FieldType   `json:"type"`
-	Required    bool        `json:"required"`
-	Description string      `json:"description,omitempty"`
-	Enum        []string    `json:"enum,omitempty"`
+	Name        string    `json:"name"`
+	Type        FieldType `json:"type"`
+	Required    bool      `json:"required"`
+	Description string    `json:"description,omitempty"`
+	Enum        []string  `json:"enum,omitempty"`
 }
 
 // InputSchema defines the input contract
@@ -74,8 +74,8 @@ type OutputSchema struct {
 
 // AgentContract defines an agent's input/output contract
 type AgentContract struct {
-	ContractID   string       `json:"contract_id"`
-	InputSchema  *InputSchema `json:"input_schema"`
+	ContractID   string        `json:"contract_id"`
+	InputSchema  *InputSchema  `json:"input_schema"`
 	OutputSchema *OutputSchema `json:"output_schema"`
 }
 

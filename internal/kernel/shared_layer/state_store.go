@@ -14,7 +14,7 @@ type StateStore interface {
 
 // MemoryStateStore implements in-memory state storage
 type MemoryStateStore struct {
-	mu    sync.RWMutex
+	mu     sync.RWMutex
 	states map[string]types.TaskState
 }
 

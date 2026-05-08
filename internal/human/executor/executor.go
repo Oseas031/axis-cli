@@ -17,8 +17,8 @@ type HumanExecutor interface {
 
 // HumanExecutorImpl implements human task execution
 type HumanExecutorImpl struct {
-	mu     sync.RWMutex
-	calls  map[string]*types.HumanCallResult
+	mu    sync.RWMutex
+	calls map[string]*types.HumanCallResult
 }
 
 // NewHumanExecutor creates a new human executor
