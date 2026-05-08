@@ -7,22 +7,24 @@ on:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/registry.yml'
+      - '.github/config/registry.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/registry.yml'
+      - '.github/config/registry.yml'
 
+# Standard: Event type check before accessing event properties
+# See .github/workflows/CODING_STANDARDS.md section 1.1
 jobs:
   validate-registry:
     name: Validate Registry
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'push' && contains(github.event.head_commit.modified, '.github/registry.yml') ||
-      github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, '.github/registry.yml')
+      github.event_name == 'push' && contains(github.event.head_commit.modified, '.github/config/registry.yml') ||
+      github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, '.github/config/registry.yml')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,7 +45,7 @@ jobs:
           import os
           import glob
 
-          with open('.github/registry.yml', 'r') as f:
+          with open('.github/config/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           required_fields = ['id', 'name', 'version', 'status', 'category', 'file']

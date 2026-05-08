@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [ main, develop ]
     paths:
-      - '.github/registry.yml'
+      - '.github/config/registry.yml'
       - '.github/workflows/*.yml'
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
           import os
           import glob
 
-          with open('.github/registry.yml', 'r') as f:
+          with open('.github/config/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           # Check required fields
@@ -101,7 +101,7 @@ jobs:
           import os
           import glob
 
-          with open('.github/registry.yml', 'r') as f:
+          with open('.github/config/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           # Get all registered workflow files
@@ -133,7 +133,7 @@ jobs:
           import yaml
           from collections import defaultdict
 
-          with open('.github/registry.yml', 'r') as f:
+          with open('.github/config/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           # Build dependency graph
@@ -180,7 +180,7 @@ jobs:
           import yaml
           from datetime import datetime
 
-          with open('.github/registry.yml', 'r') as f:
+          with open('.github/config/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           active_count = 0
@@ -231,7 +231,7 @@ jobs:
           import yaml
           from collections import defaultdict
 
-          with open('.github/registry.yml', 'r') as f:
+          with open('.github/config/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
 
           # Group workflows by category
@@ -278,7 +278,7 @@ jobs:
                   f.write('\n')
 
               f.write('\n## 相关文档\n\n')
-              f.write('- [工作流注册表](../.github/registry.yml) - 完整的工作流元数据\n')
+              f.write('- [工作流注册表](../.github/config/registry.yml) - 完整的工作流元数据\n')
               f.write('- [Meta-Workflow 管理](meta-workflow-management.md) - 工作流管理系统\n')
 
           print("✅ Workflow index generated")
@@ -293,6 +293,9 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
+# Standard: Git push requires GitHub Actions bot write permissions
+# Configure in Repository Settings > Actions > General > Workflow permissions
+# See .github/workflows/CODING_STANDARDS.md section 5.2
       - name: Commit changes
         if: false  # Disabled for milestone 1 acceptance - requires write permissions
         run: |

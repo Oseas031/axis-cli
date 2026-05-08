@@ -90,6 +90,15 @@ jobs:
             echo "⚠️ Found potentially commented code blocks"
           fi
 
+# Standard: Use GitHub Actions context variables instead of hardcoded values
+# See .github/workflows/CODING_STANDARDS.md section 5.1
+# Common context variables:
+# - github.event_name: Event type (push, pull_request, etc.)
+# - github.ref_name: Branch name
+# - github.actor: User who triggered the workflow
+# - github.base_ref: Base branch for PR
+# - github.head_ref: Head branch for PR
+# - github.event.pull_request.number: PR number
       - name: Generate diff stats
         run: |
           git diff --stat origin/${{ github.base_ref }}...HEAD

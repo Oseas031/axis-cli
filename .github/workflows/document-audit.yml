@@ -178,10 +178,47 @@ jobs:
           # This is a simplified check - in production, you'd want more thorough checking
           echo "✅ Code documentation check completed"
 
+# Standard: Check if handover document is updated after changes
+# See .github/workflows/CODING_STANDARDS.md section 7.2
+  handover-document-check:
+    name: Handover Document Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if HANDOVER.md is updated
+        run: |
+          echo "Checking HANDOVER.md updates..."
+          
+          # Get the latest commit date for HANDOVER.md
+          HANDOVER_DATE=$(git log -1 --format=%ct HANDOVER.md)
+          
+          # Get the latest commit date for code files
+          CODE_DATE=$(git log -1 --format=%ct -- '**.go' 'go.mod' 'go.sum')
+          
+          # Calculate the difference in seconds (1 day = 86400 seconds)
+          DIFF=$((CODE_DATE - HANDOVER_DATE))
+          
+          echo "HANDOVER.md last updated: $HANDOVER_DATE"
+          echo "Code last updated: $CODE_DATE"
+          echo "Difference: $DIFF seconds"
+          
+          # If code was updated more than 1 day after HANDOVER.md, warn
+          if [ $DIFF -gt 86400 ]; then
+            echo "⚠️ WARNING: HANDOVER.md may need updating"
+            echo "Code has been updated since HANDOVER.md was last modified"
+            echo "Please update HANDOVER.md with any recent bug fixes or changes"
+          else
+            echo "✅ HANDOVER.md is up to date"
+          fi
+
   summary:
     name: Audit Summary
     runs-on: ubuntu-latest
-    needs: [format-check, link-check, content-consistency, milestone-alignment, deprecated-documents, code-documentation]
+    needs: [format-check, link-check, content-consistency, milestone-alignment, deprecated-documents, code-documentation, handover-document-check]
     if: always()
     steps:
       - name: Generate audit summary
@@ -205,6 +242,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Code Documentation" >> $GITHUB_STEP_SUMMARY
           echo "- Status: ${{ needs.code-documentation.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Handover Document" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ needs.handover-document-check.result }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Create issue if problems found
         if: failure()

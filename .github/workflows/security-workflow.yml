@@ -31,6 +31,10 @@ jobs:
           path: gosec-report.json
           retention-days: 30
 
+# Standard: Avoid duplicate tools with overlapping functionality
+# govulncheck covers dependency vulnerability checking
+# nancy tool removed due to Git authentication issues
+# See .github/workflows/CODING_STANDARDS.md section 6.1
   sca:
     name: Software Composition Analysis
     runs-on: ubuntu-latest

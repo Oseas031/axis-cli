@@ -13,13 +13,13 @@ except subprocess.CalledProcessError as e:
     print(f"❌ Error running git command: {e}")
     sys.exit(1)
 
-if '.github/registry.yml' not in result.stdout:
+if '.github/config/registry.yml' not in result.stdout:
     sys.exit(0)
 
 print("Validating registry.yml...")
 
 try:
-    with open('.github/registry.yml', 'r') as f:
+    with open('.github/config/registry.yml', 'r') as f:
         registry = yaml.safe_load(f)
 
     # Check required fields
