@@ -55,12 +55,14 @@
 - ✅ 单元测试（覆盖率≥60%）
 
 ### CI/CD流水线（已完成）
-- ✅ CI Workflow（format, vet, staticcheck, test, build, docs）
+- ✅ CI Workflow（format, vet, staticcheck, test, build）
 - ✅ CD Workflow（多平台构建、Docker镜像、Release、签名）
 - ✅ Security Workflow（SAST, SCA, Secret Scan, License Compliance）
 - ✅ PR Quality Check Workflow（质量门禁、代码审查）
 - ✅ Monitoring Workflow（性能基准、覆盖率趋势、CI指标）
 - ✅ Dev Workflow（本地开发自动化）
+- ✅ Document Audit Workflow（文档格式、链接、内容一致性、里程碑对齐）
+- ✅ Registry Validator Workflow（注册表验证、索引生成）
 
 ### 工作流改造（已完成）
 - ✅ 基于软件工程范式（TDD, Quality Gates, DevSecOps, CD, Observability）
@@ -68,6 +70,12 @@
 - ✅ Meta-Workflow架构决策（Git存储、双轨绑定、三层版本控制、显式依赖）
 - ✅ 工作流架构图（docs/workflow-architecture.drawio）
 - ✅ 进度报告（docs/workflow-progress-report.md）
+- ✅ Claude Code 工作流衔接系统（docs/claude-code-workflow-continuity-guide.md）
+- ✅ 工作流索引（workflows/README.md）
+- ✅ 文档审查工作流（.github/workflows/document-audit.yml）
+- ✅ 工作流注册表验证器（.github/workflows/registry-validator.yml）
+- ✅ 文件夹重组（reports/ 和 docs/deprecated/workflows/）
+- ✅ 工作流经验总结与完善
 
 ### Bug修复（已完成）
 - ✅ 调度器 GetNextTask 标记任务为已调度
@@ -84,20 +92,31 @@
 - ✅ 里程碑1检查清单（docs/milestones/milestone1-checklist.md）
 - ✅ 工作流验收文档（docs/milestone1-acceptance-using-existing-workflows.md）
 - ✅ 进度报告（docs/workflow-progress-report.md）
+- ✅ Claude Code 工作流衔接指南（docs/claude-code-workflow-continuity-guide.md）
+- ✅ 工作流索引（workflows/README.md）
+- ✅ 工作流组织报告（reports/workflow/workflow-organization-report.md）
+- ✅ 文件夹组织评估（reports/folder-organization-evaluation.md）
+- ✅ 工作流废弃内容检查（reports/workflow-deprecated-content-check.md）
+- ✅ 工作流经验总结（reports/workflow-experience-summary.md）
+- ✅ 每日复盘（reports/daily/daily-retrospective-2026-05-08.md）
 
 ## 当前待处理任务
 
 ### 立即待处理
-- ⏳ 观察CI workflow执行结果
+- ⏳ 观察文档审查工作流执行结果
+- ⏳ 观察工作流注册表验证器执行结果
+- ⏳ 处理 release.yml 与 cd-workflow 重复问题（本周）
 - ⏳ 创建PR触发PR Quality Check和Security workflows
 - ⏳ 生成里程碑1验收报告
 
 ### 已知问题
 - ✅ staticcheck ST1003：shared_layer 包名包含下划线 - 已修复（2026-05-08）
+- ⚠️ release.yml 与 cd-workflow 重复 - 待处理（本周）
+- ⚠️ sign-artifacts job 未使用 - 待处理（里程碑1后）
 
 ### 下一步行动
 1. 使用现有工作流完成里程碑1验收（不创建新工作流）
-2. 修复 staticcheck ST1003 错误
+2. 处理 release.yml 重复问题
 3. 生成里程碑1验收报告
 4. 准备里程碑2设计（DAG并行调度、契约准入规则、SLA约定）
 
@@ -207,16 +226,25 @@ axis-cli/
 - docs/deprecated/architecture/llm-provider-DRAFT.md
 - docs/deprecated/architecture/optional-modules-DRAFT.md
 - docs/deprecated/protocols/call-human-spec-DRAFT.md
+- docs/deprecated/workflows/ci-cd-quality-improvement-workflow.md
+- docs/deprecated/workflows/comprehensive-automation-workflows.md
+- docs/deprecated/workflows/entry-workflow.md
+- docs/deprecated/workflows/software-engineering-paradigm-workflow-improvement.md
+- docs/deprecated/workflows/workflow-improvement-plan.md
 
 ## 文档索引
 
 ### 快速导航
 - Agent 接手提示词：`AGENT_INSTRUCTIONS.md`
+- 当前工作进度：`docs/current-progress.md`
+- Claude Code 工作流衔接指南：`docs/claude-code-workflow-continuity-guide.md`
 - 快速入门：`docs/QUICKSTART.md`
 - 系统架构可视化：`docs/DIAGRAMS.md`
 - 项目定义：`docs/WHITEPAPER.md`
 - 里程碑1检查清单：`docs/milestones/milestone1-checklist.md`
 - 项目演化路线图：`docs/ROADMAP.md`
+- 工作流索引：`workflows/README.md`
+- 报告索引：`reports/`
 
 ### 配置文件
 - 生产环境配置：`configs/config.yaml`
@@ -224,6 +252,6 @@ axis-cli/
 
 ---
 
-**交接时间**：2026-05-08
-**交接状态**：里程碑1核心功能已完成，CI/CD已建立，工作流改造完成
-**下一步行动**：完成里程碑1验收，修复 staticcheck ST1003 错误
+**交接时间**：2026-05-08 12:54
+**交接状态**：里程碑1核心功能已完成，CI/CD已建立，工作流改造完成，文档系统完善
+**下一步行动**：处理 release.yml 重复问题，完成里程碑1验收
