@@ -215,7 +215,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/pr-check-workflow.yml
-    documentation: workflow/pr-check-workflow.md
+    documentation: .github/workflows/pr-check-workflow.yml
     owner: "quality-team"
     reviewers:
       - "tech-lead"
