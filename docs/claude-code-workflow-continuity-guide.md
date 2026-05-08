@@ -218,17 +218,52 @@
 
 ### 接手工作流
 1. 读取 `docs/current-progress.md` 了解当前工作进度
-2. 读取 `docs/daily-retrospective-YYYY-MM-DD.md` 了解最新复盘
-3. 检查 `.github/workflows/registry.yml` 了解工作流状态
-4. 检查 GitHub Actions 了解 CI/CD 状态
-5. 更新记忆系统加载项目上下文
 
-### 交接工作流
-1. 更新 `docs/current-progress.md` 记录工作进度
-2. 创建每日复盘文档
-3. 更新 `HANDOVER.md` 和 `AGENT_INSTRUCTIONS.md`
-4. 提交并推送所有变更
-5. 确保 CI/CD 通过
+##### 1. 阅读文档
+按顺序阅读以下文档：
+1. docs/current-progress.md - 当前工作进度
+2. HANDOVER.md - 项目交接文档
+3. workflows/README.md - 工作流索引
+4. reports/daily/daily-retrospective-YYYY-MM-DD.md - 最新复盘
+
+##### 2. 理解上下文
+- 理解项目当前状态
+- 理解已完成的工作
+- 理解未完成的工作
+- 理解已知问题
+
+##### 3. 验证交接
+- 检查交接检查清单
+- 验证文档完整性
+- 验证工作流状态
+- 验证 CI/CD 状态
+
+##### 4. 开始工作
+- 从 current-progress.md 中的"下一步行动"开始
+- 继续未完成的工作
+- 更新进度文档
+
+### 交接流程
+1. **更新当前进度文档**:
+   - 记录已完成工作
+   - 记录进行中任务
+   - 记录待处理任务
+   - 记录遇到的问题
+
+2. **创建每日复盘**:
+   - 总结今日工作
+   - 分析工作流不足
+   - 制定改进计划
+
+3. **更新交接文档**:
+   - 更新 HANDOVER.md
+   - 更新 AGENT_INSTRUCTIONS.md
+   - 更新工作流注册表
+
+4. **提交并推送**:
+   - 提交所有变更
+   - 推送到 GitHub
+   - 确保 CI/CD 通过
 
 ### 重要文档
 - `docs/current-progress.md` - 当前工作进度（必须首先阅读）

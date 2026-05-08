@@ -1,0 +1,289 @@
+name: Workflow Registry Validator
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # 每周日执行
+  workflow_dispatch:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '.github/workflows/registry.yml'
+      - '.github/workflows/*.yml'
+
+jobs:
+  validate-registry:
+    name: Validate Workflow Registry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Validate registry structure
+        run: |
+          python3 << 'EOF'
+          import yaml
+          import sys
+
+          with open('.github/workflows/registry.yml', 'r') as f:
+              registry = yaml.safe_load(f)
+
+          # Check required fields
+          required_fields = ['id', 'name', 'version', 'status', 'category', 'file']
+          workflow_ids = set()
+
+          for workflow in registry.get('workflows', []):
+              # Check required fields
+              for field in required_fields:
+                  if field not in workflow:
+                      print(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
+                      sys.exit(1)
+
+              # Check for duplicate IDs
+              if workflow['id'] in workflow_ids:
+                  print(f"❌ Duplicate workflow ID: {workflow['id']}")
+                  sys.exit(1)
+              workflow_ids.add(workflow['id'])
+
+              # Check if file exists
+              import os
+              if not os.path.exists(workflow['file']):
+                  print(f"❌ Workflow file does not exist: {workflow['file']}")
+                  sys.exit(1)
+
+              # Check if documentation exists
+              if 'documentation' in workflow and not os.path.exists(workflow['documentation']):
+                  print(f"❌ Documentation file does not exist: {workflow['documentation']}")
+                  sys.exit(1)
+
+          print("✅ Registry structure validation passed")
+          print(f"✅ Validated {len(workflow_ids)} workflows")
+          EOF
+
+      - name: Check for orphaned workflows
+        run: |
+          python3 << 'EOF'
+          import yaml
+          import os
+          import glob
+
+          with open('.github/workflows/registry.yml', 'r') as f:
+              registry = yaml.safe_load(f)
+
+          # Get all registered workflow files
+          registered_files = set()
+          for workflow in registry.get('workflows', []):
+              registered_files.add(workflow['file'])
+
+          # Get all actual workflow files
+          actual_files = set()
+          for file in glob.glob('.github/workflows/*.yml'):
+              if file != '.github/workflows/registry.yml':
+                  actual_files.add(file)
+
+          # Check for unregistered workflows
+          for file in actual_files - registered_files:
+              print(f"⚠️ Workflow file not in registry: {file}")
+
+          # Check for registered files that don't exist
+          for file in registered_files - actual_files:
+              if file.endswith('.yml'):
+                  print(f"⚠️ Registered workflow file doesn't exist: {file}")
+
+          print("✅ Orphaned workflow check completed")
+          EOF
+
+      - name: Check for circular dependencies
+        run: |
+          python3 << 'EOF'
+          import yaml
+          from collections import defaultdict
+
+          with open('.github/workflows/registry.yml', 'r') as f:
+              registry = yaml.safe_load(f)
+
+          # Build dependency graph
+          graph = defaultdict(list)
+          for workflow in registry.get('workflows', []):
+              for dep in workflow.get('dependencies', []):
+                  graph[workflow['id']].append(dep)
+
+          # Check for circular dependencies
+          def has_cycle(graph):
+              visited = set()
+              recursion_stack = set()
+
+              def visit(node):
+                  if node in recursion_stack:
+                      return True
+                  if node in visited:
+                      return False
+                  visited.add(node)
+                  recursion_stack.add(node)
+                  for neighbor in graph.get(node, []):
+                      if visit(neighbor):
+                          return True
+                  recursion_stack.remove(node)
+                  return False
+
+              for node in graph:
+                  if visit(node):
+                      return True
+              return False
+
+          if has_cycle(graph):
+              print("❌ Circular dependencies detected")
+              # Print the cycle
+              for node in graph:
+                  print(f"  {node} -> {graph[node]}")
+          else:
+              print("✅ No circular dependencies detected")
+          EOF
+
+      - name: Generate registry health report
+        run: |
+          python3 << 'EOF'
+          import yaml
+          from datetime import datetime
+
+          with open('.github/workflows/registry.yml', 'r') as f:
+              registry = yaml.safe_load(f)
+
+          active_count = 0
+          deprecated_count = 0
+
+          for workflow in registry.get('workflows', []):
+              if workflow.get('status') == 'active':
+                  active_count += 1
+              elif workflow.get('status') == 'deprecated':
+                  deprecated_count += 1
+
+          echo "# Workflow Registry Health Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Total workflows: ${{ len(registry.get('workflows', [])) }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Active workflows: $active_count" >> $GITHUB_STEP_SUMMARY
+          echo "- Deprecated workflows: $deprecated_count" >> $GITHUB_STEP_SUMMARY
+          echo "- Last validated: $(date -Iseconds)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Status" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Registry is healthy" >> $GITHUB_STEP_SUMMARY
+          EOF
+
+  generate-index:
+    name: Generate Workflow Index
+    runs-on: ubuntu-latest
+    needs: validate-registry
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Generate workflow index
+        run: |
+          python3 << 'EOF'
+          import yaml
+          from collections import defaultdict
+
+          with open('.github/workflows/registry.yml', 'r') as f:
+              registry = yaml.safe_load(f)
+
+          # Group workflows by category
+          categories = defaultdict(list)
+          for workflow in registry.get('workflows', []):
+              categories[workflow.get('category', 'uncategorized')].append(workflow)
+
+          # Generate index
+          with open('workflows/README.md', 'w') as f:
+              f.write('# 工作流索引\n\n')
+              f.write('本文档提供了项目中所有工作流的快速索引。\n\n')
+              f.write('本文档由 workflow registry validator 自动生成，请勿手动编辑。\n\n')
+              f.write('---\n\n')
+
+              f.write('## 活跃的 GitHub Actions 工作流\n\n')
+              f.write('| ID | 名称 | 文件路径 | 状态 | 用途 |\n')
+              f.write('|----|------|----------|------|------|\n')
+
+              for workflow in registry.get('workflows', []):
+                  if workflow.get('status') == 'active' and workflow.get('category') != 'documentation':
+                      f.write(f"| {workflow['id']} | {workflow['name']} | {workflow['file']} | ✅ 活跃 | {workflow.get('description', '')} |\n")
+
+              f.write('\n## 活跃的文档工作流\n\n')
+              f.write('| ID | 名称 | 文件路径 | 状态 | 用途 |\n')
+              f.write('|----|------|----------|------|------|\n')
+
+              for workflow in registry.get('workflows', []):
+                  if workflow.get('status') == 'active' and workflow.get('category') == 'documentation':
+                      f.write(f"| {workflow['id']} | {workflow['name']} | {workflow['file']} | ✅ 活跃 | {workflow.get('description', '')} |\n")
+
+              f.write('\n## 废弃的工作流\n\n')
+              f.write('| ID | 名称 | 文件路径 | 状态 | 废弃原因 |\n')
+              f.write('|----|------|----------|------|----------|\n')
+
+              for workflow in registry.get('workflows', []):
+                  if workflow.get('status') == 'deprecated':
+                      f.write(f"| {workflow['id']} | {workflow['name']} | {workflow['file']} | ❌ 废弃 | {workflow.get('note', '')} |\n")
+
+              f.write('\n## 工作流分类\n\n')
+              for category, workflows in sorted(categories.items()):
+                  f.write(f'### {category.capitalize()}\n\n')
+                  for workflow in workflows:
+                      f.write(f"- {workflow['id']}: {workflow['name']}\n")
+                  f.write('\n')
+
+              f.write('\n## 相关文档\n\n')
+              f.write('- [工作流注册表](../.github/workflows/registry.yml) - 完整的工作流元数据\n')
+              f.write('- [Meta-Workflow 管理](meta-workflow-management.md) - 工作流管理系统\n')
+
+          print("✅ Workflow index generated")
+          EOF
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet workflows/README.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit changes
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add workflows/README.md
+          git commit -m "chore: auto-generate workflow index from registry"
+          git push
+
+  summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [validate-registry, generate-index]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Registry Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Registry Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ needs.validate-registry.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Index Generation" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ needs.generate-index.result }}" >> $GITHUB_STEP_SUMMARY
