@@ -80,6 +80,12 @@ type AgentContract struct {
 	OutputSchema *OutputSchema `json:"output_schema"`
 }
 
+// SLA metadata keys stored in AgentTask.Metadata
+const (
+	SLAKeyTimeoutMs  = "sla.timeout_ms"
+	SLAKeyMaxRetries = "sla.max_retries"
+)
+
 // ExecutionResult represents the result of a contract execution
 type ExecutionResult struct {
 	Output map[string]any `json:"output"`

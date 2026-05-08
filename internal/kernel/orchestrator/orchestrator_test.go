@@ -282,6 +282,101 @@ func TestOrchestrator_MultipleTasks(t *testing.T) {
 	}
 }
 
+func TestOrchestrator_ParseSLA_Valid(t *testing.T) {
+	timeoutMs, maxRetries := parseSLA(map[string]string{
+		types.SLAKeyTimeoutMs:  "5000",
+		types.SLAKeyMaxRetries: "2",
+	})
+	if timeoutMs != 5000 {
+		t.Errorf("Expected timeoutMs=5000, got %d", timeoutMs)
+	}
+	if maxRetries != 2 {
+		t.Errorf("Expected maxRetries=2, got %d", maxRetries)
+	}
+}
+
+func TestOrchestrator_ParseSLA_Missing(t *testing.T) {
+	timeoutMs, maxRetries := parseSLA(nil)
+	if timeoutMs != 0 {
+		t.Errorf("Expected default timeoutMs=0, got %d", timeoutMs)
+	}
+	if maxRetries != 0 {
+		t.Errorf("Expected default maxRetries=0, got %d", maxRetries)
+	}
+}
+
+func TestOrchestrator_ParseSLA_Invalid(t *testing.T) {
+	timeoutMs, maxRetries := parseSLA(map[string]string{
+		types.SLAKeyTimeoutMs:  "not-a-number",
+		types.SLAKeyMaxRetries: "xyz",
+	})
+	if timeoutMs != 0 {
+		t.Errorf("Invalid timeoutMs should default to 0, got %d", timeoutMs)
+	}
+	if maxRetries != 0 {
+		t.Errorf("Invalid maxRetries should default to 0, got %d", maxRetries)
+	}
+}
+
+func TestOrchestrator_TaskWithSLA(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Failed to start orchestrator: %v", err)
+	}
+
+	task := &types.AgentTask{
+		TaskID:     "task-sla",
+		ContractID: "default",
+		Input:      map[string]any{"message": "test"},
+		Metadata:   map[string]string{types.SLAKeyTimeoutMs: "60000", types.SLAKeyMaxRetries: "1"},
+	}
+	if err := orch.SubmitTask(task); err != nil {
+		t.Fatalf("Failed to submit task: %v", err)
+	}
+
+	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusCompleted)
+	if status != types.TaskStatusCompleted {
+		t.Fatalf("Expected task to complete with SLA, got %s", status)
+	}
+}
+
+func TestOrchestrator_TaskWithSLA_ZeroRetries(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Failed to start orchestrator: %v", err)
+	}
+
+	// max_retries=0 means no retry on failure (single attempt)
+	task := &types.AgentTask{
+		TaskID:     "task-zero-retries",
+		ContractID: "default",
+		Input:      map[string]any{"message": "test"},
+		Metadata:   map[string]string{types.SLAKeyMaxRetries: "0"},
+	}
+	if err := orch.SubmitTask(task); err != nil {
+		t.Fatalf("Failed to submit task: %v", err)
+	}
+
+	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusCompleted)
+	if status != types.TaskStatusCompleted {
+		t.Errorf("Task with max_retries=0 should complete normally, got %s", status)
+	}
+}
+
 func waitForTaskStatus(t *testing.T, orch *Orchestrator, taskID string, expected types.TaskStatus) types.TaskStatus {
 	t.Helper()
 

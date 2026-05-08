@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -115,8 +116,10 @@ func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 	}
 }
 
-// executeTask executes a single task
+// executeTask executes a single task with SLA timeout and retry behavior.
 func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
+	timeoutMs, maxRetries := parseSLA(task.Metadata)
+
 	// Check current status to ensure idempotency
 	currentStatus, err := o.scheduler.GetStatus(task.TaskID)
 	if err != nil {
@@ -134,28 +137,57 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 		return
 	}
 
-	// Dispatch the task
-	result, err := o.dispatcher.Dispatch(ctx, task)
-	if err != nil {
-		log.Printf("Error dispatching task %s: %v", task.TaskID, err)
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		execCtx := ctx
+		var cancel context.CancelFunc
+		if timeoutMs > 0 {
+			execCtx, cancel = context.WithTimeout(ctx, time.Duration(timeoutMs)*time.Millisecond)
+		}
+
+		result, dispatchErr := o.dispatcher.Dispatch(execCtx, task)
+		if cancel != nil {
+			cancel()
+		}
+
+		if dispatchErr == nil && result.Status == types.TaskStatusCompleted {
+			if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err != nil {
+				log.Printf("Error updating task status to completed: %v", err)
+			}
+			log.Printf("Task %s completed with status %s", task.TaskID, result.Status)
+			return
+		}
+
+		if attempt < maxRetries {
+			log.Printf("Task %s attempt %d/%d failed, retrying: %v", task.TaskID, attempt+1, maxRetries+1, dispatchErr)
+			continue
+		}
+
+		// All retries exhausted
+		errMsg := dispatchErr.Error()
+		if maxRetries > 0 {
+			errMsg = fmt.Sprintf("retry exhausted (%d attempts): %s", maxRetries+1, dispatchErr.Error())
+		}
 		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed); err != nil {
 			log.Printf("Error updating task status to failed: %v", err)
 		}
+		log.Printf("Task %s failed: %s", task.TaskID, errMsg)
 		return
 	}
+}
 
-	// Update task status based on result
-	if result.Status == types.TaskStatusCompleted {
-		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err != nil {
-			log.Printf("Error updating task status to completed: %v", err)
-		}
-	} else {
-		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed); err != nil {
-			log.Printf("Error updating task status to failed: %v", err)
+// parseSLA extracts SLA metadata. Missing keys return zero values (use defaults).
+func parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int) {
+	if v, ok := metadata[types.SLAKeyTimeoutMs]; ok {
+		if n, err := strconv.Atoi(v); err == nil {
+			timeoutMs = n
 		}
 	}
-
-	log.Printf("Task %s completed with status %s", task.TaskID, result.Status)
+	if v, ok := metadata[types.SLAKeyMaxRetries]; ok {
+		if n, err := strconv.Atoi(v); err == nil {
+			maxRetries = n
+		}
+	}
+	return
 }
 
 // SubmitTask submits a task to the orchestrator after admission validation.

@@ -3,6 +3,7 @@ package admission
 
 import (
 	"fmt"
+	"strconv"
 
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	"github.com/axis-cli/axis/internal/types"
@@ -38,5 +39,26 @@ func (a *AdmissionValidatorImpl) Validate(task *types.AgentTask) error {
 		return fmt.Errorf("admission rejected: contract %s validation failed for task %s: %w", task.ContractID, task.TaskID, err)
 	}
 
+	if err := validateSLA(task); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateSLA checks SLA metadata values for validity.
+func validateSLA(task *types.AgentTask) error {
+	if v, ok := task.Metadata[types.SLAKeyTimeoutMs]; ok {
+		ms, err := strconv.Atoi(v)
+		if err != nil || ms <= 0 {
+			return fmt.Errorf("admission rejected: %s=%q for task %s must be a positive integer", types.SLAKeyTimeoutMs, v, task.TaskID)
+		}
+	}
+	if v, ok := task.Metadata[types.SLAKeyMaxRetries]; ok {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			return fmt.Errorf("admission rejected: %s=%q for task %s must be a non-negative integer", types.SLAKeyMaxRetries, v, task.TaskID)
+		}
+	}
 	return nil
 }
