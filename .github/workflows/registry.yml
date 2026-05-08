@@ -82,6 +82,34 @@ workflows:
       avg_duration: 0s
       last_execution: null
 
+  - id: wf-doc-005
+    name: Document Audit
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508120000"
+    status: active
+    category: documentation
+    type: audit
+    triggers:
+      - schedule
+      - pull_request
+      - manual
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: .github/workflows/document-audit.yml
+    documentation: docs/document-review-workflow-check.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T12:00:00Z
+    updated_at: 2026-05-08T12:00:00Z
+    metrics:
+      success_rate: 1.0
+      avg_duration: 0s
+      last_execution: null
+
   - id: wf-doc-004
     name: Meta-Workflow Management
     version: 1.0.0
