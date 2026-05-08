@@ -162,8 +162,8 @@ jobs:
 
       - name: Check for direct dependencies
         run: |
-          go list -m all | grep "^direct" > direct-deps.txt
-          DIRECT_COUNT=$(wc -l < direct-deps.txt)
+          # Count direct dependencies (modules in go.mod)
+          DIRECT_COUNT=$(go list -m -json all | jq -r 'select(.Indirect == false) | .Path' | wc -l)
           echo "Direct dependencies: $DIRECT_COUNT"
           if [ "$DIRECT_COUNT" -gt 50 ]; then
             echo "⚠️ High number of direct dependencies"
