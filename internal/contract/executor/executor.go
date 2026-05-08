@@ -78,13 +78,8 @@ func (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string
 			}
 
 			if len(field.Enum) > 0 {
-				if field.Type != types.FieldTypeString {
-					return fmt.Errorf("field %s has enum values but type is not string", field.Name)
-				}
-				if strValue, ok := value.(string); ok {
-					if !e.isEnumValid(strValue, field.Enum) {
-						return fmt.Errorf("field %s value %s is not in allowed enum values %v", field.Name, strValue, field.Enum)
-					}
+				if err := e.validateEnum(field.Name, value, field.Type, field.Enum); err != nil {
+					return err
 				}
 			}
 		}
@@ -162,10 +157,50 @@ func (e *ContractExecutorImpl) validateFieldType(fieldName string, value any, ex
 	return nil
 }
 
-// isEnumValid checks if a value is in the enum list
-func (e *ContractExecutorImpl) isEnumValid(value string, enum []string) bool {
+// validateEnum checks if a value is in the enum list
+func (e *ContractExecutorImpl) validateEnum(fieldName string, value any, fieldType types.FieldType, enum []string) error {
+	switch fieldType {
+	case types.FieldTypeString:
+		strValue, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("field %s enum validation expects string, got %T", fieldName, value)
+		}
+		if !e.isStringEnumValid(strValue, enum) {
+			return fmt.Errorf("field %s value %s is not in allowed enum values %v", fieldName, strValue, enum)
+		}
+	case types.FieldTypeInt:
+		intValue, ok := value.(int)
+		if !ok {
+			// JSON numbers are float64 by default
+			if floatVal, ok := value.(float64); ok {
+				intValue = int(floatVal)
+			} else {
+				return fmt.Errorf("field %s enum validation expects int, got %T", fieldName, value)
+			}
+		}
+		if !e.isIntEnumValid(intValue, enum) {
+			return fmt.Errorf("field %s value %d is not in allowed enum values %v", fieldName, intValue, enum)
+		}
+	default:
+		return fmt.Errorf("field %s has enum values but type %s is not supported for enum", fieldName, fieldType)
+	}
+	return nil
+}
+
+// isStringEnumValid checks if a string value is in the enum list
+func (e *ContractExecutorImpl) isStringEnumValid(value string, enum []string) bool {
 	for _, e := range enum {
 		if e == value {
+			return true
+		}
+	}
+	return false
+}
+
+// isIntEnumValid checks if an int value is in the enum list (enum values are stored as strings)
+func (e *ContractExecutorImpl) isIntEnumValid(value int, enum []string) bool {
+	for _, e := range enum {
+		if e == fmt.Sprintf("%d", value) {
 			return true
 		}
 	}
