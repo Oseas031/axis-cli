@@ -139,17 +139,14 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		execCtx := ctx
-		var cancel context.CancelFunc
 		if timeoutMs > 0 {
+			var cancel context.CancelFunc
 			execCtx, cancel = context.WithTimeout(ctx, time.Duration(timeoutMs)*time.Millisecond)
+			defer cancel()
 		}
 
 		result, dispatchErr := o.dispatcher.Dispatch(execCtx, task)
-		if cancel != nil {
-			cancel()
-		}
-
-		if dispatchErr == nil && result.Status == types.TaskStatusCompleted {
+		if dispatchErr == nil && result != nil && result.Status == types.TaskStatusCompleted {
 			if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err != nil {
 				log.Printf("Error updating task status to completed: %v", err)
 			}
@@ -163,9 +160,12 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 		}
 
 		// All retries exhausted
-		errMsg := dispatchErr.Error()
+		errMsg := "dispatch failed"
+		if dispatchErr != nil {
+			errMsg = dispatchErr.Error()
+		}
 		if maxRetries > 0 {
-			errMsg = fmt.Sprintf("retry exhausted (%d attempts): %s", maxRetries+1, dispatchErr.Error())
+			errMsg = fmt.Sprintf("retry exhausted (%d attempts): %s", maxRetries+1, errMsg)
 		}
 		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed); err != nil {
 			log.Printf("Error updating task status to failed: %v", err)
