@@ -96,12 +96,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check for milestone 2 content in milestone 1 phase
+      - name: Verify milestone content documentation tracking
         run: |
-          # Check if DAG scheduling is mentioned in current docs (milestone 1 phase)
+          # Project is in Milestone 2 (T0-T2.5 done, T3 pending).
+          # DAG scheduling and other M2 content should appear in active docs.
+          # This check verifies M2 content is being documented (not premature).
           if grep -r "DAG" --include="*.md" docs/ docs/architecture/ | grep -v "deprecated"; then
-            echo "⚠️ Found DAG scheduling references (milestone 2 content)"
-            grep -r "DAG" --include="*.md" docs/ docs/architecture/ | grep -v "deprecated"
+            echo "✅ DAG scheduling references found (expected for M2 phase)"
+          else
+            echo "ℹ️ No DAG scheduling references found in active documentation"
+            echo "   Consider documenting M2 scheduling architecture progress"
           fi
 
       - name: Check document dates

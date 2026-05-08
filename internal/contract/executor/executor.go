@@ -33,6 +33,12 @@ func NewContractExecutor() *ContractExecutorImpl {
 func (e *ContractExecutorImpl) RegisterContract(contract *types.AgentContract) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+
+	// Check if contract already exists
+	if _, exists := e.contracts[contract.ContractID]; exists {
+		return fmt.Errorf("contract %s already exists", contract.ContractID)
+	}
+
 	e.contracts[contract.ContractID] = contract
 	return nil
 }
@@ -112,6 +118,12 @@ func (e *ContractExecutorImpl) ValidateOutput(contractID string, output map[stri
 			if err := e.validateFieldType(field.Name, value, field.Type); err != nil {
 				return err
 			}
+
+			if len(field.Enum) > 0 {
+				if err := e.validateEnum(field.Name, value, field.Type, field.Enum); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -173,7 +185,15 @@ func (e *ContractExecutorImpl) validateEnum(fieldName string, value any, fieldTy
 		if !ok {
 			// JSON numbers are float64 by default
 			if floatVal, ok := value.(float64); ok {
+				// Check if the float value is within int range
+				if floatVal < float64(-1<<63) || floatVal > float64(1<<63-1) {
+					return fmt.Errorf("field %s value %f is out of int range", fieldName, floatVal)
+				}
 				intValue = int(floatVal)
+				// Check for precision loss
+				if float64(intValue) != floatVal {
+					return fmt.Errorf("field %s value %f has fractional part, cannot convert to int", fieldName, floatVal)
+				}
 			} else {
 				return fmt.Errorf("field %s enum validation expects int, got %T", fieldName, value)
 			}

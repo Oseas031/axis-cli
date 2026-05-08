@@ -46,7 +46,7 @@ func NewOrchestrator() *Orchestrator {
 		dispatcher:       dispatch,
 		contractExecutor: contractExec,
 		humanExecutor:    humanExec,
-		running:          true,
+		running:          false,
 		taskSubmitted:    make(chan struct{}, 1),
 	}
 }
@@ -113,6 +113,17 @@ func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 
 // executeTask executes a single task
 func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
+	// Check current status to ensure idempotency
+	currentStatus, err := o.scheduler.GetStatus(task.TaskID)
+	if err != nil {
+		log.Printf("Error getting task status: %v", err)
+		return
+	}
+	if currentStatus != types.TaskStatusPending && currentStatus != types.TaskStatusRunning {
+		log.Printf("Task %s is already in status %s, skipping execution", task.TaskID, currentStatus)
+		return
+	}
+
 	// Update status to running
 	if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusRunning); err != nil {
 		log.Printf("Error updating task status to running: %v", err)
@@ -160,7 +171,7 @@ func (o *Orchestrator) SubmitTask(task *types.AgentTask) error {
 }
 
 // GetTaskStatus returns the status of a task
-func (o *Orchestrator) GetTaskStatus(taskID string) types.TaskStatus {
+func (o *Orchestrator) GetTaskStatus(taskID string) (types.TaskStatus, error) {
 	return o.scheduler.GetStatus(taskID)
 }
 

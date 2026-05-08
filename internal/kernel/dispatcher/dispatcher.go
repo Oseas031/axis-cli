@@ -46,6 +46,8 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 		select {
 		case <-ctx.Done():
 			return
+		case <-timeoutCtx.Done():
+			return
 		default:
 			result, err := d.executeTask(task)
 			if err != nil {

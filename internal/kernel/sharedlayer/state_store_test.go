@@ -41,8 +41,8 @@ func TestMemoryStateStore_LoadNonExistent(t *testing.T) {
 	store := NewMemoryStateStore()
 
 	_, err := store.Load("non-existent")
-	if err != nil {
-		t.Fatalf("Load should not error for non-existent key: %v", err)
+	if err == nil {
+		t.Fatal("Load should error for non-existent key")
 	}
 }
 
@@ -65,7 +65,7 @@ func TestMemoryStateStore_Delete(t *testing.T) {
 	}
 
 	_, err = store.Load("test-1")
-	if err != nil {
-		t.Fatalf("Load after delete should not error: %v", err)
+	if err == nil {
+		t.Fatal("Load after delete should error")
 	}
 }

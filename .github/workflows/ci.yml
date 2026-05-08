@@ -22,9 +22,10 @@ jobs:
   validate-registry:
     name: Validate Registry
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'push' && contains(github.event.head_commit.modified, '.github/config/registry.yml') ||
-      github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, '.github/config/registry.yml')
+    # on: paths filter above already gates this job — only runs when
+    # .github/config/registry.yml is among the changed paths.
+    # Note: github.event.pull_request.changed_files is an integer count,
+    # not a file list, so we cannot use contains() on it for path checks.
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

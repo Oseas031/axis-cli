@@ -15,8 +15,9 @@ import (
 type Scheduler interface {
 	Submit(task *types.AgentTask) error
 	Cancel(taskID string) error
-	GetStatus(taskID string) types.TaskStatus
+	GetStatus(taskID string) (types.TaskStatus, error)
 	GetNextTask() (*types.AgentTask, error)
+	GetReadyTasks(limit int) ([]*types.AgentTask, error)
 	UpdateTaskStatus(taskID string, status types.TaskStatus) error
 }
 
@@ -92,13 +93,11 @@ func (s *SchedulerImpl) detectCircularDependencies(taskID string, dependencies [
 		if visited[dep] {
 			return fmt.Errorf("circular dependency involving task %s", dep)
 		}
-		visited[dep] = true
 		if task, exists := s.taskMap[dep]; exists {
 			if err := s.detectCircularDependencies(dep, task.Dependencies, visited); err != nil {
 				return err
 			}
 		}
-		delete(visited, dep)
 	}
 
 	// Clean up current task from visited
@@ -141,19 +140,30 @@ func (s *SchedulerImpl) Cancel(taskID string) error {
 }
 
 // GetStatus returns the status of a task
-func (s *SchedulerImpl) GetStatus(taskID string) types.TaskStatus {
+func (s *SchedulerImpl) GetStatus(taskID string) (types.TaskStatus, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	task, exists := s.taskMap[taskID]
 	if !exists {
-		return ""
+		return "", fmt.Errorf("task %s not found", taskID)
 	}
-	return task.Status
+	return task.Status, nil
 }
 
 // GetNextTask returns the next task to execute (FIFO with dependency check)
 func (s *SchedulerImpl) GetNextTask() (*types.AgentTask, error) {
+	tasks, err := s.GetReadyTasks(1)
+	if err != nil {
+		return nil, err
+	}
+	if len(tasks) == 0 {
+		return nil, nil
+	}
+	return tasks[0], nil
+}
+
+func (s *SchedulerImpl) GetReadyTasks(limit int) ([]*types.AgentTask, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -161,33 +171,33 @@ func (s *SchedulerImpl) GetNextTask() (*types.AgentTask, error) {
 		return nil, errors.New("scheduler is not running")
 	}
 
+	readyTasks := make([]*types.AgentTask, 0)
 	for _, task := range s.queue {
 		if task.Status == types.TaskStatusPending {
-			// Check if all dependencies are completed
 			if s.areDependenciesCompleted(task.Dependencies) {
-				// Mark as dispatched to prevent duplicate returns
 				task.Status = types.TaskStatusRunning
 				now := time.Now()
 				task.StartedAt = &now
 
-				// Update state store
 				state := types.TaskState{
 					Task:      task,
 					UpdatedAt: time.Now(),
 				}
 				if err := s.stateStore.Save(task.TaskID, state); err != nil {
-					// Revert status on error
 					task.Status = types.TaskStatusPending
 					task.StartedAt = nil
 					return nil, fmt.Errorf("failed to update task state: %w", err)
 				}
 
-				return task, nil
+				readyTasks = append(readyTasks, task)
+				if limit > 0 && len(readyTasks) >= limit {
+					break
+				}
 			}
 		}
 	}
 
-	return nil, nil // No ready tasks
+	return readyTasks, nil
 }
 
 // areDependenciesCompleted checks if all dependencies are completed

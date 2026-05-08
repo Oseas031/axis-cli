@@ -130,6 +130,20 @@ jobs:
           # This is a simplified check
           echo "✅ Documentation check completed"
 
+      - name: Provide documentation update context
+        run: |
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          code_changed=$(echo "$changed_files" | grep -E '\.(go|yaml|yml)$' | wc -l)
+          doc_changed=$(echo "$changed_files" | grep -E '\.md$' | wc -l)
+
+          if [ "$code_changed" -gt 0 ] && [ "$doc_changed" -eq 0 ]; then
+            echo "ℹ️ Code or workflow changes detected without documentation changes."
+            echo "📚 Consider updating HANDOVER.md or related docs if the change affects project context."
+            echo "This is a non-blocking context reminder aligned with More Context, More Action, Zero Control."
+          else
+            echo "✅ Documentation context reminder completed"
+          fi
+
   summary:
     name: PR Summary
     runs-on: ubuntu-latest

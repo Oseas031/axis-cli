@@ -56,15 +56,18 @@ func TestHumanExecutor_GetCallStatus(t *testing.T) {
 
 	exec.ExecuteCall(req)
 
-	status := exec.GetCallStatus("call-1")
+	status, err := exec.GetCallStatus("call-1")
+	if err != nil {
+		t.Fatalf("Failed to get call status: %v", err)
+	}
 	if status != types.CallStatusPending {
 		t.Errorf("Expected status %s, got %s", types.CallStatusPending, status)
 	}
 
-	// Non-existent call should return empty string
-	nonExistentStatus := exec.GetCallStatus("non-existent")
-	if nonExistentStatus != "" {
-		t.Error("Non-existent call should return empty string")
+	// Non-existent call should return error
+	_, err = exec.GetCallStatus("non-existent")
+	if err == nil {
+		t.Error("Non-existent call should return error")
 	}
 }
 
@@ -84,7 +87,10 @@ func TestHumanExecutor_ResolveCall(t *testing.T) {
 		t.Fatalf("Failed to resolve call: %v", err)
 	}
 
-	status := exec.GetCallStatus("call-1")
+	status, err := exec.GetCallStatus("call-1")
+	if err != nil {
+		t.Fatalf("Failed to get call status: %v", err)
+	}
 	if status != types.CallStatusCompleted {
 		t.Errorf("Expected status %s, got %s", types.CallStatusCompleted, status)
 	}
@@ -111,7 +117,10 @@ func TestHumanExecutor_ResolveCallWithError(t *testing.T) {
 		t.Fatalf("Failed to resolve call with error: %v", err)
 	}
 
-	status := exec.GetCallStatus("call-1")
+	status, err := exec.GetCallStatus("call-1")
+	if err != nil {
+		t.Fatalf("Failed to get call status: %v", err)
+	}
 	if status != types.CallStatusFailed {
 		t.Errorf("Expected status %s, got %s", types.CallStatusFailed, status)
 	}

@@ -3,15 +3,17 @@
 ## 1. 事件属性访问规范
 
 ### 1.1 事件类型检查
-在访问 GitHub Actions 事件属性前，必须先检查事件类型：
+在访问 GitHub Actions 事件属性前，建议先检查事件类型：
 
 ```yaml
 if: |
   github.event_name == 'push' && contains(github.event.head_commit.modified, 'file.yml') ||
-  github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, 'file.yml')
+  github.event_name == 'pull_request'
 ```
 
-**原因**：不同事件类型的事件对象结构不同，push 事件没有 `pull_request.changed_files`，直接访问会导致错误。
+**原因**：不同事件类型的事件对象结构不同，push 事件没有 `pull_request.*` 属性，直接访问会导致错误。
+
+**注意**：`github.event.pull_request.changed_files` 是一个整数（文件数量），不是文件路径数组，因此无法用 `contains()` 检查是否包含特定文件。对于 PR 事件的文件变更检测，建议依赖 `on.pull_request.paths` 过滤器，或使用 `git diff` / GitHub API 进行判断。
 
 ### 1.2 JavaScript 可选链操作符
 在 github-script 中使用可选链操作符访问可能不存在的属性：
@@ -29,7 +31,7 @@ if (!workflowId) {
 ## 2. Python 脚本编写规范
 
 ### 2.1 字典访问安全
-在 Python 中访问字典键前必须检查键是否存在：
+在 Python 中访问字典键前建议检查键是否存在：
 
 ```python
 # 错误做法
@@ -43,7 +45,7 @@ else:
 ```
 
 ### 2.2 subprocess 异常处理
-所有 subprocess.run 调用必须添加异常处理：
+所有 subprocess.run 调用建议添加异常处理：
 
 ```python
 # 错误做法
@@ -185,11 +187,11 @@ git diff --stat origin/${{ github.base_ref }}...HEAD
 ## 7. 文档更新规范
 
 ### 7.1 及时更新文档
-每次重大变更后必须更新交接文档：
+每次重大变更后建议更新交接文档：
 
-- Bug 修复必须包含：修复时间、原因、解决方案
-- 工作流变更必须更新 HANDOVER.md
-- 新增工具必须添加功能说明
+- Bug 修复建议包含：修复时间、原因、解决方案
+- 工作流变更建议更新 HANDOVER.md
+- 新增工具建议添加功能说明
 
 ### 7.2 文档检查
 文档审查工作流应检查交接文档是否及时更新。
@@ -197,7 +199,7 @@ git diff --stat origin/${{ github.base_ref }}...HEAD
 ## 8. 状态管理规范
 
 ### 8.1 状态一致性
-确保状态检查和设置逻辑一致：
+建议确保状态检查和设置逻辑一致：
 
 ```go
 // 错误做法
@@ -244,7 +246,7 @@ func (o *Orchestrator) Shutdown(ctx context.Context) error {
 ```
 
 ### 9.2 错误处理
-所有可能失败的步骤都应添加错误处理：
+所有可能失败的步骤建议添加错误处理：
 
 ```yaml
 - name: Run command
@@ -273,7 +275,7 @@ env:
 ```
 
 ### 10.2 权限最小化
-工作流权限应遵循最小权限原则：
+工作流权限建议遵循最小权限原则：
 
 ```yaml
 permissions:
@@ -282,3 +284,13 @@ permissions:
 ```
 
 仅在需要时授予写入权限。
+
+## 11. Agent 原生工作流设计原则
+
+工作流规范遵循 **More Context, More Action, Zero Control**：
+
+- **More Context**：优先输出解释性信息、建议文档路径和调试上下文
+- **More Action**：优先提供可执行的下一步建议，增强 Agent 自主修复能力
+- **Zero Control**：除安全、构建、测试等硬性质量门禁外，经验类检查应优先使用非阻塞提醒
+
+经验沉淀类检查建议使用 `echo`、Step Summary 或 `continue-on-error` 提供上下文，避免把指导性规范升级为不必要的强制控制。

@@ -12,7 +12,7 @@ import (
 // HumanExecutor interface defines human task execution
 type HumanExecutor interface {
 	ExecuteCall(req *types.HumanCallRequest) (*types.HumanCallResult, error)
-	GetCallStatus(callID string) types.CallStatus
+	GetCallStatus(callID string) (types.CallStatus, error)
 	ResolveCall(callID string, output map[string]any, err error) error
 }
 
@@ -50,15 +50,15 @@ func (e *HumanExecutorImpl) ExecuteCall(req *types.HumanCallRequest) (*types.Hum
 }
 
 // GetCallStatus returns the status of a human call
-func (e *HumanExecutorImpl) GetCallStatus(callID string) types.CallStatus {
+func (e *HumanExecutorImpl) GetCallStatus(callID string) (types.CallStatus, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
 	call, exists := e.calls[callID]
 	if !exists {
-		return ""
+		return "", fmt.Errorf("call %s not found", callID)
 	}
-	return call.Status
+	return call.Status, nil
 }
 
 // ResolveCall resolves a human call with output or error

@@ -176,9 +176,9 @@ jobs:
 
       - name: Generate registry health report
         run: |
-          python3 << 'EOF'
-          import yaml
-          from datetime import datetime
+          python3 << 'PYEOF'
+          import yaml, os
+          from datetime import datetime, timezone
 
           with open('.github/config/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
@@ -192,21 +192,26 @@ jobs:
               elif workflow.get('status') == 'deprecated':
                   deprecated_count += 1
 
+          total_count = len(registry.get('workflows', []))
+
+          # Print key=value for any downstream bash steps that need them
           print(f"active_count={active_count}")
           print(f"deprecated_count={deprecated_count}")
-          print(f"total_count={len(registry.get('workflows', []))}")
-          EOF
+          print(f"total_count={total_count}")
 
-          echo "# Workflow Registry Health Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Total workflows: $total_count" >> $GITHUB_STEP_SUMMARY
-          echo "- Active workflows: $active_count" >> $GITHUB_STEP_SUMMARY
-          echo "- Deprecated workflows: $deprecated_count" >> $GITHUB_STEP_SUMMARY
-          echo "- Last validated: $(date -Iseconds)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Status" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Registry is healthy" >> $GITHUB_STEP_SUMMARY
+          # Write step summary directly from Python (avoid unset bash variable bugs)
+          summary_file = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary_file:
+              with open(summary_file, 'a') as sf:
+                  sf.write('# Workflow Registry Health Report\n\n')
+                  sf.write('## Summary\n')
+                  sf.write(f'- Total workflows: {total_count}\n')
+                  sf.write(f'- Active workflows: {active_count}\n')
+                  sf.write(f'- Deprecated workflows: {deprecated_count}\n')
+                  sf.write(f'- Last validated: {datetime.now(timezone.utc).isoformat()}\n')
+                  sf.write('\n## Status\n')
+                  sf.write('✅ Registry is healthy\n')
+          PYEOF
 
   generate-index:
     name: Generate Workflow Index
