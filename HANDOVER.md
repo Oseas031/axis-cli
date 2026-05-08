@@ -183,6 +183,16 @@ Axis 的默认交互面遵循 **"bash is all you need"**：
 - ✅ 里程碑2 T1/T2/T2.5 完成：baseline、scheduler ready-set、普通 CLI Bash-first 语义修正
 - ✅ 工作流机制追加复盘：M2 今日工作已按唯一上游 workflow 归类并固化经验到 entry/meta/occams
 
+### GitHub 基础设施（已完成）
+- ✅ GitHub CLI (gh v2.92.0) 安装并认证为 Oseas031
+- ✅ Pre-commit hook 修复：Windows Python 兼容（bash 包装器）、注册表路径更新、Unicode 安全输出
+- ✅ Registry 修复：注册 wf-entry、修复 wf-release 文件引用、更新 wf-doc-005/wf-doc-004 依赖链
+- ✅ CI Workflow 修复：registry-validator bash/Python 变量作用域、ci.yml 死条件、document-audit M2 阶段语义、CODING_STANDARDS 错误示例更正
+- ✅ PR Quality Check 修复：documentation-check 浅克隆 git diff 失败（fetch-depth:0 + || true）
+- ✅ Monitoring 故障诊断：Performance Benchmark/Dependency Health/CI Metrics 根因定位，修复已在分支上就绪
+- ✅ lmh-harness-v1 工程方法论接入
+- ✅ CLAUDE.md 创建：项目架构、命令、工作流路由、测试规范
+
 ## 当前待处理任务
 
 ### 立即待处理
@@ -200,6 +210,8 @@ Axis 的默认交互面遵循 **"bash is all you need"**：
 - ✅ staticcheck ST1003：shared_layer 包名包含下划线 - 已修复（2026-05-08）
 - ✅ release.yml 与 cd-workflow 重复 - 已修复（2026-05-08）
 - ✅ monitoring-workflow.yml github-script workflow 属性访问错误 - 已修复（2026-05-08）
+- ✅ PR Quality Check git diff 浅克隆失败 - 已修复（2026-05-08，添加 fetch-depth:0 + || true 兜底）
+- ✅ Monitoring Performance Benchmark/Dependency Health/CI Metrics 失败 - 已在 milestone1-acceptance 分支修复，合并到 main 后自动解决
 - ⚠️ sign-artifacts job 未使用 - 待处理（里程碑1后）
 
 ### 下一步行动
@@ -211,7 +223,7 @@ Axis 的默认交互面遵循 **"bash is all you need"**：
 6. ✅ 完成 T2 scheduler ready-set API - 已完成
 7. ✅ 完成 T2.5 普通 CLI Bash-first 语义修正 - 已完成
 8. 执行 T3 契约准入层
-9. 将 milestone1-acceptance 分支推送到 GitHub，同步本地配置与远程仓库状态
+9. ✅ 推送 milestone1-acceptance 到 GitHub，同步本地配置与远程仓库状态 - 已完成
 
 ## 项目结构
 
@@ -354,7 +366,7 @@ axis-cli/
 
 ---
 
-**交接时间**：2026-05-08 17:18
-**交接状态**：里程碑1已验收；里程碑2已完成 workflow binding、T1 baseline、T2 scheduler ready-set、T2.5 CLI 语义修正；工作流复盘经验已固化
+**交接时间**：2026-05-08 21:00
+**交接状态**：里程碑1已验收；里程碑2已完成 T0-T2.5；GitHub 基础设施完备（gh CLI 接入、workflow 修复验证通过、CLAUDE.md 创建）；PR #1 所有 CI 门禁通过
 **里程碑1验收**：✅ 通过（2026-05-08）
-**下一步行动**：从 T3 开始实现契约准入层；Markdown 风格问题单独走文档清理，不阻塞 M2 T3
+**下一步行动**：从 T3 开始实现契约准入层；Monitoring 修复等 PR 合并到 main 后生效；Markdown 风格问题单独走文档清理
