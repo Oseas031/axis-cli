@@ -115,6 +115,17 @@ Workflows are registered in `.github/config/registry.yml` with status, dependenc
 
 Meta-workflow governance: `workflow/meta-workflow-management.md` (wf-doc-004). Occam's razor guard: `workflow/occams-razor-architecture-simplification.md` (wf-occams).
 
+## Claude Code Hook Development
+
+When adding or modifying hooks in `.claude/settings.json` or hook scripts in `scripts/`:
+
+- **CRLF defense**: All stdin-consuming shell pipelines MUST strip `\r` before text processing. Two canonical patterns:
+  - `input=$(cat | tr -d '\r')` for capturing stdin to a variable
+  - `jq ... | tr -d '\r' | while IFS= read -r f; do ...` for per-line processing
+- **PATH over hardcoded**: Use `gh`, not `"/c/Program Files/GitHub CLI/gh"`. External tools resolve from PATH.
+- **Verify on Windows**: Test hook commands with `printf '...\r\n' | bash` to simulate CRLF stdin before considering a hook working.
+- **`2>/dev/null` restraint**: Only suppress stderr for known-noise output. Errors with diagnostic value (gofmt syntax failures, jq parse errors) should surface.
+
 ## Critical Constraints
 
 - **Zero external dependencies** in core modules (Go stdlib only; cobra is CLI-only)

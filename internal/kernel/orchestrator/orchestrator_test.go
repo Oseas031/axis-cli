@@ -59,6 +59,10 @@ func TestOrchestrator_SubmitTask(t *testing.T) {
 	ctx := context.Background()
 	defer orch.Shutdown(ctx)
 
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
 	task := &types.AgentTask{
 		TaskID:     "task-1",
 		ContractID: "default",
@@ -80,10 +84,52 @@ func TestOrchestrator_SubmitTask(t *testing.T) {
 	}
 }
 
+func TestOrchestrator_SubmitTask_AdmissionRejectsUnknownContract(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx := context.Background()
+	defer orch.Shutdown(ctx)
+
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "nonexistent",
+		Input:      map[string]any{"message": "test"},
+	}
+
+	err := orch.SubmitTask(task)
+	if err == nil {
+		t.Error("SubmitTask should reject task with unknown contract")
+	}
+}
+
+func TestOrchestrator_SubmitTask_AdmissionRejectsInvalidInput(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx := context.Background()
+	defer orch.Shutdown(ctx)
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "default",
+		Input:      map[string]any{}, // missing required "message" field
+	}
+
+	err := orch.SubmitTask(task)
+	if err == nil {
+		t.Error("SubmitTask should reject task with invalid input")
+	}
+}
+
 func TestOrchestrator_GetTaskStatus(t *testing.T) {
 	orch := NewOrchestrator()
 	ctx := context.Background()
 	defer orch.Shutdown(ctx)
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
 
 	task := &types.AgentTask{
 		TaskID:     "task-1",

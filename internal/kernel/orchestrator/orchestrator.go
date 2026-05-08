@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/axis-cli/axis/internal/contract/admission"
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
 	dispatcher "github.com/axis-cli/axis/internal/kernel/dispatcher"
@@ -19,15 +20,16 @@ import (
 
 // Orchestrator coordinates all kernel modules
 type Orchestrator struct {
-	stateStore       sharedlayer.StateStore
-	lifecycleManager *lifecycle.LifecycleManagerImpl
-	scheduler        *scheduler.SchedulerImpl
-	dispatcher       *dispatcher.DispatcherImpl
-	contractExecutor *contractexec.ContractExecutorImpl
-	humanExecutor    *humanexec.HumanExecutorImpl
-	mu               sync.Mutex
-	running          bool
-	taskSubmitted    chan struct{} // Channel to notify when tasks are submitted
+	stateStore         sharedlayer.StateStore
+	lifecycleManager   *lifecycle.LifecycleManagerImpl
+	scheduler          *scheduler.SchedulerImpl
+	dispatcher         *dispatcher.DispatcherImpl
+	contractExecutor   *contractexec.ContractExecutorImpl
+	admissionValidator *admission.AdmissionValidatorImpl
+	humanExecutor      *humanexec.HumanExecutorImpl
+	mu                 sync.Mutex
+	running            bool
+	taskSubmitted      chan struct{} // Channel to notify when tasks are submitted
 }
 
 // NewOrchestrator creates a new orchestrator
@@ -38,16 +40,18 @@ func NewOrchestrator() *Orchestrator {
 	contractExec := contractexec.NewContractExecutor()
 	humanExec := humanexec.NewHumanExecutor()
 	dispatch := dispatcher.NewDispatcher(contractExec, humanExec)
+	admissionValidator := admission.NewAdmissionValidator(contractExec)
 
 	return &Orchestrator{
-		stateStore:       stateStore,
-		lifecycleManager: lifecycleManager,
-		scheduler:        sched,
-		dispatcher:       dispatch,
-		contractExecutor: contractExec,
-		humanExecutor:    humanExec,
-		running:          false,
-		taskSubmitted:    make(chan struct{}, 1),
+		stateStore:         stateStore,
+		lifecycleManager:   lifecycleManager,
+		scheduler:          sched,
+		dispatcher:         dispatch,
+		contractExecutor:   contractExec,
+		admissionValidator: admissionValidator,
+		humanExecutor:      humanExec,
+		running:            false,
+		taskSubmitted:      make(chan struct{}, 1),
 	}
 }
 
@@ -154,8 +158,12 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 	log.Printf("Task %s completed with status %s", task.TaskID, result.Status)
 }
 
-// SubmitTask submits a task to the orchestrator
+// SubmitTask submits a task to the orchestrator after admission validation.
 func (o *Orchestrator) SubmitTask(task *types.AgentTask) error {
+	if err := o.admissionValidator.Validate(task); err != nil {
+		return err
+	}
+
 	if err := o.scheduler.Submit(task); err != nil {
 		return err
 	}

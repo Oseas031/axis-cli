@@ -2,7 +2,7 @@
 # PreToolUse hook: remind about doc sync before git commit
 # Reads stdin JSON, checks staged files, never blocks the commit.
 
-input=$(cat)
+input=$(cat | tr -d '\r')
 
 tool_name=$(echo "$input" | jq -r ".tool_name // empty")
 tool_cmd=$(echo "$input" | jq -r ".tool_input.command // empty")
