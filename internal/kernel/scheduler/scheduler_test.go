@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"testing"
 
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
@@ -260,6 +261,187 @@ func TestScheduler_GetReadyTasksWithDependencies(t *testing.T) {
 	}
 	if len(tasks) != 1 || tasks[0].TaskID != "child" {
 		t.Fatalf("Expected child to become ready, got %#v", tasks)
+	}
+}
+
+func TestScheduler_Cancel_NonExistent(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+
+	err := sched.Cancel("nonexistent")
+	if err == nil {
+		t.Error("Cancel of non-existent task should fail")
+	}
+}
+
+func TestScheduler_Cancel_NonPending(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "contract-1",
+	}
+	sched.Submit(task)
+	sched.UpdateTaskStatus("task-1", types.TaskStatusRunning)
+
+	err := sched.Cancel("task-1")
+	if err == nil {
+		t.Error("Cancel of non-pending task should fail")
+	}
+}
+
+func TestScheduler_Submit_NotRunning(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+	lifecycleMgr.Shutdown(context.Background())
+
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "contract-1",
+	}
+	err := sched.Submit(task)
+	if err == nil {
+		t.Error("Submit should fail when scheduler is not running")
+	}
+}
+
+func TestScheduler_UpdateTaskStatus_Completed(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "contract-1",
+	}
+	sched.Submit(task)
+	sched.UpdateTaskStatus("task-1", types.TaskStatusRunning)
+
+	err := sched.UpdateTaskStatus("task-1", types.TaskStatusCompleted)
+	if err != nil {
+		t.Fatalf("Failed to complete task: %v", err)
+	}
+
+	status, _ := sched.GetStatus("task-1")
+	if status != types.TaskStatusCompleted {
+		t.Errorf("Expected completed, got %s", status)
+	}
+
+	state, _ := stateStore.Load("task-1")
+	if state.Task.CompletedAt == nil {
+		t.Error("CompletedAt should be set when status is completed")
+	}
+}
+
+func TestScheduler_UpdateTaskStatus_Failed(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "contract-1",
+	}
+	sched.Submit(task)
+	sched.UpdateTaskStatus("task-1", types.TaskStatusRunning)
+
+	err := sched.UpdateTaskStatus("task-1", types.TaskStatusFailed)
+	if err != nil {
+		t.Fatalf("Failed to mark task failed: %v", err)
+	}
+
+	status, _ := sched.GetStatus("task-1")
+	if status != types.TaskStatusFailed {
+		t.Errorf("Expected failed, got %s", status)
+	}
+
+	state, _ := stateStore.Load("task-1")
+	if state.Task.CompletedAt == nil {
+		t.Error("CompletedAt should be set when status is failed")
+	}
+}
+
+func TestScheduler_UpdateTaskStatus_NonExistent(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+
+	err := sched.UpdateTaskStatus("nonexistent", types.TaskStatusRunning)
+	if err == nil {
+		t.Error("UpdateTaskStatus for non-existent task should fail")
+	}
+}
+
+func TestScheduler_AreDependenciesCompleted_FailedDep(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+
+	dep := &types.AgentTask{TaskID: "dep", ContractID: "c"}
+	child := &types.AgentTask{TaskID: "child", ContractID: "c", Dependencies: []string{"dep"}}
+	sched.Submit(dep)
+	sched.Submit(child)
+	sched.UpdateTaskStatus("dep", types.TaskStatusFailed)
+
+	tasks, err := sched.GetReadyTasks(0)
+	if err != nil {
+		t.Fatalf("GetReadyTasks failed: %v", err)
+	}
+	for _, task := range tasks {
+		if task.TaskID == "child" {
+			t.Error("Task with failed dependency should not be ready")
+		}
+	}
+}
+
+func TestScheduler_AreDependenciesCompleted_MissingDep(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+
+	task := &types.AgentTask{
+		TaskID:       "task-1",
+		ContractID:   "contract-1",
+		Dependencies: []string{"nonexistent"},
+	}
+	sched.Submit(task)
+
+	tasks, err := sched.GetReadyTasks(0)
+	if err != nil {
+		t.Fatalf("GetReadyTasks should succeed: %v", err)
+	}
+	if len(tasks) != 0 {
+		t.Error("Task with missing dependency should not be ready")
+	}
+}
+
+func TestScheduler_GetNextTask_NotRunning(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+	lifecycleMgr.Shutdown(context.Background())
+
+	_, err := sched.GetNextTask()
+	if err == nil {
+		t.Error("GetNextTask should fail when scheduler is not running")
+	}
+}
+
+func TestScheduler_GetNextTask_Empty(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycleMgr := lifecycle.NewLifecycleManager()
+	sched := NewScheduler(stateStore, lifecycleMgr)
+
+	task, err := sched.GetNextTask()
+	if err != nil {
+		t.Fatalf("GetNextTask should not error on empty queue: %v", err)
+	}
+	if task != nil {
+		t.Error("GetNextTask should return nil for empty queue")
 	}
 }
 

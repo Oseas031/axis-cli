@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -81,6 +82,29 @@ func TestOrchestrator_SubmitTask(t *testing.T) {
 	}
 	if status != types.TaskStatusPending && status != types.TaskStatusRunning {
 		t.Errorf("Task should be pending or running, got %s", status)
+	}
+}
+
+func TestOrchestrator_SubmitTask_Duplicate(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx := context.Background()
+	defer orch.Shutdown(ctx)
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "default",
+		Input:      map[string]any{"message": "test"},
+	}
+
+	if err := orch.SubmitTask(task); err != nil {
+		t.Fatalf("First submit should succeed: %v", err)
+	}
+	if err := orch.SubmitTask(task); err == nil {
+		t.Error("Duplicate submit should fail")
 	}
 }
 
@@ -344,6 +368,39 @@ func TestOrchestrator_TaskWithSLA(t *testing.T) {
 	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusCompleted)
 	if status != types.TaskStatusCompleted {
 		t.Fatalf("Expected task to complete with SLA, got %s", status)
+	}
+}
+
+func TestOrchestrator_ParallelExecution(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Failed to start orchestrator: %v", err)
+	}
+
+	// Submit 10 independent tasks — exercises parallel dispatch
+	for i := 0; i < 10; i++ {
+		task := &types.AgentTask{
+			TaskID:     fmt.Sprintf("task-%d", i),
+			ContractID: "default",
+			Input:      map[string]any{"message": "test"},
+		}
+		if err := orch.SubmitTask(task); err != nil {
+			t.Fatalf("Failed to submit task %d: %v", i, err)
+		}
+	}
+
+	for i := 0; i < 10; i++ {
+		status := waitForTaskStatus(t, orch, fmt.Sprintf("task-%d", i), types.TaskStatusCompleted)
+		if status != types.TaskStatusCompleted {
+			t.Errorf("Task %d should complete, got %s", i, status)
+		}
 	}
 }
 

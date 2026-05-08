@@ -43,6 +43,12 @@ func TestGetTaskStatusNotFoundGivesContext(t *testing.T) {
 	}
 }
 
+func TestPrintShellHelp(t *testing.T) {
+	captureStdout(t, func() {
+		printShellHelp()
+	})
+}
+
 func resetCLIState() {
 	orch = nil
 	orchMutex = sync.Once{}
