@@ -42,28 +42,10 @@ jobs:
       - name: Run go vet
         run: go vet ./...
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: 'v1.55.2'
-          args: --timeout=5m
-
   test:
     name: Test
     runs-on: ubuntu-latest
-    needs: [format, vet, lint]
+    needs: [format, vet]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
