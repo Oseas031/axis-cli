@@ -32,6 +32,8 @@ jobs:
           python3 << 'EOF'
           import yaml
           import sys
+          import os
+          import glob
 
           with open('.github/workflows/registry.yml', 'r') as f:
               registry = yaml.safe_load(f)
@@ -39,30 +41,50 @@ jobs:
           # Check required fields
           required_fields = ['id', 'name', 'version', 'status', 'category', 'file']
           workflow_ids = set()
+          errors = []
 
           for workflow in registry.get('workflows', []):
               # Check required fields
               for field in required_fields:
                   if field not in workflow:
-                      print(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
-                      sys.exit(1)
+                      errors.append(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
 
               # Check for duplicate IDs
               if workflow['id'] in workflow_ids:
-                  print(f"❌ Duplicate workflow ID: {workflow['id']}")
-                  sys.exit(1)
+                  errors.append(f"❌ Duplicate workflow ID: {workflow['id']}")
               workflow_ids.add(workflow['id'])
 
-              # Check if file exists
-              import os
+              # Check if file exists with better error messages
               if not os.path.exists(workflow['file']):
-                  print(f"❌ Workflow file does not exist: {workflow['file']}")
-                  sys.exit(1)
+                  errors.append(f"❌ Workflow file does not exist: {workflow['file']}")
+                  # Suggest similar files
+                  if workflow['file'].startswith('docs/deprecated/'):
+                      suggestions = glob.glob('docs/deprecated/workflows/*.md')
+                      if suggestions:
+                          errors.append(f"💡 Did you mean one of these?")
+                          for s in suggestions[:3]:
+                              errors.append(f"   - {s}")
+                  elif workflow['file'].startswith('.github/workflows/'):
+                      actual_files = glob.glob('.github/workflows/*.yml')
+                      if actual_files:
+                          errors.append(f"💡 Available workflow files:")
+                          for f in actual_files[:5]:
+                              errors.append(f"   - {f}")
 
-              # Check if documentation exists
+              # Check if documentation exists with better error messages
               if 'documentation' in workflow and not os.path.exists(workflow['documentation']):
-                  print(f"❌ Documentation file does not exist: {workflow['documentation']}")
-                  sys.exit(1)
+                  errors.append(f"❌ Documentation file does not exist: {workflow['documentation']}")
+                  # Check for common typos
+                  if workflow['documentation'].startswith('/'):
+                      errors.append(f"💡 Absolute path detected. Use relative path from repository root.")
+                  if 'worklow' in workflow['documentation']:
+                      errors.append(f"💡 Typo detected: 'worklow' should be 'workflow'")
+
+          if errors:
+              print("❌ Registry validation failed:")
+              for error in errors:
+                  print(error)
+              sys.exit(1)
 
           print("✅ Registry structure validation passed")
           print(f"✅ Validated {len(workflow_ids)} workflows")
