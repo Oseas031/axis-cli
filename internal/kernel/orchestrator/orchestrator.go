@@ -13,7 +13,6 @@ import (
 	dispatcher "github.com/axis-cli/axis/internal/kernel/dispatcher"
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
 	"github.com/axis-cli/axis/internal/kernel/scheduler"
-	"github.com/axis-cli/axis/internal/kernel/shared_layer"
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/types"
 )
@@ -33,7 +32,7 @@ type Orchestrator struct {
 
 // NewOrchestrator creates a new orchestrator
 func NewOrchestrator() *Orchestrator {
-	stateStore := shared_layer.NewMemoryStateStore()
+	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleManager := lifecycle.NewLifecycleManager()
 	sched := scheduler.NewScheduler(stateStore, lifecycleManager)
 	contractExec := contractexec.NewContractExecutor()
