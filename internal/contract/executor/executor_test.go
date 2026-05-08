@@ -533,7 +533,7 @@ func TestContractExecutor_Execute_NonExistentContract(t *testing.T) {
 		t.Error("Execute with non-existent contract should return error")
 	}
 	if result == nil {
-		t.Error("Result should not be nil even on error")
+		t.Fatal("Result should not be nil even on error")
 	}
 	if result.Error == "" {
 		t.Error("Result.Error should contain error message on contract not found")
