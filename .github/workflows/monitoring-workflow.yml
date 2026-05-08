@@ -25,9 +25,20 @@ jobs:
 
       - name: Run benchmark tests
         run: |
-          go test -bench=. -benchmem -run=^$ ./... > benchmark.txt
+          go test -bench=. -benchmem -run=^$ ./... > benchmark.txt || true
+
+      - name: Check if benchmark results exist
+        id: check-benchmark
+        run: |
+          if [ -s benchmark.txt ] && grep -q "Benchmark" benchmark.txt; then
+            echo "has_benchmark=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_benchmark=false" >> $GITHUB_OUTPUT
+            echo "No benchmark tests found, skipping benchmark storage"
+          fi
 
       - name: Store benchmark result
+        if: steps.check-benchmark.outputs.has_benchmark == 'true'
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'go'
