@@ -6,7 +6,7 @@
 **项目定位**：面向 AI Agent 设计的统一调度平台
 **核心能力**：任务调度、依赖管理、输入输出验证
 **技术栈**：Go 1.26+
-**当前状态**：框架设计完成，未开始代码实现
+**当前状态**：里程碑1核心功能已完成，CI/CD已建立，工作流改造完成
 
 **重要说明**：
 - **终态**：Agent 原生调度系统
@@ -40,12 +40,70 @@
 - 基础状态存储
 - 基础 CLI
 
-## 已完成的设计文档
+## 已完成的工作
 
-1. **核心模块架构** (`docs/architecture/core-modules.md`) - 简化版
-2. **契约层设计** (`docs/architecture/agent-contract-design.md`) - 简化版
-3. **DAG 调度策略** (`docs/architecture/dag-scheduling.md`) - 简化版
-4. **里程碑1检查清单** (`docs/milestones/milestone1-checklist.md`) - 简化版
+### 里程碑1核心功能（已完成）
+- ✅ 核心数据结构实现（AgentTask, TaskStatus, TaskResult, FieldDef等）
+- ✅ 状态存储模块（internal/kernel/sharedlayer/state_store）
+- ✅ 生命周期管理器（internal/kernel/lifecycle）
+- ✅ 调度器（FIFO + 依赖管理）（internal/kernel/scheduler）
+- ✅ 契约执行器（输入输出验证）（internal/contract/executor）
+- ✅ 人类执行器（internal/human/executor）
+- ✅ 分发器（internal/kernel/dispatcher）
+- ✅ 编排器（internal/kernel/orchestrator）
+- ✅ CLI 客户端（cmd/axis）
+- ✅ 单元测试（覆盖率≥60%）
+
+### CI/CD流水线（已完成）
+- ✅ CI Workflow（format, vet, staticcheck, test, build, docs）
+- ✅ CD Workflow（多平台构建、Docker镜像、Release、签名）
+- ✅ Security Workflow（SAST, SCA, Secret Scan, License Compliance）
+- ✅ PR Quality Check Workflow（质量门禁、代码审查）
+- ✅ Monitoring Workflow（性能基准、覆盖率趋势、CI指标）
+- ✅ Dev Workflow（本地开发自动化）
+
+### 工作流改造（已完成）
+- ✅ 基于软件工程范式（TDD, Quality Gates, DevSecOps, CD, Observability）
+- ✅ 工作流注册表（.github/workflows/registry.yml）
+- ✅ Meta-Workflow架构决策（Git存储、双轨绑定、三层版本控制、显式依赖）
+- ✅ 工作流架构图（docs/workflow-architecture.drawio）
+- ✅ 进度报告（docs/workflow-progress-report.md）
+
+### Bug修复（已完成）
+- ✅ 调度器 GetNextTask 标记任务为已调度
+- ✅ 分发器 goroutine 泄漏修复
+- ✅ 编排器 busy-wait 模式修复
+- ✅ 契约执行器线程安全修复
+- ✅ CLI nil指针风险修复
+- ✅ 编排器 Start 逻辑错误修复
+- ✅ 生命周期检查的 mutex 保护
+- ✅ 契约执行器枚举验证修复
+- ✅ 分发器 context shadowing 修复
+
+### 文档（已完成）
+- ✅ 里程碑1检查清单（docs/milestones/milestone1-checklist.md）
+- ✅ 工作流验收文档（docs/milestone1-acceptance-using-existing-workflows.md）
+- ✅ 进度报告（docs/workflow-progress-report.md）
+
+## 当前待处理任务
+
+### 立即待处理
+- ⏳ 观察CI workflow执行结果（用户正在推送代码到GitHub）
+- ⏳ 修复 staticcheck ST1003（包名下划线：sharedlayer → sharedlayer）
+- ⏳ 创建PR触发PR Quality Check和Security workflows
+- ⏳ 生成里程碑1验收报告
+
+### 已知问题
+- ⚠️ staticcheck ST1003：sharedlayer 包名包含下划线，需要改为 sharedlayer
+  - 需要重命名目录：internal/kernel/sharedlayer → internal/kernel/sharedlayer
+  - 更新所有引用路径
+  - 受影响文件：scheduler.go, scheduler_test.go, orchestrator.go
+
+### 下一步行动
+1. 使用现有工作流完成里程碑1验收（不创建新工作流）
+2. 修复 staticcheck ST1003 错误
+3. 生成里程碑1验收报告
+4. 准备里程碑2设计（DAG并行调度、契约准入规则、SLA约定）
 
 ## 项目结构
 
@@ -59,7 +117,7 @@ axis-cli/
 │   │   ├── scheduler/    # 调度器
 │   │   ├── dispatcher/   # 分发器
 │   │   ├── lifecycle/    # 生命周期管理
-│   │   └── shared_layer/ # 共享状态存储
+│   │   └── sharedlayer/ # 共享状态存储
 │   ├── contract/        # 契约层
 │   │   └── executor/    # 契约执行器
 │   └── human/           # Human-as-a-Function
@@ -171,5 +229,5 @@ axis-cli/
 ---
 
 **交接时间**：2026-05-08
-**交接状态**：框架设计完成，等待实施
-**下一步行动**：开始里程碑1实施
+**交接状态**：里程碑1核心功能已完成，CI/CD已建立，工作流改造完成
+**下一步行动**：完成里程碑1验收，修复 staticcheck ST1003 错误

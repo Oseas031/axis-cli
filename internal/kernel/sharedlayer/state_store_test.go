@@ -1,4 +1,4 @@
-package shared_layer
+package sharedlayer
 
 import (
 	"testing"

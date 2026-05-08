@@ -1,3 +1,4 @@
+// Package orchestrator provides task orchestration and coordination.
 package orchestrator
 
 import (
@@ -13,12 +14,13 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
 	"github.com/axis-cli/axis/internal/kernel/scheduler"
 	"github.com/axis-cli/axis/internal/kernel/shared_layer"
+	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/types"
 )
 
 // Orchestrator coordinates all kernel modules
 type Orchestrator struct {
-	stateStore       shared_layer.StateStore
+	stateStore       sharedlayer.StateStore
 	lifecycleManager *lifecycle.LifecycleManagerImpl
 	scheduler        *scheduler.SchedulerImpl
 	dispatcher       *dispatcher.DispatcherImpl

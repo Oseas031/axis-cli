@@ -1,3 +1,4 @@
+// Package dispatcher provides task dispatching to executors.
 package dispatcher
 
 import (

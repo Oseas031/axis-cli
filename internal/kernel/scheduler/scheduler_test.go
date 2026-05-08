@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
-	"github.com/axis-cli/axis/internal/kernel/shared_layer"
+	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/types"
 )
 
 func TestScheduler_Submit(t *testing.T) {
-	stateStore := shared_layer.NewMemoryStateStore()
+	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleMgr := lifecycle.NewLifecycleManager()
 	sched := NewScheduler(stateStore, lifecycleMgr)
 
@@ -32,7 +32,7 @@ func TestScheduler_Submit(t *testing.T) {
 }
 
 func TestScheduler_DuplicateSubmit(t *testing.T) {
-	stateStore := shared_layer.NewMemoryStateStore()
+	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleMgr := lifecycle.NewLifecycleManager()
 	sched := NewScheduler(stateStore, lifecycleMgr)
 
@@ -50,7 +50,7 @@ func TestScheduler_DuplicateSubmit(t *testing.T) {
 }
 
 func TestScheduler_Cancel(t *testing.T) {
-	stateStore := shared_layer.NewMemoryStateStore()
+	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleMgr := lifecycle.NewLifecycleManager()
 	sched := NewScheduler(stateStore, lifecycleMgr)
 
@@ -74,7 +74,7 @@ func TestScheduler_Cancel(t *testing.T) {
 }
 
 func TestScheduler_DependencyManagement(t *testing.T) {
-	stateStore := shared_layer.NewMemoryStateStore()
+	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleMgr := lifecycle.NewLifecycleManager()
 	sched := NewScheduler(stateStore, lifecycleMgr)
 
@@ -111,7 +111,7 @@ func TestScheduler_DependencyManagement(t *testing.T) {
 }
 
 func TestScheduler_CircularDependency(t *testing.T) {
-	stateStore := shared_layer.NewMemoryStateStore()
+	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleMgr := lifecycle.NewLifecycleManager()
 	sched := NewScheduler(stateStore, lifecycleMgr)
 
@@ -138,7 +138,7 @@ func TestScheduler_CircularDependency(t *testing.T) {
 }
 
 func TestScheduler_FIFOOrdering(t *testing.T) {
-	stateStore := shared_layer.NewMemoryStateStore()
+	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleMgr := lifecycle.NewLifecycleManager()
 	sched := NewScheduler(stateStore, lifecycleMgr)
 
@@ -163,7 +163,7 @@ func TestScheduler_FIFOOrdering(t *testing.T) {
 }
 
 func TestScheduler_UpdateTaskStatus(t *testing.T) {
-	stateStore := shared_layer.NewMemoryStateStore()
+	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleMgr := lifecycle.NewLifecycleManager()
 	sched := NewScheduler(stateStore, lifecycleMgr)
 

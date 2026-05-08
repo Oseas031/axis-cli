@@ -1,8 +1,10 @@
-package shared_layer
+// Package sharedlayer provides shared state storage for tasks.
+package sharedlayer
 
 import (
-	"github.com/axis-cli/axis/internal/types"
 	"sync"
+
+	"github.com/axis-cli/axis/internal/types"
 )
 
 // StateStore interface defines task state persistence

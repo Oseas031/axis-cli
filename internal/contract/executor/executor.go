@@ -1,3 +1,4 @@
+// Package executor provides contract execution with input/output validation.
 package executor
 
 import (

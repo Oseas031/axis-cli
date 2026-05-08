@@ -1,3 +1,4 @@
+// Package scheduler provides FIFO task scheduling with dependency management.
 package scheduler
 
 import (
@@ -6,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/axis-cli/axis/internal/kernel/shared_layer"
+	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -24,7 +25,7 @@ type SchedulerImpl struct {
 	mu         sync.RWMutex
 	queue      []*types.AgentTask
 	taskMap    map[string]*types.AgentTask
-	stateStore shared_layer.StateStore
+	stateStore sharedlayer.StateStore
 	lifecycle  LifecycleChecker
 }
 
@@ -34,7 +35,7 @@ type LifecycleChecker interface {
 }
 
 // NewScheduler creates a new scheduler
-func NewScheduler(stateStore shared_layer.StateStore, lifecycle LifecycleChecker) *SchedulerImpl {
+func NewScheduler(stateStore sharedlayer.StateStore, lifecycle LifecycleChecker) *SchedulerImpl {
 	return &SchedulerImpl{
 		queue:      make([]*types.AgentTask, 0),
 		taskMap:    make(map[string]*types.AgentTask),

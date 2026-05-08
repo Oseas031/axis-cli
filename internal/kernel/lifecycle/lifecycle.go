@@ -1,3 +1,4 @@
+// Package lifecycle provides agent and task lifecycle management.
 package lifecycle
 
 import (

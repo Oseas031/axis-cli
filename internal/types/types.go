@@ -1,3 +1,4 @@
+// Package types provides core data types for the agent system.
 package types
 
 import "time"
