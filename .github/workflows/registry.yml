@@ -1,0 +1,395 @@
+# Workflow Registry
+# This file maintains metadata for all workflows in the project
+# Managed by Meta-Workflow
+
+workflows:
+  # Documentation Workflows
+  - id: wf-doc-001
+    name: CI/CD Quality Improvement Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508103000"
+    status: active
+    category: documentation
+    type: process
+    triggers:
+      - manual
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: workflow/ci-cd-quality-improvement-workflow.md
+    documentation: workflow/ci-cd-quality-improvement-workflow.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T10:30:00Z
+    updated_at: 2026-05-08T10:30:00Z
+    metrics:
+      success_rate: 1.0
+      avg_duration: 0s
+      last_execution: null
+
+  - id: wf-doc-002
+    name: Software Engineering Paradigm Workflow Improvement
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508103500"
+    status: active
+    category: documentation
+    type: process
+    triggers:
+      - manual
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: workflow/software-engineering-paradigm-workflow-improvement.md
+    documentation: workflow/software-engineering-paradigm-workflow-improvement.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T10:35:00Z
+    updated_at: 2026-05-08T10:35:00Z
+    metrics:
+      success_rate: 1.0
+      avg_duration: 0s
+      last_execution: null
+
+  - id: wf-doc-003
+    name: Comprehensive Automation Workflows Architecture
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508104000"
+    status: active
+    category: documentation
+    type: architecture
+    triggers:
+      - manual
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: workflow/comprehensive-automation-workflows.md
+    documentation: workflow/comprehensive-automation-workflows.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T10:40:00Z
+    updated_at: 2026-05-08T10:40:00Z
+    metrics:
+      success_rate: 1.0
+      avg_duration: 0s
+      last_execution: null
+
+  - id: wf-doc-004
+    name: Meta-Workflow Management
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508104500"
+    status: active
+    category: meta
+    type: management
+    triggers:
+      - manual
+      - schedule
+    dependencies: []
+    implicit_dependencies: []
+    dependents:
+      - wf-entry
+    file: workflow/meta-workflow-management.md
+    documentation: workflow/meta-workflow-management.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T10:45:00Z
+    updated_at: 2026-05-08T10:45:00Z
+    metrics:
+      success_rate: 1.0
+      avg_duration: 0s
+      last_execution: null
+
+  - id: wf-doc-005
+    name: Entry Point Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508105000"
+    status: active
+    category: meta
+    type: dispatcher
+    triggers:
+      - workflow_dispatch
+      - api
+    dependencies:
+      - wf-doc-004
+    implicit_dependencies: []
+    dependents:
+      - wf-ci
+      - wf-security
+      - wf-cd
+    file: workflow/entry-workflow.md
+    documentation: workflow/entry-workflow.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T10:50:00Z
+    updated_at: 2026-05-08T10:50:00Z
+    metrics:
+      success_rate: 1.0
+      avg_duration: 0s
+      last_execution: null
+
+  # Implementation Workflows (Planned)
+  - id: wf-dev
+    name: Development Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508110000"
+    status: active
+    category: development
+    type: automation
+    triggers:
+      - push
+      - pull_request
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: .github/workflows/dev-workflow.yml
+    documentation: workflow/dev-workflow.md
+    owner: "dev-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-08T11:00:00Z
+    metrics:
+      success_rate: null
+      avg_duration: null
+      last_execution: null
+
+  - id: wf-pr-check
+    name: PR Quality Check Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508110000"
+    status: active
+    category: quality
+    type: automation
+    triggers:
+      - pull_request
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: .github/workflows/pr-check-workflow.yml
+    documentation: workflow/pr-check-workflow.md
+    owner: "quality-team"
+    reviewers:
+      - "tech-lead"
+      - "security-team"
+    created_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-08T11:00:00Z
+    metrics:
+      success_rate: null
+      avg_duration: null
+      last_execution: null
+
+  - id: wf-ci
+    name: Continuous Integration Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508090000"
+    status: active
+    category: ci
+    type: automation
+    triggers:
+      - push
+      - pull_request
+    dependencies: []
+    implicit_dependencies: []
+    dependents:
+      - wf-cd
+    file: .github/workflows/ci.yml
+    documentation: .github/workflows/ci.yml
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T09:00:00Z
+    updated_at: 2026-05-08T11:00:00Z
+    metrics:
+      success_rate: 0.98
+      avg_duration: 180s
+      last_execution: 2026-05-08T09:00:00Z
+    note: "Refactored to include documentation generation job"
+
+  - id: wf-security
+    name: Security Scanning Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508110000"
+    status: active
+    category: security
+    type: automation
+    triggers:
+      - schedule
+      - pull_request
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: .github/workflows/security-workflow.yml
+    documentation: workflow/security-workflow.md
+    owner: "security-team"
+    reviewers:
+      - "tech-lead"
+      - "security-team"
+    created_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-08T11:00:00Z
+    metrics:
+      success_rate: null
+      avg_duration: null
+      last_execution: null
+
+  - id: wf-cd
+    name: Continuous Delivery Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508110000"
+    status: active
+    category: cd
+    type: automation
+    triggers:
+      - push: {tags: ['v*']}
+    dependencies:
+      - wf-ci
+      - wf-security
+    implicit_dependencies: []
+    dependents: []
+    file: .github/workflows/cd-workflow.yml
+    documentation: workflow/cd-workflow.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-08T11:00:00Z
+    metrics:
+      success_rate: null
+      avg_duration: null
+      last_execution: null
+
+  - id: wf-docs
+    name: Documentation Automation Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508110000"
+    status: active
+    category: documentation
+    type: automation
+    triggers:
+      - push: {paths: ['internal/**/*.go', 'cmd/**/*.go']}
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: .github/workflows/ci.yml
+    documentation: workflow/docs-workflow.md
+    owner: "docs-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-08T11:00:00Z
+    metrics:
+      success_rate: null
+      avg_duration: null
+      last_execution: null
+    note: "Integrated into CI workflow as 'docs' job"
+
+  - id: wf-monitoring
+    name: Monitoring Workflow
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508110000"
+    status: active
+    category: monitoring
+    type: automation
+    triggers:
+      - schedule
+      - workflow_run
+    dependencies: []
+    implicit_dependencies: []
+    dependents: []
+    file: .github/workflows/monitoring-workflow.yml
+    documentation: workflow/monitoring-workflow.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-08T11:00:00Z
+    metrics:
+      success_rate: null
+      avg_duration: null
+      last_execution: null
+
+# Workflow Categories
+categories:
+  - id: meta
+    name: Meta Workflows
+    description: Workflows that manage other workflows
+  - id: documentation
+    name: Documentation Workflows
+    description: Process and architecture documentation
+  - id: development
+    name: Development Workflows
+    description: Local development automation
+  - id: quality
+    name: Quality Workflows
+    description: Quality assurance and checks
+  - id: ci
+    name: Continuous Integration
+    description: Build and test automation
+  - id: security
+    name: Security Workflows
+    description: Security scanning and compliance
+  - id: cd
+    name: Continuous Delivery
+    description: Release and deployment automation
+  - id: monitoring
+    name: Monitoring Workflows
+    description: System monitoring and observability
+
+# Workflow Status Values
+status_values:
+  - value: draft
+    description: Workflow is in draft state, not yet implemented
+  - value: review
+    description: Workflow is under review
+  - value: approved
+    description: Workflow is approved, waiting for deployment
+  - value: active
+    description: Workflow is active and in use
+  - value: paused
+    description: Workflow is temporarily paused
+  - value: deprecated
+    description: Workflow is deprecated, will be removed
+  - value: removed
+    description: Workflow has been removed
+  - value: abandoned
+    description: Workflow has been abandoned
+
+# Workflow Type Values
+type_values:
+  - value: process
+    description: Process documentation workflow
+  - value: architecture
+    description: Architecture documentation workflow
+  - value: management
+    description: Workflow management workflow
+  - value: dispatcher
+    description: Workflow dispatcher/router
+  - value: automation
+    description: Automated execution workflow
