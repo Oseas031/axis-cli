@@ -13,7 +13,7 @@ Agent 原生调度系统 - 为 AI Agent 提供统一任务调度能力
 ## 文档阅读顺序（必须按顺序）
 1. docs/current-progress.md - 当前工作进度（必须首先阅读）
 2. HANDOVER.md - 项目交接文档（当前进度）
-3. docs/daily-retrospective-2026-05-08.md - 最新复盘
+3. reports/daily/daily-retrospective-2026-05-08.md - 最新复盘
 4. docs/QUICKSTART.md - 快速入门
 5. WHITEPAPER.md - 项目定义
 6. docs/milestones/milestone1-checklist.md - 里程碑1目标
@@ -69,7 +69,8 @@ Agent 原生调度系统 - 为 AI Agent 提供统一任务调度能力
 - `docs/current-progress.md` - 当前工作进度（必须首先阅读）
 - `docs/claude-code-workflow-continuity-guide.md` - 工作流衔接指南
 - `HANDOVER.md` - 项目交接文档
-- `docs/daily-retrospective-YYYY-MM-DD.md` - 最新复盘
+- `reports/daily/daily-retrospective-YYYY-MM-DD.md` - 最新复盘
+- `workflows/README.md` - 工作流索引
 
 ## 开发优先级
 1. 完成里程碑1验收（使用现有工作流）

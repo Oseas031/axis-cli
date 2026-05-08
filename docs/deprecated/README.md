@@ -19,7 +19,7 @@
 ### protocols/
 - call-human-spec-DRAFT.md - Call Human协议规范，里程碑1不需要
 
-### workflow/
+### workflows/
 - ci-cd-quality-improvement-workflow.md - 早期 CI/CD 设置过程，当前 CI/CD 已完成
 - comprehensive-automation-workflows.md - 7 个核心工作流架构设计，已被简化
 - entry-workflow.md - 工作流调度器设计，过度设计不符合奥卡姆剃刀
@@ -34,3 +34,4 @@
 - docs/architecture/agent-contract-design.md - 契约设计（简化版）
 - docs/architecture/dag-scheduling.md - DAG调度（简化版）
 - docs/milestones/milestone1-checklist.md - 里程碑1目标
+- workflows/README.md - 工作流索引

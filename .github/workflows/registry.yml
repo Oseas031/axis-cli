@@ -102,7 +102,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/document-audit.yml
-    documentation: docs/document-review-workflow-check.md
+    documentation: reports/audit/document-review-workflow-check.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -160,8 +160,8 @@ workflows:
       - wf-ci
       - wf-security
       - wf-cd
-    file: workflow/entry-workflow.md
-    documentation: workflow/entry-workflow.md
+    file: docs/deprecated/workflows/entry-workflow.md
+    documentation: docs/deprecated/workflows/entry-workflow.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
