@@ -101,8 +101,8 @@ jobs:
 # - github.event.pull_request.number: PR number
       - name: Generate diff stats
         run: |
-          git diff --stat origin/${{ github.base_ref }}...HEAD
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          git diff --stat origin/${{ github.base_ref }}...HEAD 2>/dev/null || true
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null | wc -l)
           echo "Changed files: $CHANGED_FILES"
           if [ $CHANGED_FILES -gt 20 ]; then
             echo "⚠️ Large PR: Consider splitting into smaller PRs"
@@ -114,6 +114,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check for package documentation
         run: |
@@ -132,7 +134,7 @@ jobs:
 
       - name: Provide documentation update context
         run: |
-          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null || true)
           code_changed=$(echo "$changed_files" | grep -E '\.(go|yaml|yml)$' | wc -l)
           doc_changed=$(echo "$changed_files" | grep -E '\.md$' | wc -l)
 
