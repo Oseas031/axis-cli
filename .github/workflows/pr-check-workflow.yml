@@ -44,7 +44,7 @@ jobs:
           flags: pr-check
 
       - name: Install complexity analyzer
-        run: go install golang.org/x/tools/cmd/gocyclo@latest
+        run: go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
 
       - name: Check cyclomatic complexity
         run: |
