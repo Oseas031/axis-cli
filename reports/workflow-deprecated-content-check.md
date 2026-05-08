@@ -165,18 +165,22 @@ docs:
 ## 修复优先级
 
 ### 高优先级（必须修复）
-（无 - Go 版本已确认正确）
-
+1. **修复*修复 Go** - 所有工作流
+   - 原因: 使用不存在的版本会导致工作流失败
+   - 影响: 所有工作流都无法*常运行- 所有工作流
+   - 原因: 使用不存在的版本会导致工作流失败
+   - 影响: 所有工作流都无法正常运行
+2
 ### 中优先级（建议修复）
-1. **修复 cd-workflow.yml 的 sign-artifacts job**
+2. **修复 cd-workflow.yml 的 sign-artifacts job**
    - 原因: 生成签名但不使用，浪费资源
-   - 影响: CI/CD 时间增加
+3  - 影响: CI/CD 时间增加
 
-2. **修复 ci.yml 的 docs job**
+3. **修复 ci.yml 的 docs job**
    - 原因: 生成文档但不使用，浪费资源
-   - 影响: CI/CD 时间增加
+4  - 影响: CI/CD 时间增加
 
-3. **解决 release.yml 和 cd-workflow.yml 重复**
+4. **解决 release.yml 和 cd-workflow.yml 重复**
    - 原因: 维护两套发布流程容易出错
    - 影响: 维护成本增加
 
@@ -184,18 +188,7 @@ docs:
 
 ## 修复建议
 
-### 建议 1: 统一 Go 版本
-
-将所有工作流中的 Go 版本改为 1.22：
-
-```yaml
-- name: Set up Go
-  uses: actions/setup-go@v5
-  with:
-    go-version: '1.22'  # 从 1.26 改为 1.22
-```
-
-### 建议 2: 修复 cd-workflow.yml 的 sign-artifacts
+### 建议 1: 修复 cd-workflow.yml 的 sign-artifacts
 
 **选项 A**: 在 create-release 中使用签名
 ```yaml
@@ -226,7 +219,7 @@ docs:
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     publish_dir: ./docs/api
-```
+```2
 
 **选项 B**: 删除 docs job
 如果不需要自动生成文档，直接删除该 job
@@ -238,8 +231,13 @@ docs:
 ---
 
 ## 执行计划
+3
+### 阶段 1: 修复 Go 版本（立即执行）
+1. 更新所有工作流的 Go 版本为 1.22
+2. 测试 CI workflow
+3. 提交并推送
 
-### 阶段 1: 修复未使用内容（本周）
+### 阶段 2: 修复未使用内容（本周）
 1. 决定 sign-artifacts 的处理方式
 2. 决定 docs job 的处理方式
 3. 决定发布流程的统一方式
@@ -251,18 +249,16 @@ docs:
 
 ## 结论
 
-**总体状态**: ⚠️ 需要修复
+**总体状态**: ⚠️ 需要优化
 
 **主要问题**:
-1. 所有工作流使用不存在的 Go 版本 1.26
-2. cd-workflow.yml 的 sign-artifacts job 未被使用
-3. ci.yml 的 docs job 未被使用
-4. release.yml 和 cd-workflow.yml 功能重复
+1. cd-workflow.yml 的 sign-artifacts job 未被使用
+2. ci.yml 的 docs job 未被使用
+3. release.yml 和 cd-workflow.yml 功能重复
 
 **建议行动**:
-1. 立即修复 Go 版本问题
-2. 本周内修复未使用内容问题
-3. 统一发布流程
+1. 本周内修复未使用内容问题
+2. 统一发布流程
 
 **预期结果**:
-修复后，所有工作流将能够正常运行，资源使用更加高效，维护成本降低。
+修复后，资源使用更加高效，维护成本降低。
