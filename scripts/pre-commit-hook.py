@@ -10,76 +10,78 @@ import glob
 try:
     result = subprocess.run(['git', 'diff', '--cached', '--name-only'], capture_output=True, text=True, check=True)
 except subprocess.CalledProcessError as e:
-    print(f"❌ Error running git command: {e}")
+    print(f"[ERR] Error running git command: {e}")
     sys.exit(1)
 
-if '.github/config/registry.yml' not in result.stdout:
+registry_changed = any(
+    f.endswith('registry.yml') or f.endswith('registry.yaml')
+    for f in result.stdout.split('\n')
+)
+if not registry_changed:
     sys.exit(0)
 
-print("Validating registry.yml...")
+# Find the actual registry file being modified
+registry_file = '.github/config/registry.yml'
+for line in result.stdout.split('\n'):
+    if line.endswith('registry.yml'):
+        registry_file = line
+        break
+
+print(f"Validating {registry_file}...")
 
 try:
-    with open('.github/config/registry.yml', 'r') as f:
+    with open(registry_file, 'r') as f:
         registry = yaml.safe_load(f)
 
-    # Check required fields
     required_fields = ['id', 'name', 'version', 'status', 'category', 'file']
     workflow_ids = set()
     errors = []
 
     for workflow in registry.get('workflows', []):
-        # Check required fields
         for field in required_fields:
             if field not in workflow:
-                errors.append(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
+                errors.append(f"[ERR] Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
 
-        # Skip further validation if required fields are missing
         if 'id' not in workflow or 'file' not in workflow:
             continue
 
-        # Check for duplicate IDs
         if workflow['id'] in workflow_ids:
-            errors.append(f"❌ Duplicate workflow ID: {workflow['id']}")
+            errors.append(f"[ERR] Duplicate workflow ID: {workflow['id']}")
         workflow_ids.add(workflow['id'])
 
-        # Check if file exists with better error messages
         if not os.path.exists(workflow['file']):
-            errors.append(f"❌ Workflow file does not exist: {workflow['file']}")
-            # Suggest similar files
+            errors.append(f"[ERR] Workflow file does not exist: {workflow['file']}")
             if workflow['file'].startswith('docs/deprecated/'):
                 suggestions = glob.glob('docs/deprecated/workflows/*.md')
                 if suggestions:
-                    errors.append(f"💡 Did you mean one of these?")
+                    errors.append(f"[HINT] Did you mean one of these?")
                     for s in suggestions[:3]:
                         errors.append(f"   - {s}")
             elif workflow['file'].startswith('.github/workflows/'):
                 actual_files = glob.glob('.github/workflows/*.yml')
                 if actual_files:
-                    errors.append(f"💡 Available workflow files:")
+                    errors.append(f"[HINT] Available workflow files:")
                     for f in actual_files[:5]:
                         errors.append(f"   - {f}")
 
-        # Check if documentation exists with better error messages
         if 'documentation' in workflow and not os.path.exists(workflow['documentation']):
-            errors.append(f"❌ Documentation file does not exist: {workflow['documentation']}")
-            # Check for common typos
+            errors.append(f"[ERR] Documentation file does not exist: {workflow['documentation']}")
             if workflow['documentation'].startswith('/'):
-                errors.append(f"💡 Absolute path detected. Use relative path from repository root.")
+                errors.append(f"[HINT] Absolute path detected. Use relative path from repository root.")
             if 'worklow' in workflow['documentation']:
-                errors.append(f"💡 Typo detected: 'worklow' should be 'workflow'")
+                errors.append(f"[HINT] Typo detected: 'worklow' should be 'workflow'")
 
     if errors:
-        print("❌ Registry validation failed:")
+        print("[FAIL] Registry validation failed:")
         for error in errors:
             print(error)
-        print("❌ Pre-commit validation failed. Commit aborted.")
-        print("   Fix the errors and try again.")
+        print("[FAIL] Pre-commit validation failed. Commit aborted.")
         sys.exit(1)
 
-    print("✅ Registry structure validation passed")
-    print(f"✅ Validated {len(workflow_ids)} workflows")
+    print("[OK] Registry structure validation passed")
+    print(f"[OK] Validated {len(workflow_ids)} workflows")
 except Exception as e:
-    print(f"❌ Error during validation: {e}")
+    print(f"[ERR] Error during validation: {e}")
     sys.exit(1)
 
 sys.exit(0)
