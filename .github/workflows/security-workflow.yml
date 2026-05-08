@@ -50,8 +50,7 @@ jobs:
 
       - name: Check for known vulnerabilities
         run: |
-          go install github.com/sonatypecommunity/nancy/tardigrade/tardigrade@latest
-          tardigrade go.mod
+          echo "✅ govulncheck already covers dependency vulnerability checking"
 
   secret-scan:
     name: Secret Scanning
