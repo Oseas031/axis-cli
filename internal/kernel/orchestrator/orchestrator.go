@@ -19,6 +19,8 @@ import (
 	"github.com/axis-cli/axis/internal/types"
 )
 
+const defaultWorkerLimit = 5
+
 // Orchestrator coordinates all kernel modules
 type Orchestrator struct {
 	stateStore         sharedlayer.StateStore
@@ -31,6 +33,9 @@ type Orchestrator struct {
 	mu                 sync.Mutex
 	running            bool
 	taskSubmitted      chan struct{} // Channel to notify when tasks are submitted
+	workerLimit        int           // Max concurrent workers
+	workerSem          chan struct{} // Counting semaphore for worker limit
+	wg                 sync.WaitGroup
 }
 
 // NewOrchestrator creates a new orchestrator
@@ -53,6 +58,8 @@ func NewOrchestrator() *Orchestrator {
 		humanExecutor:      humanExec,
 		running:            false,
 		taskSubmitted:      make(chan struct{}, 1),
+		workerLimit:        defaultWorkerLimit,
+		workerSem:          make(chan struct{}, defaultWorkerLimit),
 	}
 }
 
@@ -68,50 +75,67 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 	// Mark as running to prevent duplicate starts
 	o.running = true
 
-	// Start the task execution loop
-	go o.runTaskLoop(ctx)
+	// Start the task execution loop; waits for workers on exit
+	go func() {
+		o.runTaskLoop(ctx)
+		o.wg.Wait()
+	}()
 
 	return nil
 }
 
-// runTaskLoop continuously processes tasks from the scheduler
+// runTaskLoop continuously fetches ready tasks and dispatches them in parallel.
 func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-o.taskSubmitted:
-			// Task submitted, process immediately
 		default:
-			// No notification, check periodically
-			o.mu.Lock()
-			if !o.lifecycleManager.IsRunning() {
-				o.mu.Unlock()
-				return
-			}
+		}
+
+		o.mu.Lock()
+		if !o.lifecycleManager.IsRunning() {
 			o.mu.Unlock()
+			return
+		}
+		o.mu.Unlock()
 
-			task, err := o.scheduler.GetNextTask()
-			if err != nil {
-				log.Printf("Error getting next task: %v", err)
-				time.Sleep(1 * time.Second)
-				continue
+		available := o.workerLimit - len(o.workerSem)
+		if available <= 0 {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(100 * time.Millisecond):
 			}
+			continue
+		}
 
-			if task == nil {
-				// No tasks ready, wait for notification
-				select {
-				case <-o.taskSubmitted:
-					continue
-				case <-ctx.Done():
-					return
-				case <-time.After(100 * time.Millisecond):
-					continue
-				}
+		tasks, err := o.scheduler.GetReadyTasks(available)
+		if err != nil {
+			log.Printf("Error getting ready tasks: %v", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		if len(tasks) == 0 {
+			select {
+			case <-o.taskSubmitted:
+			case <-ctx.Done():
+				return
+			case <-time.After(100 * time.Millisecond):
 			}
+			continue
+		}
 
-			// Execute the task
-			o.executeTask(ctx, task)
+		for _, task := range tasks {
+			o.workerSem <- struct{}{}
+			o.wg.Add(1)
+			go func(t *types.AgentTask) {
+				defer o.wg.Done()
+				defer func() { <-o.workerSem }()
+				o.executeTask(ctx, t)
+			}(task)
 		}
 	}
 }
