@@ -123,15 +123,21 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 	result, err := o.dispatcher.Dispatch(ctx, task)
 	if err != nil {
 		log.Printf("Error dispatching task %s: %v", task.TaskID, err)
-		o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed)
+		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed); err != nil {
+			log.Printf("Error updating task status to failed: %v", err)
+		}
 		return
 	}
 
 	// Update task status based on result
 	if result.Status == types.TaskStatusCompleted {
-		o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted)
+		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err != nil {
+			log.Printf("Error updating task status to completed: %v", err)
+		}
 	} else {
-		o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed)
+		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed); err != nil {
+			log.Printf("Error updating task status to failed: %v", err)
+		}
 	}
 
 	log.Printf("Task %s completed with status %s", task.TaskID, result.Status)
