@@ -192,17 +192,21 @@ jobs:
               elif workflow.get('status') == 'deprecated':
                   deprecated_count += 1
 
+          print(f"active_count={active_count}")
+          print(f"deprecated_count={deprecated_count}")
+          print(f"total_count={len(registry.get('workflows', []))}")
+          EOF
+
           echo "# Workflow Registry Health Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Total workflows: $(python3 -c "import yaml; print(len(yaml.safe_load(open('.github/workflows/registry.yml')).get('workflows', [])))")" >> $GITHUB_STEP_SUMMARY
+          echo "- Total workflows: $total_count" >> $GITHUB_STEP_SUMMARY
           echo "- Active workflows: $active_count" >> $GITHUB_STEP_SUMMARY
           echo "- Deprecated workflows: $deprecated_count" >> $GITHUB_STEP_SUMMARY
           echo "- Last validated: $(date -Iseconds)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Status" >> $GITHUB_STEP_SUMMARY
           echo "✅ Registry is healthy" >> $GITHUB_STEP_SUMMARY
-          EOF
 
   generate-index:
     name: Generate Workflow Index
