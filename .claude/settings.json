@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r \".tool_input.file_path // .tool_response.file_path // empty\" | while IFS= read -r f; do case \"$f\" in *.go) gofmt -w \"$f\" 2>/dev/null;; esac; done",
+            "async": true,
+            "statusMessage": "Formatting Go files..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "if": "Bash(git push *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); echo \"$input\" | jq -e '(.tool_name == \"Bash\") and (.tool_input.command | startswith(\"git push\")) and (.tool_response.success == true)' >/dev/null 2>&1 && { sleep 20; summary=$(\"/c/Program Files/GitHub CLI/gh\" run list --limit 5 --json name,status,conclusion,headBranch 2>/dev/null | jq -r '[.[] | \"\\(.name)=\\(.conclusion // .status)\"] | join(\", \")' 2>/dev/null); if [ -n \"$summary\" ]; then jq -nc --arg s \"CI: $summary\" '{\"systemMessage\":$s}'; fi; } || echo '{\"continue\":true}'",
+            "async": true,
+            "statusMessage": "Checking CI status..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(git push *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "read -r input; cmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"'); case \"$cmd\" in \"git push\"*) gosec ./... >/dev/null 2>&1; gosec_rc=$?; staticcheck ./... >/dev/null 2>&1; staticcheck_rc=$?; if [ $gosec_rc -ne 0 ] || [ $staticcheck_rc -ne 0 ]; then echo \"{\\\"continue\\\":false,\\\"stopReason\\\":\\\"Security check failed: gosec=$gosec_rc staticcheck=$staticcheck_rc\\\",\\\"systemMessage\\\":\\\"Push blocked: security/static check failed\\\"}\"; else echo \"{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"Security checks passed\\\"}\"; fi;; *) echo \"{\\\"continue\\\":true}\";; esac",
+            "timeout": 120,
+            "statusMessage": "Running security checks before push..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "if": "Bash(git commit *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/doc-sync-check.sh",
+            "statusMessage": "Checking documentation sync..."
+          }
+        ]
+      }
+    ]
+  }
+}
