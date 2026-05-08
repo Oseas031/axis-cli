@@ -65,7 +65,7 @@ func (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string
 
 	contract, exists := e.contracts[contractID]
 	if !exists {
-		return fmt.Errorf("contract %s not found", contractID)
+		return types.NewAgentError(types.ErrContractNotFound, fmt.Sprintf("contract %s not found", contractID))
 	}
 
 	if contract.InputSchema == nil {
@@ -75,17 +75,17 @@ func (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string
 	for _, field := range contract.InputSchema.Fields {
 		value, exists := input[field.Name]
 		if field.Required && !exists {
-			return fmt.Errorf("required field %s is missing", field.Name)
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("required field %s is missing", field.Name))
 		}
 
 		if exists {
 			if err := e.validateFieldType(field.Name, value, field.Type); err != nil {
-				return err
+				return types.NewAgentErrorWithCause(types.ErrContractInputInvalid, "input validation failed", err)
 			}
 
 			if len(field.Enum) > 0 {
 				if err := e.validateEnum(field.Name, value, field.Type, field.Enum); err != nil {
-					return err
+					return types.NewAgentErrorWithCause(types.ErrContractInputInvalid, "input validation failed", err)
 				}
 			}
 		}
@@ -101,7 +101,7 @@ func (e *ContractExecutorImpl) ValidateOutput(contractID string, output map[stri
 
 	contract, exists := e.contracts[contractID]
 	if !exists {
-		return fmt.Errorf("contract %s not found", contractID)
+		return types.NewAgentError(types.ErrContractNotFound, fmt.Sprintf("contract %s not found", contractID))
 	}
 
 	if contract.OutputSchema == nil {
@@ -111,17 +111,17 @@ func (e *ContractExecutorImpl) ValidateOutput(contractID string, output map[stri
 	for _, field := range contract.OutputSchema.Fields {
 		value, exists := output[field.Name]
 		if field.Required && !exists {
-			return fmt.Errorf("required field %s is missing", field.Name)
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("required field %s is missing", field.Name))
 		}
 
 		if exists {
 			if err := e.validateFieldType(field.Name, value, field.Type); err != nil {
-				return err
+				return types.NewAgentErrorWithCause(types.ErrContractInputInvalid, "input validation failed", err)
 			}
 
 			if len(field.Enum) > 0 {
 				if err := e.validateEnum(field.Name, value, field.Type, field.Enum); err != nil {
-					return err
+					return types.NewAgentErrorWithCause(types.ErrContractInputInvalid, "input validation failed", err)
 				}
 			}
 		}

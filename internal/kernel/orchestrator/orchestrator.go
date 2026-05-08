@@ -184,17 +184,20 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 		}
 
 		// All retries exhausted
-		errMsg := "dispatch failed"
-		if dispatchErr != nil {
-			errMsg = dispatchErr.Error()
+		retryErr := dispatchErr
+		if retryErr == nil {
+			retryErr = types.NewAgentError(types.ErrTaskTimeout, "dispatch failed")
+		} else if _, ok := retryErr.(*types.AgentError); !ok {
+			retryErr = types.NewAgentErrorWithCause(types.ErrTaskTimeout, "dispatch failed", retryErr)
 		}
 		if maxRetries > 0 {
-			errMsg = fmt.Sprintf("retry exhausted (%d attempts): %s", maxRetries+1, errMsg)
+			retryErr = types.NewAgentErrorWithCause(types.ErrTaskRetryExhausted,
+				fmt.Sprintf("retry exhausted (%d attempts)", maxRetries+1), retryErr)
 		}
 		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed); err != nil {
 			log.Printf("Error updating task status to failed: %v", err)
 		}
-		log.Printf("Task %s failed: %s", task.TaskID, errMsg)
+		log.Printf("Task %s failed: %s", task.TaskID, retryErr.Error())
 		return
 	}
 }

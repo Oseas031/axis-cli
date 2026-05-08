@@ -1,7 +1,10 @@
 // Package types provides core data types for the agent system.
 package types
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // TaskStatus represents the status of a task
 type TaskStatus string
@@ -85,6 +88,46 @@ const (
 	SLAKeyTimeoutMs  = "sla.timeout_ms"
 	SLAKeyMaxRetries = "sla.max_retries"
 )
+
+// ErrorCode is a stable machine-readable error identifier.
+type ErrorCode string
+
+const (
+	ErrSchedulerNotRunning  ErrorCode = "SCHEDULER_NOT_RUNNING"
+	ErrTaskNotFound         ErrorCode = "TASK_NOT_FOUND"
+	ErrTaskAlreadyExists    ErrorCode = "TASK_ALREADY_EXISTS"
+	ErrDependencyCycle      ErrorCode = "DEPENDENCY_CYCLE"
+	ErrContractNotFound     ErrorCode = "CONTRACT_NOT_FOUND"
+	ErrContractInputInvalid ErrorCode = "CONTRACT_INPUT_INVALID"
+	ErrTaskTimeout          ErrorCode = "TASK_TIMEOUT"
+	ErrTaskRetryExhausted   ErrorCode = "TASK_RETRY_EXHAUSTED"
+)
+
+// AgentError is a structured error with a stable error code.
+type AgentError struct {
+	Code    ErrorCode
+	Message string
+	Cause   error
+}
+
+func (e *AgentError) Error() string {
+	if e.Cause != nil {
+		return fmt.Sprintf("[%s] %s: %v", e.Code, e.Message, e.Cause)
+	}
+	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
+}
+
+func (e *AgentError) Unwrap() error {
+	return e.Cause
+}
+
+func NewAgentError(code ErrorCode, message string) *AgentError {
+	return &AgentError{Code: code, Message: message}
+}
+
+func NewAgentErrorWithCause(code ErrorCode, message string, cause error) *AgentError {
+	return &AgentError{Code: code, Message: message, Cause: cause}
+}
 
 // ExecutionResult represents the result of a contract execution
 type ExecutionResult struct {

@@ -2,7 +2,6 @@
 package scheduler
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -51,17 +50,17 @@ func (s *SchedulerImpl) Submit(task *types.AgentTask) error {
 	defer s.mu.Unlock()
 
 	if !s.lifecycle.IsRunning() {
-		return errors.New("scheduler is not running")
+		return types.NewAgentError(types.ErrSchedulerNotRunning, "scheduler is not running")
 	}
 
 	// Check for circular dependencies
 	if err := s.detectCircularDependencies(task.TaskID, task.Dependencies, make(map[string]bool)); err != nil {
-		return fmt.Errorf("circular dependency detected: %w", err)
+		return types.NewAgentErrorWithCause(types.ErrDependencyCycle, "circular dependency detected", err)
 	}
 
 	// Check if task already exists
 	if _, exists := s.taskMap[task.TaskID]; exists {
-		return fmt.Errorf("task %s already exists", task.TaskID)
+		return types.NewAgentError(types.ErrTaskAlreadyExists, fmt.Sprintf("task %s already exists", task.TaskID))
 	}
 
 	// Set initial status
@@ -112,7 +111,7 @@ func (s *SchedulerImpl) Cancel(taskID string) error {
 
 	task, exists := s.taskMap[taskID]
 	if !exists {
-		return fmt.Errorf("task %s not found", taskID)
+		return types.NewAgentError(types.ErrTaskNotFound, fmt.Sprintf("task %s not found", taskID))
 	}
 
 	// Only allow cancellation of pending tasks
@@ -146,7 +145,7 @@ func (s *SchedulerImpl) GetStatus(taskID string) (types.TaskStatus, error) {
 
 	task, exists := s.taskMap[taskID]
 	if !exists {
-		return "", fmt.Errorf("task %s not found", taskID)
+		return "", types.NewAgentError(types.ErrTaskNotFound, fmt.Sprintf("task %s not found", taskID))
 	}
 	return task.Status, nil
 }
@@ -168,7 +167,7 @@ func (s *SchedulerImpl) GetReadyTasks(limit int) ([]*types.AgentTask, error) {
 	defer s.mu.Unlock()
 
 	if !s.lifecycle.IsRunning() {
-		return nil, errors.New("scheduler is not running")
+		return nil, types.NewAgentError(types.ErrSchedulerNotRunning, "scheduler is not running")
 	}
 
 	readyTasks := make([]*types.AgentTask, 0)
@@ -221,7 +220,7 @@ func (s *SchedulerImpl) UpdateTaskStatus(taskID string, status types.TaskStatus)
 
 	task, exists := s.taskMap[taskID]
 	if !exists {
-		return fmt.Errorf("task %s not found", taskID)
+		return types.NewAgentError(types.ErrTaskNotFound, fmt.Sprintf("task %s not found", taskID))
 	}
 
 	task.Status = status

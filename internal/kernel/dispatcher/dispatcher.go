@@ -60,12 +60,13 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 
 	select {
 	case <-timeoutCtx.Done():
+		timeoutErr := types.NewAgentError(types.ErrTaskTimeout, fmt.Sprintf("task %s timed out", task.TaskID))
 		return &types.TaskResult{
 			TaskID:    task.TaskID,
 			Status:    types.TaskStatusFailed,
-			Error:     "task execution timed out",
+			Error:     timeoutErr.Error(),
 			Completed: time.Now(),
-		}, timeoutCtx.Err()
+		}, timeoutErr
 	case result := <-resultChan:
 		return result, nil
 	case err := <-errChan:

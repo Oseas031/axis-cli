@@ -24,7 +24,7 @@ Axis 作为 Agent 原生调度系统，遵循 **"More Context, More Action, Zero
 - ✅ CLAUDE.md 已创建用于 Claude Code 集成
 - ✅ 里程碑2规格文档骨架已创建（requirements、design、tasks、workflow-binding）
 - ✅ 里程碑2 T0（workflow binding）、T1（baseline）、T2（scheduler ready-set）、T2.5（CLI Bash-first 语义修正）已完成
-- ⏳ T3 契约准入层待执行
+- ✅ Milestone 2 全部完成（T0-T7，覆盖率 75.7%）
 
 ## 文档阅读顺序（必须按顺序）
 0. CLAUDE.md - Claude Code 实例专用入口（包含完整项目上下文、构建命令、架构概要）
