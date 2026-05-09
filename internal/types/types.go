@@ -90,6 +90,15 @@ const (
 	SLAKeyFailureClass = "sla.failure_class"
 )
 
+// TaskMetadataKeyExecutor selects the executor type for dispatch.
+// Values: "model" (default) or "human".
+const TaskMetadataKeyExecutor = "executor"
+
+const (
+	ExecutorTypeModel = "model"
+	ExecutorTypeHuman = "human"
+)
+
 // ErrorCode is a stable machine-readable error identifier.
 type ErrorCode string
 

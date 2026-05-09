@@ -188,6 +188,18 @@ func runShell(cmd *cobra.Command, args []string) error {
 				continue
 			}
 			fmt.Printf("Task %s status: %s\n", commandArgs[0], status)
+		case "dag":
+			printDAG()
+		case "resolve":
+			if len(commandArgs) != 1 {
+				fmt.Println("Usage: resolve <call-id>")
+				continue
+			}
+			if err := orch.ResolveCall(commandArgs[0], map[string]any{"status": "resolved"}); err != nil {
+				fmt.Printf("Could not resolve call %s: %v\n", commandArgs[0], err)
+				continue
+			}
+			fmt.Printf("Call %s resolved.\n", commandArgs[0])
 		case "exit", "quit":
 			fmt.Println("Exiting Axis shell.")
 			return nil
@@ -223,7 +235,34 @@ func printShellHelp() {
 	fmt.Println("  help              Show this help message")
 	fmt.Println("  run <task-id>     Submit a task")
 	fmt.Println("  status <task-id>  Show task status")
+	fmt.Println("  dag               Show dependency graph")
+	fmt.Println("  resolve <call-id> Resolve a pending human call")
 	fmt.Println("  exit, quit        Shut down the shell")
+}
+
+func printDAG() {
+	tasks := orch.GetAllTasks()
+	deps := orch.GetDependencyGraph()
+	if len(tasks) == 0 {
+		fmt.Println("No tasks registered.")
+		return
+	}
+	fmt.Printf("%-20s %-12s %s\n", "TASK", "STATUS", "DEPENDS ON")
+	fmt.Printf("%-20s %-12s %s\n", "----", "------", "----------")
+	for _, task := range tasks {
+		depList := deps[task.TaskID]
+		depStr := "(none)"
+		if len(depList) > 0 {
+			depStr = ""
+			for i, d := range depList {
+				if i > 0 {
+					depStr += ", "
+				}
+				depStr += d
+			}
+		}
+		fmt.Printf("%-20s %-12s %s\n", task.TaskID, task.Status, depStr)
+	}
 }
 
 func defaultContract() *types.AgentContract {

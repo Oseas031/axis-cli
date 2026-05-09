@@ -212,3 +212,54 @@ func TestDispatcher_DispatchTimeout(t *testing.T) {
 		t.Error("Result should not be nil")
 	}
 }
+
+func TestDispatcher_HumanExecutorRoute(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatch := NewDispatcher(contractExec, humanExec)
+	dispatch.timeout = 500 * time.Millisecond
+
+	task := &types.AgentTask{
+		TaskID:     "human-task",
+		ContractID: "any",
+		Input:      map[string]any{"prompt": "hello"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeHuman},
+	}
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		humanExec.ResolveCall("human-task", map[string]any{"answer": "hi"}, nil)
+	}()
+
+	ctx := context.Background()
+	result, err := dispatch.Dispatch(ctx, task)
+	if err != nil {
+		t.Fatalf("Human dispatch should succeed after resolution: %v", err)
+	}
+	if result.Status != types.TaskStatusCompleted {
+		t.Errorf("Expected completed, got %s", result.Status)
+	}
+}
+
+func TestDispatcher_HumanExecutorTimeout(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatch := NewDispatcher(contractExec, humanExec)
+	dispatch.timeout = 100 * time.Millisecond
+
+	task := &types.AgentTask{
+		TaskID:     "human-timeout",
+		ContractID: "any",
+		Input:      map[string]any{"prompt": "hello"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeHuman},
+	}
+
+	ctx := context.Background()
+	result, err := dispatch.Dispatch(ctx, task)
+	if err == nil {
+		t.Fatal("Human dispatch should timeout")
+	}
+	if result.Status != types.TaskStatusFailed {
+		t.Errorf("Expected failed status, got %s", result.Status)
+	}
+}

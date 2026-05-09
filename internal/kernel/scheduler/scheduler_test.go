@@ -9,6 +9,10 @@ import (
 	"github.com/axis-cli/axis/internal/types"
 )
 
+type mockLifecycleChecker struct{ running bool }
+
+func (m *mockLifecycleChecker) IsRunning() bool { return m.running }
+
 func TestScheduler_Submit(t *testing.T) {
 	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleMgr := lifecycle.NewLifecycleManager()
@@ -480,5 +484,49 @@ func TestScheduler_UpdateTaskStatus(t *testing.T) {
 	state, _ := stateStore.Load("task-1")
 	if state.Task.StartedAt == nil {
 		t.Error("StartedAt should be set when status is running")
+	}
+}
+
+func TestScheduler_GetAllTasks(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycle := &mockLifecycleChecker{running: true}
+	sched := NewScheduler(stateStore, lifecycle)
+	sched.Submit(&types.AgentTask{TaskID: "a"})
+	sched.Submit(&types.AgentTask{TaskID: "b"})
+	tasks := sched.GetAllTasks()
+	if len(tasks) != 2 {
+		t.Fatalf("Expected 2 tasks, got %d", len(tasks))
+	}
+}
+
+func TestScheduler_GetAllTasks_Empty(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycle := &mockLifecycleChecker{running: true}
+	sched := NewScheduler(stateStore, lifecycle)
+	tasks := sched.GetAllTasks()
+	if len(tasks) != 0 {
+		t.Fatalf("Expected 0 tasks, got %d", len(tasks))
+	}
+}
+
+func TestScheduler_GetDependencyGraph(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycle := &mockLifecycleChecker{running: true}
+	sched := NewScheduler(stateStore, lifecycle)
+	sched.Submit(&types.AgentTask{TaskID: "a"})
+	sched.Submit(&types.AgentTask{TaskID: "b", Dependencies: []string{"a"}})
+	sched.Submit(&types.AgentTask{TaskID: "c", Dependencies: []string{"a", "b"}})
+	graph := sched.GetDependencyGraph()
+	if len(graph) != 3 {
+		t.Fatalf("Expected 3 entries, got %d", len(graph))
+	}
+	if len(graph["a"]) != 0 {
+		t.Errorf("Task a should have no deps, got %v", graph["a"])
+	}
+	if len(graph["b"]) != 1 || graph["b"][0] != "a" {
+		t.Errorf("Task b should depend on a, got %v", graph["b"])
+	}
+	if len(graph["c"]) != 2 {
+		t.Errorf("Task c should have 2 deps, got %v", graph["c"])
 	}
 }

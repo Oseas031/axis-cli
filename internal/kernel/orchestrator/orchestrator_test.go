@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -16,6 +17,21 @@ func TestOrchestrator_NewOrchestrator(t *testing.T) {
 	}
 	if orch.IsRunning() {
 		t.Error("NewOrchestrator should create a stopped orchestrator")
+	}
+}
+
+func TestOrchestrator_WithModelProvider(t *testing.T) {
+	echo := provider.NewEchoModelProvider()
+	orch := NewOrchestrator(WithModelProvider(echo))
+	if orch == nil {
+		t.Fatal("NewOrchestrator should return non-nil")
+	}
+	ctx := context.Background()
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Start should succeed: %v", err)
+	}
+	if err := orch.Shutdown(ctx); err != nil {
+		t.Fatalf("Shutdown should succeed: %v", err)
 	}
 }
 

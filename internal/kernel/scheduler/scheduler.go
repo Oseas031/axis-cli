@@ -216,6 +216,53 @@ func (s *SchedulerImpl) areDependenciesCompleted(dependencies []string) bool {
 	return true
 }
 
+// GetAllTasks returns copies of all tasks currently known to the scheduler.
+func (s *SchedulerImpl) GetAllTasks() []*types.AgentTask {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result := make([]*types.AgentTask, 0, len(s.taskMap))
+	for _, task := range s.taskMap {
+		taskCopy := *task
+		if len(task.Dependencies) > 0 {
+			taskCopy.Dependencies = make([]string, len(task.Dependencies))
+			copy(taskCopy.Dependencies, task.Dependencies)
+		}
+		if task.Metadata != nil {
+			taskCopy.Metadata = make(map[string]string, len(task.Metadata))
+			for k, v := range task.Metadata {
+				taskCopy.Metadata[k] = v
+			}
+		}
+		if task.Input != nil {
+			taskCopy.Input = make(map[string]any, len(task.Input))
+			for k, v := range task.Input {
+				taskCopy.Input[k] = v
+			}
+		}
+		result = append(result, &taskCopy)
+	}
+	return result
+}
+
+// GetDependencyGraph returns the task-to-dependencies mapping for all known tasks.
+func (s *SchedulerImpl) GetDependencyGraph() map[string][]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result := make(map[string][]string, len(s.taskMap))
+	for id, task := range s.taskMap {
+		if len(task.Dependencies) == 0 {
+			result[id] = nil
+		} else {
+			deps := make([]string, len(task.Dependencies))
+			copy(deps, task.Dependencies)
+			result[id] = deps
+		}
+	}
+	return result
+}
+
 // UpdateTaskStatus updates the status of a task
 func (s *SchedulerImpl) UpdateTaskStatus(taskID string, status types.TaskStatus) error {
 	s.mu.Lock()

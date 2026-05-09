@@ -22,6 +22,16 @@ import (
 
 const defaultWorkerLimit = 5
 
+// OrchestratorOption is a functional option for Orchestrator construction.
+type OrchestratorOption func(*Orchestrator)
+
+// WithModelProvider sets the ModelProvider for contract execution.
+func WithModelProvider(p provider.ModelProvider) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.contractExecutor.SetProvider(p)
+	}
+}
+
 // Orchestrator coordinates all kernel modules
 type Orchestrator struct {
 	stateStore         sharedlayer.StateStore
@@ -39,8 +49,9 @@ type Orchestrator struct {
 	wg                 sync.WaitGroup
 }
 
-// NewOrchestrator creates a new orchestrator
-func NewOrchestrator() *Orchestrator {
+// NewOrchestrator creates a new orchestrator with the given options.
+// Default provider is MockModelProvider.
+func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleManager := lifecycle.NewLifecycleManager()
 	sched := scheduler.NewScheduler(stateStore, lifecycleManager)
@@ -50,7 +61,7 @@ func NewOrchestrator() *Orchestrator {
 	dispatch := dispatcher.NewDispatcher(contractExec, humanExec)
 	admissionValidator := admission.NewAdmissionValidator(contractExec)
 
-	return &Orchestrator{
+	orch := &Orchestrator{
 		stateStore:         stateStore,
 		lifecycleManager:   lifecycleManager,
 		scheduler:          sched,
@@ -63,6 +74,12 @@ func NewOrchestrator() *Orchestrator {
 		workerLimit:        defaultWorkerLimit,
 		workerSem:          make(chan struct{}, defaultWorkerLimit),
 	}
+
+	for _, opt := range opts {
+		opt(orch)
+	}
+
+	return orch
 }
 
 // Start starts the orchestrator
@@ -270,4 +287,19 @@ func (o *Orchestrator) IsRunning() bool {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	return o.running
+}
+
+// GetAllTasks returns all tasks known to the scheduler.
+func (o *Orchestrator) GetAllTasks() []*types.AgentTask {
+	return o.scheduler.GetAllTasks()
+}
+
+// GetDependencyGraph returns the task-to-dependencies mapping.
+func (o *Orchestrator) GetDependencyGraph() map[string][]string {
+	return o.scheduler.GetDependencyGraph()
+}
+
+// ResolveCall resolves a pending human call with the given output.
+func (o *Orchestrator) ResolveCall(callID string, output map[string]any) error {
+	return o.humanExecutor.ResolveCall(callID, output, nil)
 }

@@ -79,8 +79,14 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 	}
 }
 
-// executeTask executes a task by routing through the contract executor.
+// executeTask executes a task by routing to the appropriate executor.
 func (d *DispatcherImpl) executeTask(task *types.AgentTask) (*types.TaskResult, error) {
+	executorType := task.Metadata[types.TaskMetadataKeyExecutor]
+
+	if executorType == types.ExecutorTypeHuman {
+		return d.executeHumanTask(task)
+	}
+
 	execResult, err := d.contractExecutor.Execute(task.ContractID, task.Input)
 	if err != nil {
 		return &types.TaskResult{
@@ -97,4 +103,66 @@ func (d *DispatcherImpl) executeTask(task *types.AgentTask) (*types.TaskResult, 
 		Status:    types.TaskStatusCompleted,
 		Completed: time.Now(),
 	}, nil
+}
+
+// executeHumanTask routes a task to the human executor and polls until resolved or timed out.
+func (d *DispatcherImpl) executeHumanTask(task *types.AgentTask) (*types.TaskResult, error) {
+	callReq := &types.HumanCallRequest{
+		CallID:   task.TaskID,
+		TaskID:   task.TaskID,
+		Input:    task.Input,
+		Metadata: task.Metadata,
+	}
+
+	if _, err := d.humanExecutor.ExecuteCall(callReq); err != nil {
+		return &types.TaskResult{
+			TaskID:    task.TaskID,
+			Status:    types.TaskStatusFailed,
+			Error:     fmt.Sprintf("human call failed: %v", err),
+			Completed: time.Now(),
+		}, err
+	}
+
+	pollInterval := 100 * time.Millisecond
+	deadline := time.Now().Add(d.timeout)
+
+	for {
+		status, err := d.humanExecutor.GetCallStatus(task.TaskID)
+		if err != nil {
+			return &types.TaskResult{
+				TaskID:    task.TaskID,
+				Status:    types.TaskStatusFailed,
+				Error:     fmt.Sprintf("call status check failed: %v", err),
+				Completed: time.Now(),
+			}, err
+		}
+
+		switch status {
+		case types.CallStatusCompleted:
+			return &types.TaskResult{
+				TaskID:    task.TaskID,
+				Status:    types.TaskStatusCompleted,
+				Completed: time.Now(),
+			}, nil
+		case types.CallStatusFailed:
+			return &types.TaskResult{
+				TaskID:    task.TaskID,
+				Status:    types.TaskStatusFailed,
+				Error:     "human call failed",
+				Completed: time.Now(),
+			}, fmt.Errorf("human call %s failed", task.TaskID)
+		}
+
+		if time.Now().After(deadline) {
+			timeoutErr := types.NewAgentError(types.ErrTaskTimeout, fmt.Sprintf("human call %s timed out waiting for resolution", task.TaskID))
+			return &types.TaskResult{
+				TaskID:    task.TaskID,
+				Status:    types.TaskStatusFailed,
+				Error:     timeoutErr.Error(),
+				Completed: time.Now(),
+			}, timeoutErr
+		}
+
+		time.Sleep(pollInterval)
+	}
 }
