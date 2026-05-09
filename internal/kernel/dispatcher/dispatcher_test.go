@@ -7,6 +7,7 @@ import (
 
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
+	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -98,6 +99,79 @@ func TestDispatcher_DispatchInvalidInput(t *testing.T) {
 
 	if result.Status != types.TaskStatusFailed {
 		t.Errorf("Expected status %s, got %s", types.TaskStatusFailed, result.Status)
+	}
+}
+
+func TestDispatcher_DispatchParentContextCancelled(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatch := NewDispatcher(contractExec, humanExec)
+
+	contract := &types.AgentContract{
+		ContractID: "test-contract",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "name", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	contractExec.RegisterContract(contract)
+
+	task := &types.AgentTask{
+		TaskID:     "ctx-cancelled",
+		ContractID: "test-contract",
+		Input:      map[string]any{"name": "test"},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	result, err := dispatch.Dispatch(ctx, task)
+	if err == nil {
+		t.Fatal("Dispatch should return error when parent context is cancelled")
+	}
+	if result == nil {
+		t.Fatal("Result should not be nil")
+	}
+	if result.Status != types.TaskStatusFailed {
+		t.Errorf("Expected failed status, got %s", result.Status)
+	}
+}
+
+func TestDispatcher_DispatchErrChan(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatch := NewDispatcher(contractExec, humanExec)
+
+	// Set a provider so Execute goes through the full path
+	contractExec.SetProvider(provider.NewMockModelProvider())
+
+	// Contract whose output schema requires a field the mock won't provide
+	contract := &types.AgentContract{
+		ContractID: "err-chan",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "x", Type: types.FieldTypeString, Required: false}},
+		},
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{{Name: "missing_field", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	contractExec.RegisterContract(contract)
+
+	task := &types.AgentTask{
+		TaskID:     "err-chan-task",
+		ContractID: "err-chan",
+		Input:      map[string]any{"x": "y"},
+	}
+
+	ctx := context.Background()
+	result, err := dispatch.Dispatch(ctx, task)
+	if err == nil {
+		t.Fatal("Dispatch should return error when executeTask fails output validation")
+	}
+	if result == nil {
+		t.Fatal("Result should not be nil")
+	}
+	if result.Status != types.TaskStatusFailed {
+		t.Errorf("Expected failed status, got %s", result.Status)
 	}
 }
 
