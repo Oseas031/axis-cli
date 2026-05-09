@@ -91,25 +91,15 @@ Axis 当前仍需要早期工程结构，但它们不是终点：
 
 ## 当前状态
 
-Milestone 1 已完成并验收。Axis 已具备：
+Milestone 1 ✅ | Milestone 2 ✅ | Milestone 3 Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅
 
-- 基础任务模型
-- FIFO 调度
-- 依赖管理
-- 契约执行器
-- 状态存储
-- 编排器
-- CLI / shell 入口
-- 工作流与 specs 机制
+Axis 已具备：
 
-Milestone 2 正在建设 Autogenesis Loop 的执行底座：
-
-- ready-set DAG 调度
-- contract admission
-- SLA timeout / retry
-- parallel orchestrator
-- stable error codes
-- CLI / docs acceptance
+- Milestone 1：基础任务模型、FIFO 调度、依赖管理、契约执行器、状态存储、编排器、CLI / shell 入口
+- Milestone 2：DAG 并行调度、contract admission、SLA timeout/retry、5-worker 并行 orchestrator、9 个结构化错误码
+- Milestone 3 Phase 1：ModelProvider 接口 + MockModelProvider、ErrDependencyNotReady、SLA failure_class
+- Milestone 3 Phase 2：ModelProvider 可配置化（WithModelProvider）、HumanExecutor 路由、DAG 可见性（dag 命令）
+- Milestone 3 Phase 3：SLA 策略引擎（failure_class 路由 + 退避策略 + 优先级排序）、Tool 接口 + BashTool + 多轮执行循环
 
 ## 快速开始
 
@@ -140,10 +130,12 @@ Windows 本地开发建议输出到 `axis-dev.exe`，避免覆盖或锁定根目
 
 ## 当前最重要的下一步
 
-继续 Milestone 2：
+Milestone 4：
 
 ```text
-T3 contract admission layer
+- 真实 LLM 集成（OpenAI / Anthropic / 本地模型）
+- 更多工具（文件读写、HTTP client）
+- 安全沙箱
 ```
 
-因为自举不能先从真实 LLM 开始，而要先让 Axis 能安全、可验证、可恢复地调度“改进 Axis 自己”的任务 DAG。
+在 M1-M3 验证了调度、执行、工具调用的基础能力后，M4 将打通真实 LLM 作为推理后端。
