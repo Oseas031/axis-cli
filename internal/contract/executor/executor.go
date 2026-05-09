@@ -135,9 +135,12 @@ func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) 
 }
 
 // executeMultiTurn runs a multi-turn tool-calling loop with a maximum of 10 turns.
+// It implements a circuit breaker that aborts after 5 consecutive tool errors.
 func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
 	var history []types.ModelMessage
 	maxTurns := 10
+	consecutiveErrors := 0
+	const circuitBreakerThreshold = 5
 
 	for turn := 0; turn < maxTurns; turn++ {
 		req.History = history
@@ -163,6 +166,12 @@ func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *to
 						ToolCallID: tc.ID,
 						Content:    fmt.Sprintf("error: tool %s not found", tc.Name),
 					})
+					consecutiveErrors++
+					if consecutiveErrors >= circuitBreakerThreshold {
+						return &types.ExecutionResult{
+							Error: fmt.Sprintf("circuit breaker triggered: %d consecutive tool errors, aborting", consecutiveErrors),
+						}, fmt.Errorf("circuit breaker triggered: %d consecutive tool errors", consecutiveErrors)
+					}
 					continue
 				}
 				result, execErr := toolImpl.Execute(context.Background(), tc.Input)
@@ -172,8 +181,16 @@ func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *to
 						ToolCallID: tc.ID,
 						Content:    fmt.Sprintf("error: %v", execErr),
 					})
+					consecutiveErrors++
+					if consecutiveErrors >= circuitBreakerThreshold {
+						return &types.ExecutionResult{
+							Error: fmt.Sprintf("circuit breaker triggered: %d consecutive tool errors, aborting", consecutiveErrors),
+						}, fmt.Errorf("circuit breaker triggered: %d consecutive tool errors", consecutiveErrors)
+					}
 					continue
 				}
+				// Successful execution resets the error counter
+				consecutiveErrors = 0
 				content, _ := safeMarshal(result)
 				history = append(history, types.ModelMessage{
 					Role:       "tool",

@@ -663,7 +663,7 @@ func TestSafeMarshal_PanicRecovery(t *testing.T) {
 	if err == nil {
 		t.Error("safeMarshal should return error when marshal panics")
 	}
-	if data != nil && len(data) > 0 {
+	if len(data) > 0 {
 		t.Error("safeMarshal should return nil or empty data when marshal panics")
 	}
 }
