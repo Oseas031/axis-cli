@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/axis-cli/axis/internal/agent"
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
 	"github.com/axis-cli/axis/internal/types"
@@ -15,12 +16,14 @@ import (
 // Dispatcher interface defines task dispatching to executors
 type Dispatcher interface {
 	Dispatch(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error)
+	SetAgentExecutor(e agent.AgentExecutor)
 }
 
 // DispatcherImpl implements task dispatching
 type DispatcherImpl struct {
 	contractExecutor contractexec.ContractExecutor
 	humanExecutor    humanexec.HumanExecutor
+	agentExecutor    agent.AgentExecutor
 	timeout          time.Duration
 }
 
@@ -31,6 +34,11 @@ func NewDispatcher(contractExec contractexec.ContractExecutor, humanExec humanex
 		humanExecutor:    humanExec,
 		timeout:          30 * time.Minute, // Default timeout for milestone 1
 	}
+}
+
+// SetAgentExecutor sets the agent executor for agent-based task execution.
+func (d *DispatcherImpl) SetAgentExecutor(e agent.AgentExecutor) {
+	d.agentExecutor = e
 }
 
 // Dispatch dispatches a task to the appropriate executor
@@ -94,6 +102,10 @@ func (d *DispatcherImpl) executeTask(task *types.AgentTask) (*types.TaskResult, 
 		return d.executeHumanTask(task)
 	}
 
+	if executorType == types.ExecutorTypeAgent {
+		return d.executeAgentTask(task)
+	}
+
 	execResult, err := d.contractExecutor.Execute(task.ContractID, task.Input)
 	if err != nil {
 		return &types.TaskResult{
@@ -107,6 +119,60 @@ func (d *DispatcherImpl) executeTask(task *types.AgentTask) (*types.TaskResult, 
 	return &types.TaskResult{
 		TaskID:    task.TaskID,
 		Output:    execResult.Output,
+		Status:    types.TaskStatusCompleted,
+		Completed: time.Now(),
+	}, nil
+}
+
+// executeAgentTask routes a task to the agent executor.
+func (d *DispatcherImpl) executeAgentTask(task *types.AgentTask) (*types.TaskResult, error) {
+	if d.agentExecutor == nil {
+		return &types.TaskResult{
+			TaskID:    task.TaskID,
+			Status:    types.TaskStatusFailed,
+			Error:     "agent executor not configured",
+			Completed: time.Now(),
+		}, fmt.Errorf("agent executor not configured")
+	}
+
+	selfContext := &agent.SelfContext{
+		AgentID:        "agent-001",
+		Name:           "MockAgent",
+		Capabilities:   []string{"code_generation", "debugging", "refactoring", "analysis"},
+		CurrentTask:    task.TaskID,
+		CompletedTasks: 0,
+		EarnedAutonomy: agent.AutonomyLevelLow,
+	}
+
+	agentReq := &agent.AgentExecutionRequest{
+		Task:        task,
+		SelfContext: selfContext,
+		Autonomy:    agent.AutonomyLevelLow,
+	}
+
+	agentResult, err := d.agentExecutor.Execute(context.Background(), agentReq)
+	if err != nil {
+		return &types.TaskResult{
+			TaskID:    task.TaskID,
+			Status:    types.TaskStatusFailed,
+			Error:     fmt.Sprintf("agent execution failed: %v", err),
+			Completed: time.Now(),
+		}, fmt.Errorf("agent execution failed: %w", err)
+	}
+
+	if agentResult.Error != "" {
+		return &types.TaskResult{
+			TaskID:    task.TaskID,
+			Output:    agentResult.Output,
+			Status:    types.TaskStatusFailed,
+			Error:     agentResult.Error,
+			Completed: time.Now(),
+		}, fmt.Errorf("agent execution error: %s", agentResult.Error)
+	}
+
+	return &types.TaskResult{
+		TaskID:    task.TaskID,
+		Output:    agentResult.Output,
 		Status:    types.TaskStatusCompleted,
 		Completed: time.Now(),
 	}, nil

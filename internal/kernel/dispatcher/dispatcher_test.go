@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/axis-cli/axis/internal/agent"
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
 	"github.com/axis-cli/axis/internal/model/provider"
@@ -261,5 +262,171 @@ func TestDispatcher_HumanExecutorTimeout(t *testing.T) {
 	}
 	if result.Status != types.TaskStatusFailed {
 		t.Errorf("Expected failed status, got %s", result.Status)
+	}
+}
+
+func TestDispatcher_SetAgentExecutor(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+
+	agentExec := agent.NewMockAgentExecutor(contractExec)
+	dispatcher.SetAgentExecutor(agentExec)
+
+	if dispatcher.agentExecutor == nil {
+		t.Error("agentExecutor should be set after SetAgentExecutor")
+	}
+}
+
+func TestDispatcher_Dispatch_AgentExecutor(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+
+	agentExec := agent.NewMockAgentExecutor(contractExec)
+	dispatcher.SetAgentExecutor(agentExec)
+
+	task := &types.AgentTask{
+		TaskID:     "agent-task-1",
+		ContractID: "test-contract",
+		Input: map[string]any{
+			"input":     "test input",
+			"task_type": "default",
+		},
+		Metadata: map[string]string{
+			"executor": "agent",
+		},
+		Status: types.TaskStatusPending,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := dispatcher.Dispatch(ctx, task)
+	if err != nil {
+		t.Fatalf("Dispatch failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("Result is nil")
+	}
+
+	if result.Status != types.TaskStatusCompleted {
+		t.Errorf("Expected status completed, got %s", result.Status)
+	}
+}
+
+func TestDispatcher_Dispatch_AgentExecutorNotConfigured(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+	// Don't set agent executor
+
+	task := &types.AgentTask{
+		TaskID:     "agent-task-unconfigured",
+		ContractID: "test-contract",
+		Input: map[string]any{
+			"input": "test input",
+		},
+		Metadata: map[string]string{
+			"executor": "agent",
+		},
+		Status: types.TaskStatusPending,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := dispatcher.Dispatch(ctx, task)
+	if err == nil {
+		t.Error("Expected error when agent executor not configured")
+	}
+
+	if result == nil {
+		t.Fatal("Result is nil")
+	}
+
+	if result.Status != types.TaskStatusFailed {
+		t.Errorf("Expected status failed, got %s", result.Status)
+	}
+
+	if result.Error == "" {
+		t.Error("Error should be set when agent executor not configured")
+	}
+}
+
+func TestDispatcher_Dispatch_AgentExecutorCodeGen(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+
+	agentExec := agent.NewMockAgentExecutor(contractExec)
+	dispatcher.SetAgentExecutor(agentExec)
+
+	task := &types.AgentTask{
+		TaskID:     "agent-code-gen",
+		ContractID: "test-contract",
+		Input: map[string]any{
+			"input":     "generate code",
+			"task_type": "code_generation",
+		},
+		Metadata: map[string]string{
+			"executor": "agent",
+		},
+		Status: types.TaskStatusPending,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := dispatcher.Dispatch(ctx, task)
+	if err != nil {
+		t.Fatalf("Dispatch failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("Result is nil")
+	}
+
+	if result.Status != types.TaskStatusCompleted {
+		t.Errorf("Expected status completed, got %s", result.Status)
+	}
+}
+
+func TestDispatcher_Dispatch_AgentExecutorDebugging(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+
+	agentExec := agent.NewMockAgentExecutor(contractExec)
+	dispatcher.SetAgentExecutor(agentExec)
+
+	task := &types.AgentTask{
+		TaskID:     "agent-debug",
+		ContractID: "test-contract",
+		Input: map[string]any{
+			"input":     "debug issue",
+			"task_type": "debugging",
+		},
+		Metadata: map[string]string{
+			"executor": "agent",
+		},
+		Status: types.TaskStatusPending,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := dispatcher.Dispatch(ctx, task)
+	if err != nil {
+		t.Fatalf("Dispatch failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("Result is nil")
+	}
+
+	if result.Status != types.TaskStatusCompleted {
+		t.Errorf("Expected status completed, got %s", result.Status)
 	}
 }
