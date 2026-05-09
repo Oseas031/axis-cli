@@ -426,7 +426,7 @@ workflows:
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508120000"
-    status: active
+    status: deprecated
     category: documentation
     type: architecture
     triggers:
@@ -440,11 +440,12 @@ workflows:
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T12:00:00Z
-    updated_at: 2026-05-08T12:35:00Z
+    updated_at: 2026-05-09T14:45:00Z
     metrics:
       success_rate: 1.0
       avg_duration: 0s
       last_execution: null
+    note: "Deprecated on 2026-05-09 - principle absorbed into design philosophy; no longer a separate workflow. Entry.md principles are now applied directly."
 
 # Workflow Categories
 categories:
