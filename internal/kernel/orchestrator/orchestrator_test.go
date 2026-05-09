@@ -434,6 +434,124 @@ func TestOrchestrator_TaskWithSLA_ZeroRetries(t *testing.T) {
 	}
 }
 
+func TestOrchestrator_TaskWithRetryExhaustion(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+
+	// Register a contract whose output validation will fail because
+	// MockModelProvider never provides the required "missing_field"
+	failingContract := &types.AgentContract{
+		ContractID: "failing-output",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "msg", Type: types.FieldTypeString, Required: false}},
+		},
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{{Name: "missing_field", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	if err := orch.RegisterContract(failingContract); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Failed to start orchestrator: %v", err)
+	}
+
+	task := &types.AgentTask{
+		TaskID:     "retry-fail",
+		ContractID: "failing-output",
+		Input:      map[string]any{"msg": "test"},
+		Metadata:   map[string]string{types.SLAKeyMaxRetries: "3"},
+	}
+	if err := orch.SubmitTask(task); err != nil {
+		t.Fatalf("Failed to submit task: %v", err)
+	}
+
+	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusFailed)
+	if status != types.TaskStatusFailed {
+		t.Errorf("Expected task to fail after retries, got %s", status)
+	}
+}
+
+func TestOrchestrator_TaskFailsNoRetry(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+
+	failingContract := &types.AgentContract{
+		ContractID: "failing-once",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "msg", Type: types.FieldTypeString, Required: false}},
+		},
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{{Name: "required_output", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	if err := orch.RegisterContract(failingContract); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Failed to start orchestrator: %v", err)
+	}
+
+	// max_retries=0 means no retry on first failure, wraps with ErrTaskTimeout
+	task := &types.AgentTask{
+		TaskID:     "fail-no-retry",
+		ContractID: "failing-once",
+		Input:      map[string]any{"msg": "test"},
+		Metadata:   map[string]string{types.SLAKeyMaxRetries: "0"},
+	}
+	if err := orch.SubmitTask(task); err != nil {
+		t.Fatalf("Failed to submit task: %v", err)
+	}
+
+	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusFailed)
+	if status != types.TaskStatusFailed {
+		t.Errorf("Expected task to fail without retry, got %s", status)
+	}
+}
+
+func TestOrchestrator_TaskWithTimeoutRetry(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+
+	failingContract := &types.AgentContract{
+		ContractID: "timeout-fail",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "msg", Type: types.FieldTypeString, Required: false}},
+		},
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{{Name: "missing", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	if err := orch.RegisterContract(failingContract); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Failed to start orchestrator: %v", err)
+	}
+
+	// timeout + retries — timeout triggers retry, retry exhaustion wraps both
+	task := &types.AgentTask{
+		TaskID:     "timeout-retry",
+		ContractID: "timeout-fail",
+		Input:      map[string]any{"msg": "test"},
+		Metadata:   map[string]string{types.SLAKeyTimeoutMs: "60000", types.SLAKeyMaxRetries: "1"},
+	}
+	if err := orch.SubmitTask(task); err != nil {
+		t.Fatalf("Failed to submit task: %v", err)
+	}
+
+	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusFailed)
+	if status != types.TaskStatusFailed {
+		t.Errorf("Expected task to fail with timeout+retry, got %s", status)
+	}
+}
+
 func waitForTaskStatus(t *testing.T, orch *Orchestrator, taskID string, expected types.TaskStatus) types.TaskStatus {
 	t.Helper()
 
