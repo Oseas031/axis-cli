@@ -253,6 +253,32 @@ func TestRunShell_StatusUnknownTask(t *testing.T) {
 	}
 }
 
+func TestRunShell_DagEmpty(t *testing.T) {
+	resetCLIState()
+
+	output := captureStdoutStdin(t, "dag\nexit\n", func() {
+		if err := runShell(&cobra.Command{}, []string{}); err != nil {
+			t.Fatalf("runShell should succeed: %v", err)
+		}
+	})
+	if !strings.Contains(output, "No tasks") {
+		t.Errorf("Expected 'No tasks' for empty dag, got: %s", output)
+	}
+}
+
+func TestRunShell_DagWithTasks(t *testing.T) {
+	resetCLIState()
+
+	output := captureStdoutStdin(t, "run t1\nrun t2\ndag\nexit\n", func() {
+		if err := runShell(&cobra.Command{}, []string{}); err != nil {
+			t.Fatalf("runShell should succeed: %v", err)
+		}
+	})
+	if !strings.Contains(output, "t1") || !strings.Contains(output, "t2") {
+		t.Errorf("Expected dag output to list tasks, got: %s", output)
+	}
+}
+
 func TestRootCmd_InvalidSubcommand(t *testing.T) {
 	root := newAxisRoot()
 	root.SetArgs([]string{"invalid-cmd"})
@@ -343,4 +369,17 @@ func captureStdoutStdin(t *testing.T, input string, fn func()) string {
 
 	outWriter.Close()
 	return <-outCh
+}
+
+func TestRunShell_ResolveMissingArg(t *testing.T) {
+	resetCLIState()
+
+	output := captureStdoutStdin(t, "resolve\nexit\n", func() {
+		if err := runShell(&cobra.Command{}, []string{}); err != nil {
+			t.Fatalf("runShell should succeed: %v", err)
+		}
+	})
+	if !strings.Contains(output, "Usage: resolve") {
+		t.Errorf("Expected usage message, got: %s", output)
+	}
 }

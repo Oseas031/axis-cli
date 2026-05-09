@@ -19,7 +19,7 @@ Axis 作为 Agent 原生调度系统，遵循 **"More Context, More Action, Zero
 - ✅ 里程碑1核心功能已完成并通过验收
 - ✅ 里程碑2全部完成（T0-T7，覆盖率 75.7%）
 - ✅ 里程碑3 Phase 1 完成（ModelProvider 执行路径、覆盖率 88.8%、DAG/SLA 补全）
-- ⏳ 里程碑3 Phase 2 准备中（ModelProvider 可配置化、HumanExecutor 路由）
+- ✅ 里程碑3 Phase 2 完成（ModelProvider 可配置化、HumanExecutor 路由、DAG 增强、覆盖率 86.8%）
 - ⚠️ worktree 隔离已知缺陷：基于 main HEAD 而非当前分支 HEAD，手动创建 worktree（方案 B）可规避
 
 ## 文档阅读顺序（必须按顺序）
