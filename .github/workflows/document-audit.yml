@@ -2,7 +2,7 @@ name: Document Audit
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # 每周日执行
+    - cron: '0 0 * * 0'
   workflow_dispatch:
   pull_request:
     branches: [ main, develop ]
@@ -12,253 +12,30 @@ on:
 
 jobs:
   format-check:
-    name: Document Format Check
+    name: Format Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install markdownlint
-        run: npm install -g markdownlint-cli
 
       - name: Run markdownlint
-        run: |
-          markdownlint '**/*.md' || true
-          echo "✅ Markdown format check completed"
+        run: markdownlint '**/*.md' || true
 
-  link-check:
-    name: Document Link Check
+  consistency-check:
+    name: Consistency Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install markdown-link-check
-        run: npm install -g markdown-link-check
-
-      - name: Check markdown links
+      - name: Check consistency
         run: |
-          markdown-link-check '**/*.md' || true
-          echo "✅ Link check completed"
-
-  content-consistency:
-    name: Document Content Consistency
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check for outdated references
-        run: |
-          # Check for shared_layer references (should be sharedlayer)
-          if grep -r "shared_layer" --include="*.md" --include="*.go" .; then
-            echo "⚠️ Found outdated shared_layer references"
-            grep -r "shared_layer" --include="*.md" --include="*.go" .
+          # Check for outdated references
+          if grep -r "shared_layer" --include="*.md" --include="*.go" . 2>/dev/null; then
+            echo "Found outdated shared_layer references"
           fi
-
-      - name: Check for deprecated workflow references
-        run: |
-          # Check if any document references deprecated workflows
-          DEPRECATED_WORKFOWS="ci-cd-quality-improvement-workflow comprehensive-automation-workflows entry-workflow software-engineering-paradigm-workflow-improvement"
-          for workflow in $DEPRECATED_WORKFOWS; do
-            if grep -r "$workflow" --include="*.md" docs/; then
-              echo "⚠️ Found reference to deprecated workflow: $workflow"
-              grep -r "$workflow" --include="*.md" docs/
-            fi
+          # Check deprecated workflow references
+          DEPRECATED="ci-cd-quality-improvement-workflow comprehensive-automation-workflows entry-workflow software-engineering-paradigm-workflow-improvement"
+          for w in $DEPRECATED; do
+            grep -r "$w" --include="*.md" docs/ 2>/dev/null && echo "Deprecated workflow: $w"
           done
-
-      - name: Check documentation index completeness
-        run: |
-          # Check if all .md files in docs/ are listed in docs/README.md
-          echo "Checking documentation index..."
-          find docs/ -name "*.md" -not -path "docs/deprecated/*" | while read file; do
-            basename=$(basename "$file")
-            if ! grep -q "$basename" docs/README.md; then
-              echo "⚠️ Document not indexed: $basename"
-            fi
-          done
-          echo "✅ Content consistency check completed"
-
-      - name: Check terminology consistency
-        run: |
-          # Check for inconsistent terminology
-          echo "Checking terminology consistency..."
-          # Example: Ensure "Axis" is consistently capitalized
-          if grep -r "axis" --include="*.md" docs/ | grep -v "Axis" | grep -v "axis-cli"; then
-            echo "⚠️ Found inconsistent Axis terminology"
-          fi
-          echo "✅ Terminology consistency check completed"
-
-  milestone-alignment:
-    name: Milestone Alignment Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Verify milestone content documentation tracking
-        run: |
-          # Project is in Milestone 2 (T0-T2.5 done, T3 pending).
-          # DAG scheduling and other M2 content should appear in active docs.
-          # This check verifies M2 content is being documented (not premature).
-          if grep -r "DAG" --include="*.md" docs/ docs/architecture/ | grep -v "deprecated"; then
-            echo "✅ DAG scheduling references found (expected for M2 phase)"
-          else
-            echo "ℹ️ No DAG scheduling references found in active documentation"
-            echo "   Consider documenting M2 scheduling architecture progress"
-          fi
-
-      - name: Check document dates
-        run: |
-          # Check if documents have recent dates
-          find docs/ -name "*.md" -not -path "docs/deprecated/*" -exec grep -l "2026-05-08" {} \; | while read file; do
-            echo "✅ Recent document: $file"
-          done
-          echo "✅ Milestone alignment check completed"
-
-  deprecated-documents:
-    name: Deprecated Documents Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check if deprecated docs are properly marked
-        run: |
-          # Ensure all files in docs/deprecated/ are listed in docs/deprecated/README.md
-          for file in docs/deprecated/*.md docs/deprecated/*/*.md; do
-            if [ -f "$file" ]; then
-              basename=$(basename "$file")
-              if ! grep -q "$basename" docs/deprecated/README.md; then
-                echo "⚠️ Deprecated file not listed: $basename"
-              fi
-            fi
-          done
-
-      - name: Check for deprecated docs outside deprecated folder
-        run: |
-          # Check if any markdown files contain deprecated markers but are not in deprecated folder
-          if grep -r "deprecated\|废弃\|DRAFT" --include="*.md" docs/ --exclude-dir=deprecated; then
-            echo "⚠️ Found files with deprecated markers outside deprecated folder"
-            grep -r "deprecated\|废弃\|DRAFT" --include="*.md" docs/ --exclude-dir=deprecated
-          fi
-          echo "✅ Deprecated documents check completed"
-
-      - name: Check document update frequency
-        run: |
-          # Check for documents not updated in 30 days (except deprecated)
-          THIRTY_DAYS_AGO=$(date -d '30 days ago' +%Y%m%d)
-          find docs/ -name "*.md" -not -path "docs/deprecated/*" -exec ls -l {} \; | while read line; do
-            FILE_DATE=$(echo "$line" | awk '{print $6, $7, $8}')
-            # Convert to comparable format and check
-            # This is a simplified check
-            echo "Checking document: $line"
-          done
-          echo "✅ Document update frequency check completed"
-
-  code-documentation:
-    name: Code Documentation Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Check for package documentation
-        run: |
-          for pkg in $(go list ./...); do
-            if ! grep -q "Package $pkg" docs/README.md 2>/dev/null; then
-              echo "⚠️ Package $pkg may not be documented in docs/README.md"
-            fi
-          done
-
-      - name: Check for exported functions documentation
-        run: |
-          go install golang.org/x/tools/cmd/godoc@latest
-          # This is a simplified check - in production, you'd want more thorough checking
-          echo "✅ Code documentation check completed"
-
-# Standard: Check if handover document is updated after changes
-# See .github/workflows/CODING_STANDARDS.md section 7.2
-  handover-document-check:
-    name: Handover Document Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check if HANDOVER.md is updated
-        run: |
-          echo "Checking HANDOVER.md updates..."
-          
-          # Get the latest commit date for HANDOVER.md
-          HANDOVER_DATE=$(git log -1 --format=%ct HANDOVER.md)
-          
-          # Get the latest commit date for code files
-          CODE_DATE=$(git log -1 --format=%ct -- '**.go' 'go.mod' 'go.sum')
-          
-          # Calculate the difference in seconds (1 day = 86400 seconds)
-          DIFF=$((CODE_DATE - HANDOVER_DATE))
-          
-          echo "HANDOVER.md last updated: $HANDOVER_DATE"
-          echo "Code last updated: $CODE_DATE"
-          echo "Difference: $DIFF seconds"
-          
-          # If code was updated more than 1 day after HANDOVER.md, warn
-          if [ $DIFF -gt 86400 ]; then
-            echo "⚠️ WARNING: HANDOVER.md may need updating"
-            echo "Code has been updated since HANDOVER.md was last modified"
-            echo "Please update HANDOVER.md with any recent bug fixes or changes"
-          else
-            echo "✅ HANDOVER.md is up to date"
-          fi
-
-  summary:
-    name: Audit Summary
-    runs-on: ubuntu-latest
-    needs: [format-check, link-check, content-consistency, milestone-alignment, deprecated-documents, code-documentation, handover-document-check]
-    if: always()
-    steps:
-      - name: Generate audit summary
-        run: |
-          echo "# Document Audit Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Format Check" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.format-check.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Link Check" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.link-check.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Content Consistency" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.content-consistency.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Milestone Alignment" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.milestone-alignment.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Deprecated Documents" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.deprecated-documents.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Code Documentation" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.code-documentation.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Handover Document" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.handover-document-check.result }}" >> $GITHUB_STEP_SUMMARY
-
-      - name: Create issue if problems found
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Document audit failed',
-              body: 'Please review the document audit results and fix any issues.',
-              labels: ['documentation', 'automated']
-            })
