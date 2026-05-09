@@ -205,7 +205,7 @@ workflows:
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508110000"
-    status: active
+    status: deprecated
     category: development
     type: automation
     triggers:
@@ -214,17 +214,18 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: .github/workflows/dev-workflow.yml
-    documentation: .github/workflows/dev-workflow.yml
+    file: docs/deprecated/dev-workflow.md
+    documentation: docs/deprecated/dev-workflow.md
     owner: "dev-team"
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T11:00:00Z
-    updated_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-09T14:55:00Z
     metrics:
       success_rate: null
       avg_duration: null
       last_execution: null
+    note: "Deprecated on 2026-05-09 - pre-commit hook handles local checks; CI duplicate removed per Zero Control."
 
   - id: wf-pr-check
     name: PR Quality Check Workflow
@@ -386,11 +387,12 @@ workflows:
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T11:00:00Z
-    updated_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-09T14:55:00Z
     metrics:
       success_rate: null
       avg_duration: null
       last_execution: null
+    note: "Simplified 2026-05-09 - removed unused benchmark/coverage/ci-metrics jobs; retained only dependency-health."
 
   - id: wf-release
     name: Release Workflow
