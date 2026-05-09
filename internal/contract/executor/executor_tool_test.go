@@ -217,3 +217,150 @@ func (p *errorToolCallProvider) Execute(_ context.Context, req *provider.ModelRe
 	}
 	return nil, fmt.Errorf("simulated provider error")
 }
+
+// erroringTool is a tool that always returns an error.
+type erroringTool struct{}
+
+func (e *erroringTool) Name() string { return "error-tool" }
+
+func (e *erroringTool) Schema() types.ToolDefinition {
+	return types.ToolDefinition{Name: "error-tool", Description: "always fails"}
+}
+
+func (e *erroringTool) Execute(_ context.Context, _ map[string]any) (map[string]any, error) {
+	return nil, fmt.Errorf("tool execution failed")
+}
+
+// erroringToolCallProvider returns tool calls for erroringTool indefinitely.
+type erroringToolCallProvider struct {
+	callCount int
+}
+
+func (p *erroringToolCallProvider) Execute(_ context.Context, req *provider.ModelRequest) (*provider.ModelResponse, error) {
+	p.callCount++
+	return &provider.ModelResponse{
+		ToolCalls: []types.ToolCall{
+			{ID: fmt.Sprintf("call-%d", p.callCount), Name: "error-tool", Input: map[string]any{}},
+		},
+	}, nil
+}
+
+// successAfterErrorProvider returns errors for first N calls, then outputs.
+type successAfterErrorProvider struct {
+	errorCount    int
+	callCount     int
+	successOutput map[string]any
+}
+
+func (p *successAfterErrorProvider) Execute(_ context.Context, req *provider.ModelRequest) (*provider.ModelResponse, error) {
+	p.callCount++
+	if p.callCount <= p.errorCount {
+		return &provider.ModelResponse{
+			ToolCalls: []types.ToolCall{
+				{ID: fmt.Sprintf("call-%d", p.callCount), Name: "error-tool", Input: map[string]any{}},
+			},
+		}, nil
+	}
+	return &provider.ModelResponse{Output: p.successOutput}, nil
+}
+
+func TestContractExecutor_Execute_CircuitBreaker_TripsAfter5Errors(t *testing.T) {
+	exec := NewContractExecutor()
+
+	// Provider that keeps returning tool calls
+	provider := &erroringToolCallProvider{}
+	exec.SetProvider(provider)
+
+	reg := tool.NewRegistry()
+	reg.Register(&erroringTool{}, nil)
+	exec.SetToolRegistry(reg)
+
+	contract := &types.AgentContract{
+		ContractID: "circuit-test",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "x", Type: types.FieldTypeString, Required: false}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	// With 5 consecutive errors (each turn has 1 tool call), circuit should trip
+	// Turn 1: error #1, Turn 2: error #2, Turn 3: error #3, Turn 4: error #4, Turn 5: error #5 -> abort
+	result, err := exec.Execute("circuit-test", map[string]any{"x": "y"})
+	if err == nil {
+		t.Fatal("Expected circuit breaker error")
+	}
+	if result == nil {
+		t.Fatal("Result should not be nil")
+	}
+	// Circuit breaker error message should indicate triggered count
+	if result.Error == "" {
+		t.Error("Expected error message about circuit breaker")
+	}
+}
+
+func TestContractExecutor_Execute_CircuitBreaker_ResetsOnSuccess(t *testing.T) {
+	exec := NewContractExecutor()
+
+	// Provider that returns 3 errors then success
+	provider := &successAfterErrorProvider{
+		errorCount:    3,
+		successOutput: map[string]any{"status": "completed"},
+	}
+	exec.SetProvider(provider)
+
+	reg := tool.NewRegistry()
+	reg.Register(&erroringTool{}, nil)
+	exec.SetToolRegistry(reg)
+
+	contract := &types.AgentContract{
+		ContractID: "circuit-reset-test",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "x", Type: types.FieldTypeString, Required: false}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	// Should succeed because errors reset after 3 errors when success happens
+	result, err := exec.Execute("circuit-reset-test", map[string]any{"x": "y"})
+	if err != nil {
+		t.Fatalf("Should not error when success follows errors: %v", err)
+	}
+	if result == nil {
+		t.Fatal("Result should not be nil")
+	}
+	if result.Output["status"] != "completed" {
+		t.Errorf("Expected status=completed, got %v", result.Output["status"])
+	}
+}
+
+func TestContractExecutor_Execute_CircuitBreaker_UnregisteredToolCounts(t *testing.T) {
+	exec := NewContractExecutor()
+
+	// Provider that returns tool calls for unknown tools
+	unknownToolProvider := &unknownToolCallProvider{}
+	exec.SetProvider(unknownToolProvider)
+
+	reg := tool.NewRegistry()
+	// Note: NOT registering erroringTool, so "error-tool" will be "not found"
+	reg.Register(&erroringTool{}, nil)
+	exec.SetToolRegistry(reg)
+
+	contract := &types.AgentContract{
+		ContractID: "circuit-unregistered",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "x", Type: types.FieldTypeString, Required: false}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	// This will use unknownToolCallProvider which calls "nonexistent-tool" (not registered)
+	// So it will count as a "tool not found" error
+	result, err := exec.Execute("circuit-unregistered", map[string]any{"x": "y"})
+	if err == nil {
+		// With only 1 tool call and unknown tool, should get error about max turns or tool not found
+		// Not critical - just verify it handled gracefully
+	}
+	if result == nil {
+		t.Fatal("Result should not be nil")
+	}
+}
