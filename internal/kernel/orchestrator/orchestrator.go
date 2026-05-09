@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/axis-cli/axis/internal/agent"
 	"github.com/axis-cli/axis/internal/contract/admission"
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
@@ -34,6 +35,13 @@ func WithModelProvider(p provider.ModelProvider) OrchestratorOption {
 	}
 }
 
+// WithAgentExecutor sets the AgentExecutor for agent-based task execution.
+func WithAgentExecutor(e agent.AgentExecutor) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.agentExecutor = e
+	}
+}
+
 // Orchestrator coordinates all kernel modules
 type Orchestrator struct {
 	stateStore         sharedlayer.StateStore
@@ -43,6 +51,7 @@ type Orchestrator struct {
 	contractExecutor   *contractexec.ContractExecutorImpl
 	admissionValidator *admission.AdmissionValidatorImpl
 	humanExecutor      *humanexec.HumanExecutorImpl
+	agentExecutor      agent.AgentExecutor
 	mu                 sync.Mutex
 	running            bool
 	taskSubmitted      chan struct{} // Channel to notify when tasks are submitted
@@ -83,6 +92,11 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 
 	for _, opt := range opts {
 		opt(orch)
+	}
+
+	// Inject agent executor into dispatcher if configured
+	if orch.agentExecutor != nil {
+		orch.dispatcher.SetAgentExecutor(orch.agentExecutor)
 	}
 
 	return orch

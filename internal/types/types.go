@@ -113,6 +113,7 @@ const TaskMetadataKeyExecutor = "executor"
 const (
 	ExecutorTypeModel = "model"
 	ExecutorTypeHuman = "human"
+	ExecutorTypeAgent = "agent"
 )
 
 // ErrorCode is a stable machine-readable error identifier.
