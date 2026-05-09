@@ -6,7 +6,7 @@
 **项目定位**：Agent 原生调度系统；Agent 自因化的早期执行底座
 **核心能力**：任务调度、依赖管理、契约准入、上下文供给、执行编排、验证与反思基础
 **技术栈**：Go 1.26+
-**当前状态**：里程碑1 ✅ | 里程碑2 ✅ (2026-05-08) | 里程碑3 准备中
+**当前状态**：里程碑1 ✅ | 里程碑2 ✅ (2026-05-08) | 里程碑3 Phase 1 ✅ (2026-05-09) | Phase 2 准备中
 
 **重要说明**：
 - **终态**：Agent 原生调度系统，逐步走向 Agent 自因化
@@ -39,6 +39,26 @@ Axis 的方向不是自动化，而是自因化。当前自举起点已经发生
 这些结构不是永久控制 Agent 的铁笼，而是帮助 Agent 积累胜任力、赢得自主权，并最终将外部结构内化、重写、扬弃为自身行动结构的发生条件。
 
 M2 不是普通并行调度里程碑，而是未来 **Autogenesis Loop** 的执行底座。
+
+M3 Phase 1 打通了执行路径：Dispatcher 不再返回硬编码桩结果，任务真正流经 ValidateInput → ModelProvider.Execute → ValidateOutput → TaskResult。
+
+### 测试覆盖率
+
+当前覆盖率 **88.8%**（2026-05-09），超过 85% 目标：
+
+| 模块 | 覆盖率 |
+|---|---|
+| cmd/axis | 68.0% |
+| contract/admission | 100.0% |
+| contract/executor | 94.3% |
+| human/executor | 100.0% |
+| kernel/dispatcher | 95.5% |
+| kernel/lifecycle | 100.0% |
+| kernel/orchestrator | 87.0% |
+| kernel/scheduler | 93.8% |
+| kernel/sharedlayer | 100.0% |
+| model/provider | 100.0% |
+| types | 100.0% |
 
 ## 交互设计思想：Bash is All You Need
 
@@ -212,18 +232,17 @@ Axis 的默认交互面遵循 **"bash is all you need"**：
 - ✅ monitoring-workflow.yml github-script workflow 属性访问错误 - 已修复（2026-05-08）
 - ✅ PR Quality Check git diff 浅克隆失败 - 已修复（2026-05-08，添加 fetch-depth:0 + || true 兜底）
 - ✅ Monitoring Performance Benchmark/Dependency Health/CI Metrics 失败 - 已在 milestone1-acceptance 分支修复，合并到 main 后自动解决
+- ⚠️ `EnterWorktree`（及 Agent `isolation: "worktree"`）基于默认分支 `main` HEAD 创建 worktree，非当前分支 HEAD。并行开发使用手动 worktree：`git worktree add -b <name> .claude/worktrees/<name> <commit>` + `EnterWorktree --path`
 - ⚠️ sign-artifacts job 未使用 - 待处理（里程碑1后）
 
 ### 下一步行动
-1. ✅ 使用现有工作流完成里程碑1验收（不创建新工作流）- 已完成
+1. ✅ 使用现有工作流完成里程碑1验收 - 已完成
 2. ✅ 生成里程碑1验收报告 - 已完成
-3. ✅ 准备里程碑2设计骨架（DAG并行调度、契约准入规则、SLA约定、错误码）- 已完成
-4. ✅ 确认 `docs/specs/milestone2/workflow-binding.md` - 已完成
-5. ✅ 完成 T1 baseline verification - 已完成
-6. ✅ 完成 T2 scheduler ready-set API - 已完成
-7. ✅ 完成 T2.5 普通 CLI Bash-first 语义修正 - 已完成
-8. 执行 T3 契约准入层
-9. ✅ 推送 milestone1-acceptance 到 GitHub，同步本地配置与远程仓库状态 - 已完成
+3. ✅ M2 全部完成（T0-T7）
+4. ✅ M3 Phase 1 全部完成（ModelProvider + 覆盖率 + DAG/SLA 补全）
+5. 执行 M3 Phase 2: ModelProvider 可配置化
+6. 执行 M3 Phase 2: HumanExecutor 路由
+7. 推送并验证 CI 通过
 
 ## 项目结构
 
@@ -240,9 +259,13 @@ axis-cli/
 │   │   ├── orchestrator/ # 编排器
 │   │   └── sharedlayer/ # 共享状态存储
 │   ├── contract/        # 契约层
+│   │   ├── admission/   # 契约准入验证
 │   │   └── executor/    # 契约执行器
-│   └── human/           # Human-as-a-Function
-│       └── executor/    # Human 执行器
+│   ├── human/           # Human-as-a-Function
+│   │   └── executor/    # Human 执行器
+│   ├── model/           # 模型层
+│   │   └── provider/    # ModelProvider 接口 + Mock 实现
+│   └── types/           # 核心数据类型 + 错误码
 ├── scripts/             # 工具脚本
 │   ├── pre-commit-hook.py # Pre-commit 验证脚本
 │   └── install-hooks.sh  # Hook 安装脚本
@@ -275,15 +298,26 @@ axis-cli/
 - SLA 约定
 - 工具调用层
 
-### 里程碑2：并行调度
+### 里程碑2：并行调度（已完成）
 - DAG 并行调度
 - 契约准入规则
-- SLA 约定
+- SLA 约定（timeout/retries/failure_class）
+- 结构化错误码（9 codes）
+- 并行执行循环（5 workers）
+- 重试与耗尽包装
 
-### 里程碑3：生态成熟
+### 里程碑3 Phase 1：执行路径打通（已完成）
+- ModelProvider 接口 + MockModelProvider（echo/反射输出）
+- Dispatcher → ContractExecutor → ModelProvider 执行路径
+- `ErrDependencyNotReady` 错误码 + `sla.failure_class` 常量
+- 失败依赖处理（failed = done，不阻塞下游）
+- 覆盖率 88.8%
+
+### 里程碑3 Phase 2：生态成熟（待开始）
+- ModelProvider 可配置化
+- HumanExecutor 路由
 - 工具调用层
-- 完整异常处理
-- 多客户端支持
+- DAG 增强
 
 ## 关键技术决策
 
@@ -366,7 +400,7 @@ axis-cli/
 
 ---
 
-**交接时间**：2026-05-08 21:00
-**交接状态**：里程碑1已验收；里程碑2已完成 T0-T2.5；GitHub 基础设施完备（gh CLI 接入、workflow 修复验证通过、CLAUDE.md 创建）；PR #1 所有 CI 门禁通过
+**交接时间**：2026-05-09 08:50
+**交接状态**：里程碑1 ✅ | 里程碑2 ✅ | 里程碑3 Phase 1 ✅（覆盖率 88.8%，执行路径打通，DAG/SLA 补全）
 **里程碑1验收**：✅ 通过（2026-05-08）
-**下一步行动**：从 T3 开始实现契约准入层；Monitoring 修复等 PR 合并到 main 后生效；Markdown 风格问题单独走文档清理
+**下一步行动**：M3 Phase 2（ModelProvider 可配置化、HumanExecutor 路由）；推送并验证 CI
