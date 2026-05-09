@@ -38,6 +38,26 @@ workflow、contract、permission rule、spec 是过渡性结构。
 3. 不借校正任务引入 Web UI、复杂 TUI、外部数据库、daemon 或真实 LLM SDK。
 4. 确需新增复杂度时，先创建独立 spec。
 
+## 可测试性设计约束
+
+新增 CLI 命令或后台函数时：
+
+1. 阻塞在信号/全局状态的函数应接受可注入的 `context.Context` 或 shutdown channel
+2. 避免直接在函数内调用 `os.Exit()`；将错误返回给调用者处理
+3. 避免依赖 `syscall.Kill` 等不可移植 API；Windows 不响应程序化信号
+4. 若某路径在当前平台不可测试，在测试文件中明确标记原因，不可静默跳过
+
+## 测试设计规范
+
+覆盖率提升不以测试数量为目标，以未覆盖分支路径为目标：
+
+```bash
+go test -coverprofile=cov.out ./<package>/...
+go tool cover -func=cov.out | grep -v "100.0%"
+# 针对 <100% 的函数设计测试用例
+# 优先覆盖：错误处理 > 边界条件 > 并发路径 > 正常路径
+```
+
 ## 注意事项
 
 - 不做破坏性编辑。

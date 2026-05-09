@@ -41,6 +41,34 @@ Agent 接到任务后，先读入口，再选择最小上游 workflow 组合。
 - 多层版本自动发布机制
 - 独立 workflow 调度器
 
+## 并行开发隔离规则
+
+Agent `isolation: "worktree"` 存在已知缺陷：创建的 worktree 基于默认分支 `main` HEAD，而非当前分支 HEAD。并行开发时使用手动 worktree：
+
+```bash
+# 创建（从当前 commit）
+git worktree add -b <branch-name> .claude/worktrees/<name> <commit>
+
+# 使用（主会话通过 EnterWorktree --path 进入）
+
+# 回收
+git worktree remove --force .claude/worktrees/<name>
+git branch -D <branch-name>
+```
+
+同一分支不能同时在两个 worktree checkout，必须基于 commit SHA 创建新分支。
+
+## 文档同步清单
+
+进度更新必须同步以下 4 个文件：
+
+| 文件 | 更新内容 |
+|---|---|
+| `CLAUDE.md` | Current Status + Architecture + Runtime Flow + 约束/缺陷 |
+| `HANDOVER.md` | 交接状态 + 覆盖率 + 已知问题 + 下一步行动 |
+| `AGENT_INSTRUCTIONS.md` | 当前状态摘要 |
+| `docs/current-progress.md` | 已完成/进行中/待处理 + 最近提交 |
+
 ## 与设计哲学的关系
 
 - **More Context**：workflow 提供上下文和路由。
