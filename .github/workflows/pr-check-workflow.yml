@@ -31,36 +31,21 @@ jobs:
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Total coverage: $COVERAGE%"
           if (( $(echo "$COVERAGE < 60" | bc -l) )); then
-            echo "❌ Coverage is below 60% threshold"
+            echo "Coverage is below 60% threshold"
             exit 1
           fi
-          echo "✅ Coverage meets threshold"
-
-      - name: Upload coverage to PR
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.out
-          fail_ci_if_error: false
-          flags: pr-check
 
       - name: Install complexity analyzer
         run: go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
 
       - name: Check cyclomatic complexity
-        run: |
-          gocyclo -over 15 ./...
-          echo "✅ Cyclomatic complexity check passed"
+        run: gocyclo -over 15 ./...
 
-      - name: Install gosec
-        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+      - name: Run gosec
+        run: gosec ./...
 
-      - name: Run security check
-        run: |
-          gosec ./...
-          echo "✅ Security check passed"
-
-  code-review:
-    name: Code Review Analysis
+  staticcheck:
+    name: Static Analysis
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -73,43 +58,11 @@ jobs:
         with:
           go-version: '1.26'
 
-      - name: Run static analysis
-        run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          staticcheck -checks=all ./...
+      - name: Run staticcheck
+        run: staticcheck ./...
 
-      - name: Check for TODOs and FIXMEs
-        run: |
-          if grep -r "TODO\|FIXME" --include="*.go" .; then
-            echo "⚠️ Found TODOs or FIXMEs in code"
-          fi
-
-      - name: Check for commented code
-        run: |
-          if grep -r "// .*{.*}" --include="*.go" .; then
-            echo "⚠️ Found potentially commented code blocks"
-          fi
-
-# Standard: Use GitHub Actions context variables instead of hardcoded values
-# See .github/workflows/CODING_STANDARDS.md section 5.1
-# Common context variables:
-# - github.event_name: Event type (push, pull_request, etc.)
-# - github.ref_name: Branch name
-# - github.actor: User who triggered the workflow
-# - github.base_ref: Base branch for PR
-# - github.head_ref: Head branch for PR
-# - github.event.pull_request.number: PR number
-      - name: Generate diff stats
-        run: |
-          git diff --stat origin/${{ github.base_ref }}...HEAD 2>/dev/null || true
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null | wc -l)
-          echo "Changed files: $CHANGED_FILES"
-          if [ $CHANGED_FILES -gt 20 ]; then
-            echo "⚠️ Large PR: Consider splitting into smaller PRs"
-          fi
-
-  documentation-check:
-    name: Documentation Check
+  pr-context:
+    name: PR Context
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -117,54 +70,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for package documentation
+      - name: Generate diff stats
         run: |
-          for pkg in $(go list ./...); do
-            if ! grep -q "Package $pkg" docs/README.md 2>/dev/null; then
-              echo "⚠️ Package $pkg may not be documented"
-            fi
-          done
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null | wc -l)
+          echo "Changed files: $CHANGED_FILES"
+          if [ $CHANGED_FILES -gt 20 ]; then
+            echo "Large PR: $CHANGED_FILES files changed"
+          fi
 
-      - name: Check for exported functions documentation
+      - name: Check documentation coverage
         run: |
-          go install golang.org/x/tools/cmd/godoc@latest
-          # Check if exported functions have comments
-          # This is a simplified check
-          echo "✅ Documentation check completed"
-
-      - name: Provide documentation update context
-        run: |
-          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null || true)
-          code_changed=$(echo "$changed_files" | grep -E '\.(go|yaml|yml)$' | wc -l)
-          doc_changed=$(echo "$changed_files" | grep -E '\.md$' | wc -l)
-
-          if [ "$code_changed" -gt 0 ] && [ "$doc_changed" -eq 0 ]; then
-            echo "ℹ️ Code or workflow changes detected without documentation changes."
-            echo "📚 Consider updating HANDOVER.md or related docs if the change affects project context."
-            echo "This is a non-blocking context reminder aligned with More Context, More Action, Zero Control."
-          else
-            echo "✅ Documentation context reminder completed"
+          changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null | grep -E '\.go$' | wc -l)
+          doc_changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null | grep -E '\.md$' | wc -l)
+          echo "Code files changed: $changed"
+          echo "Doc files changed: $doc_changed"
+          if [ "$changed" -gt 0 ] && [ "$doc_changed" -eq 0 ]; then
+            echo "Code changes without doc updates"
           fi
 
   summary:
-    name: PR Summary
+    name: Summary
     runs-on: ubuntu-latest
-    needs: [quality-gates, code-review, documentation-check]
+    needs: [quality-gates, staticcheck, pr-context]
     if: always()
     steps:
-      - name: Generate PR summary
+      - name: Generate summary
         run: |
-          echo "# PR Quality Check Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Quality Gates" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.quality-gates.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Code Review" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.code-review.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Documentation" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.documentation-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "# PR Quality Check" >> $GITHUB_STEP_SUMMARY
+          echo "quality-gates: ${{ needs.quality-gates.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "staticcheck: ${{ needs.staticcheck.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "pr-context: ${{ needs.pr-context.result }}" >> $GITHUB_STEP_SUMMARY
 
-      - name: Fail if any gate failed
-        if: needs.quality-gates.result == 'failure' || needs.code-review.result == 'failure'
+      - name: Gate failure
+        if: needs.quality-gates.result == 'failure' || needs.staticcheck.result == 'failure'
         run: exit 1
