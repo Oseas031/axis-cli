@@ -91,7 +91,7 @@ Axis 当前仍需要早期工程结构，但它们不是终点：
 
 ## 当前状态
 
-Milestone 1 ✅ | Milestone 2 ✅ | Milestone 3 Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅
+Milestone 1 ✅ | Milestone 2 ✅ | Milestone 3 Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ | M4 🚧
 
 Axis 已具备：
 
@@ -100,6 +100,10 @@ Axis 已具备：
 - Milestone 3 Phase 1：ModelProvider 接口 + MockModelProvider、ErrDependencyNotReady、SLA failure_class
 - Milestone 3 Phase 2：ModelProvider 可配置化（WithModelProvider）、HumanExecutor 路由、DAG 可见性（dag 命令）
 - Milestone 3 Phase 3：SLA 策略引擎（failure_class 路由 + 退避策略 + 优先级排序）、Tool 接口 + BashTool + 多轮执行循环
+- M4 Phase 4.1：Anthropic / OpenAI 真实 LLM provider、token accounting、safe JSON
+- M4 Phase 4.2：FileReadTool、FileWriteTool、HTTPClientTool、tool permission scopes
+- M4 Phase 4.3：Circuit breaker、provider wiring、test coverage (provider 91.8%, tool 93.7%, executor 95.1%)
+- M4 Phase 4.4：CLI `--provider` flag、shell `tools` command（进行中）
 
 ## 快速开始
 
@@ -107,6 +111,32 @@ Axis 已具备：
 go test ./...
 go build -o axis-dev.exe cmd/axis/main.go
 .\axis-dev.exe run my-task
+```
+
+### Provider Selection
+
+```bash
+# Use Anthropic Claude
+.\axis-dev.exe run my-task --provider anthropic
+
+# Use OpenAI GPT
+.\axis-dev.exe run my-task --provider openai
+
+# Use Mock (default)
+.\axis-dev.exe run my-task --provider mock
+```
+
+### Environment Variables
+
+```bash
+export ANTHROPIC_API_KEY=sk-...
+export OPENAI_API_KEY=sk-...
+```
+
+Windows:
+```cmd
+set ANTHROPIC_API_KEY=sk-...
+set OPENAI_API_KEY=sk-...
 ```
 
 Windows 本地开发建议输出到 `axis-dev.exe`，避免覆盖或锁定根目录下既有 `axis.exe`。

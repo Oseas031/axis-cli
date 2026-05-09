@@ -11,13 +11,15 @@ import (
 	"syscall"
 
 	"github.com/axis-cli/axis/internal/kernel/orchestrator"
+	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/types"
 	"github.com/spf13/cobra"
 )
 
 var (
-	orch      *orchestrator.Orchestrator
-	orchMutex sync.Once
+	orch         *orchestrator.Orchestrator
+	orchMutex    sync.Once
+	providerFlag string
 )
 
 func main() {
@@ -54,6 +56,8 @@ func main() {
 	}
 
 	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd)
+
+	runCmd.Flags().StringVar(&providerFlag, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -200,6 +204,8 @@ func runShell(cmd *cobra.Command, args []string) error {
 				continue
 			}
 			fmt.Printf("Call %s resolved.\n", commandArgs[0])
+		case "tools":
+			printTools()
 		case "exit", "quit":
 			fmt.Println("Exiting Axis shell.")
 			return nil
@@ -212,7 +218,12 @@ func runShell(cmd *cobra.Command, args []string) error {
 
 func initOrchestrator() {
 	orchMutex.Do(func() {
-		orch = orchestrator.NewOrchestrator()
+		p, err := provider.NewProvider(providerFlag)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to create provider %q: %v, using mock\n", providerFlag, err)
+			p = provider.NewMockModelProvider()
+		}
+		orch = orchestrator.NewOrchestrator(orchestrator.WithModelProvider(p))
 		if err := orch.RegisterContract(defaultContract()); err != nil {
 			fmt.Fprintf(os.Stderr, "Error registering default contract: %v\n", err)
 		}
@@ -237,7 +248,16 @@ func printShellHelp() {
 	fmt.Println("  status <task-id>  Show task status")
 	fmt.Println("  dag               Show dependency graph")
 	fmt.Println("  resolve <call-id> Resolve a pending human call")
+	fmt.Println("  tools              Show available tools")
 	fmt.Println("  exit, quit        Shut down the shell")
+}
+
+func printTools() {
+	fmt.Println("Available tools:")
+	fmt.Println("  bash           Execute shell commands")
+	fmt.Println("  file_read      Read file contents")
+	fmt.Println("  file_write     Write file contents")
+	fmt.Println("  http_request   Make HTTP requests")
 }
 
 func printDAG() {
