@@ -3,6 +3,7 @@ package executor
 import (
 	"testing"
 
+	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -537,5 +538,102 @@ func TestContractExecutor_Execute_NonExistentContract(t *testing.T) {
 	}
 	if result.Error == "" {
 		t.Error("Result.Error should contain error message on contract not found")
+	}
+}
+
+func TestContractExecutor_SetProvider(t *testing.T) {
+	exec := NewContractExecutor()
+	p := provider.NewMockModelProvider()
+	exec.SetProvider(p)
+}
+
+func TestContractExecutor_Execute_WithProvider(t *testing.T) {
+	exec := NewContractExecutor()
+	exec.SetProvider(provider.NewMockModelProvider())
+
+	contract := &types.AgentContract{
+		ContractID: "provider-test",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "msg", Type: types.FieldTypeString, Required: false}},
+		},
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{{Name: "status", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	result, err := exec.Execute("provider-test", map[string]any{"msg": "hello"})
+	if err != nil {
+		t.Fatalf("Execute with provider should succeed: %v", err)
+	}
+	if result.Output["msg"] != "hello" {
+		t.Errorf("Expected echoed msg, got %v", result.Output["msg"])
+	}
+	if result.Output["provider"] != "mock" {
+		t.Errorf("Expected provider=mock, got %v", result.Output["provider"])
+	}
+}
+
+func TestContractExecutor_Execute_ProviderOutputValidationFails(t *testing.T) {
+	exec := NewContractExecutor()
+	exec.SetProvider(provider.NewMockModelProvider())
+
+	contract := &types.AgentContract{
+		ContractID: "provider-fail",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "msg", Type: types.FieldTypeString, Required: false}},
+		},
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{{Name: "nonexistent_field", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	result, err := exec.Execute("provider-fail", map[string]any{"msg": "test"})
+	if err == nil {
+		t.Error("Execute should fail when output validation fails")
+	}
+	if result == nil {
+		t.Fatal("Result should not be nil")
+	}
+	if result.Error == "" {
+		t.Error("Result.Error should contain error message")
+	}
+}
+
+func TestContractExecutor_ValidateOutput_MissingRequired(t *testing.T) {
+	exec := NewContractExecutor()
+
+	contract := &types.AgentContract{
+		ContractID: "output-req",
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{{Name: "result", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	err := exec.ValidateOutput("output-req", map[string]any{})
+	if err == nil {
+		t.Error("ValidateOutput should fail when required field is missing")
+	}
+}
+
+func TestContractExecutor_ValidateEnum_IntFloat64InEnum(t *testing.T) {
+	exec := NewContractExecutor()
+
+	contract := &types.AgentContract{
+		ContractID: "int-enum-float",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{
+				{Name: "priority", Type: types.FieldTypeInt, Enum: []string{"1", "2", "42"}},
+			},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	// Float64 value that converts cleanly to int and is in enum
+	err := exec.ValidateInput("int-enum-float", map[string]any{"priority": float64(42)})
+	if err != nil {
+		t.Errorf("Float64 42 should be valid int 42 in enum: %v", err)
 	}
 }
