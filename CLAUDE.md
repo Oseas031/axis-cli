@@ -15,6 +15,7 @@ Axis is an **Agent-native scheduling system** — the execution substrate for Ag
 - **Milestone 1**: Complete and accepted (2026-05-08). FIFO scheduling, dependency management, contract validation, state storage, orchestrator, CLI/shell.
 - **Milestone 2**: Complete (2026-05-08). DAG parallel scheduling, contract admission layer, SLA parsing/execution/timeout, structured error codes (9 codes), parallel execution loop (5 workers), retry with exhaustion wrapping.
 - **Milestone 3 Phase 1**: Complete (2026-05-09). ModelProvider interface + MockModelProvider, Dispatcher → ModelProvider execution path, `ErrDependencyNotReady` + `sla.failure_class`, failed-dependency handling (failed = done), coverage raised to 88.8%.
+- **Milestone 3 Phase 2**: Complete (2026-05-09). ModelProvider configurable (WithModelProvider option, EchoModelProvider, NewProvider factory), HumanExecutor routing (metadata key "executor", polling/resolve), DAG visibility (GetAllTasks/GetDependencyGraph, dag command), coverage 86.8%.
 
 ## Build, Test, Lint
 
