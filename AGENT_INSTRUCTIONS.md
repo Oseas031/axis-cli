@@ -15,16 +15,12 @@ Axis 作为 Agent 原生调度系统，遵循 **"More Context, More Action, Zero
 
 详见 [Agent 原生设计思想](docs/architecture/agent-native-design-philosophy.md)
 
-## 当前状态（2026-05-08）
+## 当前状态（2026-05-09）
 - ✅ 里程碑1核心功能已完成并通过验收
-- ✅ CI/CD流水线已建立
-- ✅ 工作流改造完成
-- ✅ 文档系统完善
-- ✅ 工作流索引创建
-- ✅ CLAUDE.md 已创建用于 Claude Code 集成
-- ✅ 里程碑2规格文档骨架已创建（requirements、design、tasks、workflow-binding）
-- ✅ 里程碑2 T0（workflow binding）、T1（baseline）、T2（scheduler ready-set）、T2.5（CLI Bash-first 语义修正）已完成
-- ✅ Milestone 2 全部完成（T0-T7，覆盖率 75.7%）
+- ✅ 里程碑2全部完成（T0-T7，覆盖率 75.7%）
+- ✅ 里程碑3 Phase 1 完成（ModelProvider 执行路径、覆盖率 88.8%、DAG/SLA 补全）
+- ⏳ 里程碑3 Phase 2 准备中（ModelProvider 可配置化、HumanExecutor 路由）
+- ⚠️ worktree 隔离已知缺陷：基于 main HEAD 而非当前分支 HEAD，手动创建 worktree（方案 B）可规避
 
 ## 文档阅读顺序（必须按顺序）
 0. CLAUDE.md - Claude Code 实例专用入口（包含完整项目上下文、构建命令、架构概要）

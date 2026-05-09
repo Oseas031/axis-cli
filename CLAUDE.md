@@ -13,7 +13,8 @@ Axis is an **Agent-native scheduling system** — the execution substrate for Ag
 ## Current Status
 
 - **Milestone 1**: Complete and accepted (2026-05-08). FIFO scheduling, dependency management, contract validation, state storage, orchestrator, CLI/shell.
-- **Milestone 2**: In progress. Tasks T0-T2.5 complete; **T3 (contract admission layer) is the next pending task**. T4-T7 remain.
+- **Milestone 2**: Complete (2026-05-08). DAG parallel scheduling, contract admission layer, SLA parsing/execution/timeout, structured error codes (9 codes), parallel execution loop (5 workers), retry with exhaustion wrapping.
+- **Milestone 3 Phase 1**: Complete (2026-05-09). ModelProvider interface + MockModelProvider, Dispatcher → ModelProvider execution path, `ErrDependencyNotReady` + `sla.failure_class`, failed-dependency handling (failed = done), coverage raised to 88.8%.
 
 ## Build, Test, Lint
 
@@ -42,7 +43,7 @@ gocyclo -over 15 .
 gosec ./...
 ```
 
-CI enforces: `gofmt`, `go vet`, `staticcheck`, `go test -race` with ≥60% coverage, `gocyclo`, `gosec`, and cross-platform build (linux/windows/darwin).
+CI enforces: `gofmt`, `go vet`, `staticcheck`, `go test -race` with ≥85% coverage, `gocyclo`, `gosec`, and cross-platform build (linux/windows/darwin).
 
 ## Architecture
 
@@ -56,14 +57,18 @@ Single external dependency: `github.com/spf13/cobra` (CLI only). All core module
 
 ```
 Orchestrator
-  ├── StateStore        (MemoryStateStore — in-memory map + RWMutex)
-  ├── LifecycleManager  (running flag, graceful shutdown via context cancel + done chan)
-  ├── Scheduler         (FIFO queue, dependency resolution, cycle detection)
+  ├── StateStore          (MemoryStateStore — in-memory map + RWMutex)
+  ├── LifecycleManager    (running flag, graceful shutdown via context cancel + done chan)
+  ├── Scheduler           (FIFO queue, dependency resolution, cycle detection)
   │     depends on: StateStore, LifecycleManager (as LifecycleChecker)
-  ├── Dispatcher        (routes tasks to executors, 30-min timeout)
+  ├── AdmissionValidator  (pre-scheduling: TaskID, ContractID, input schema, SLA metadata)
+  │     depends on: ContractExecutor
+  ├── Dispatcher          (routes tasks to executors, 30-min timeout)
   │     depends on: ContractExecutor, HumanExecutor
-  ├── ContractExecutor  (schema validation against registered contracts)
-  └── HumanExecutor     (human-in-the-loop call lifecycle — wired but not yet invoked)
+  ├── ContractExecutor    (schema validation + ModelProvider invocation)
+  │     depends on: ModelProvider
+  ├── ModelProvider       (mock echo provider; interface ready for real LLM swap)
+  └── HumanExecutor       (human-in-the-loop call lifecycle — wired but not yet invoked)
 ```
 
 ### Core Data Types (`internal/types/types.go`)
@@ -90,10 +95,11 @@ Every package follows the interface+impl pattern — interfaces are exported, im
 
 1. CLI creates/gets singleton Orchestrator via `sync.Once`
 2. `Orchestrator.Start()` launches background `runTaskLoop` goroutine
-3. `SubmitTask(task)` → Scheduler.Submit (cycle check, state store persist) → non-blocking notify on `taskSubmitted` channel
-4. `runTaskLoop` polls `GetNextTask()` (delegates to `GetReadyTasks(1)` in M2), dispatches each ready task
-5. `executeTask`: idempotency check → status to running → dispatcher.Dispatch → status to completed/failed
-6. On shutdown: running flag cleared → task loop signalled → lifecycleManager.Shutdown (idempotent via sync.Once)
+3. `SubmitTask(task)` → AdmissionValidator.Validate → Scheduler.Submit (cycle check, state store persist) → non-blocking notify on `taskSubmitted` channel
+4. `runTaskLoop` polls `GetReadyTasks(availableWorkers)`, dispatches each ready task in a goroutine (5-worker semaphore)
+5. `executeTask`: idempotency check → status to running → parse SLA (timeout/retries) → retry loop: `dispatcher.Dispatch` (with timeout context) → status to completed/failed, AgentError wrapping on exhaustion
+6. Dispatcher: `ContractExecutor.Execute` → `ValidateInput` → `ModelProvider.Execute` → `ValidateOutput` → TaskResult
+7. On shutdown: running flag cleared → task loop signalled → lifecycleManager.Shutdown (idempotent via sync.Once)
 
 ## CLI
 
@@ -151,4 +157,14 @@ When adding or modifying hooks in `.claude/settings.json` or hook scripts in `sc
 - `HANDOVER.md` — full project handoff context
 - `docs/QUICKSTART.md` — build/run instructions and constraints
 - `docs/specs/milestone2/` — M2 requirements, design, tasks, workflow binding
+- `docs/specs/model-provider/` — M3 ModelProvider requirements, design, tasks, workflow binding
 - `reports/daily/` — daily retrospectives
+
+## Worktree Isolation Caveat
+
+`EnterWorktree` (and Agent `isolation: "worktree"`) creates worktrees from the **default branch** (`main`) HEAD, NOT the current branch HEAD. This means feature-branch work is lost when agents work in isolation. **Workaround**: manually create worktrees from the correct commit:
+
+```bash
+git worktree add -b <branch-name> .claude/worktrees/<name> <current-commit>
+# Then use EnterWorktree with path: ".claude/worktrees/<name>"
+```
