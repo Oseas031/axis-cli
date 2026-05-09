@@ -1,0 +1,127 @@
+{
+  "timestamp": "2026-05-09T07:56:38.896Z",
+  "mode": "headless",
+  "workerType": "optimize",
+  "model": "sonnet",
+  "durationMs": 61703,
+  "executionId": "optimize_1778313337193_8mkdxf",
+  "success": true,
+  "findings": {
+    "sections": [
+      {
+        "title": "Performance Optimization Report",
+        "content": "\n",
+        "level": 2
+      },
+      {
+        "title": "1. N+1 Query Patterns",
+        "content": "**Not applicable** — This project uses an in-memory `MemoryStateStore` (map-based), not a database. No ORM/DAL patterns that would cause N+1 issues.\n\n---\n\n",
+        "level": 3
+      },
+      {
+        "title": "2. Caching Opportunities",
+        "content": "\n",
+        "level": 3
+      },
+      {
+        "title": "A. SLA Parsing — `parseSLA` called on every retry",
+        "content": "**File**: `orchestrator.go:261-282`\n\n```go\n// parseSLA extracts SLA metadata. Missing keys return zero values (use defaults).\nfunc parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int, ...) {\n    // Called every retry attempt, but SLA metadata is immutable\n```\n\n**Issue**: `parseSLA` does `strconv.Atoi` conversions on every retry attempt for the same `task.Metadata`. SLA metadata never changes during execution.\n\n**Fix**: Cache parsed SLA on first call:\n```go\ntype parsedSLA struct {\n    timeoutMs   int\n    maxRetries  int\n    failureClass string\n    backoff     string\n    parsed      bool\n}\n\n// In executeTask, cache SLA parsing:\nslaOnce := sync.Once{}\nvar sla parsedSLA\nslaOnce.Do(func() {\n    sla.timeoutMs, sla.maxRetries, sla.failureClass, sla.backoff = parseSLA(task.Metadata)\n    sla.parsed = true\n})\n```\n\n",
+        "level": 4
+      },
+      {
+        "title": "B. Priority Calculation — `getPriority` recalculates on every sort",
+        "content": "**File**: `scheduler.go:214-227`\n\n```go\n// Called during every GetReadyTasks sort\nsort.SliceStable(candidates, func(i, j int) bool {\n    return getPriority(candidates[i]) > getPriority(candidates[j])\n})\n```\n\n**Fix**: Pre-calculate and cache priority in task struct or memoize per call.\n\n",
+        "level": 4
+      },
+      {
+        "title": "C. Contract Lookup in `ValidateInput`/`ValidateOutput`",
+        "content": "**File**: `executor.go:203-236, 238-272`\n\nBoth methods acquire `RLock`, then do map lookup and iteration. The contract schema doesn't change at runtime.\n\n**Fix**: Use `sync.RWMutex` properly — reads already do `RLock`, which is correct. But consider caching validated schemas if schema count grows large.\n\n---\n\n",
+        "level": 4
+      },
+      {
+        "title": "3. Memory Leaks / Resource Issues",
+        "content": "\n",
+        "level": 3
+      },
+      {
+        "title": "A. Busy-Wait Loop in `runTaskLoop` — CPU Spinning",
+        "content": "**File**: `orchestrator.go:129-137`\n\n```go\navailable := o.workerLimit - len(o.workerSem)\nif available <= 0 {\n    select {\n    case <-ctx.Done():\n        return\n    case <-time.After(100 * time.Millisecond):  // ← This is inside select, fires immediately if nothing else\n    }\n    continue\n}\n```\n\n**Issue**: `time.After` creates a timer on every iteration when `available <= 0`. Under high load, this creates many timer objects.\n\n**Fix**: Use a single ticker or channel-based signaling:\n```go\nvar timer *time.Timer\nif timer == nil {\n    timer = time.NewTimer(100 * time.Millisecond)\n}\nselect {\ncase <-ctx.Done():\n    return\ncase <-o.taskSubmitted:\ncase <-timer.C:\n    timer.Reset(100 * time.Millisecond)\n}\n```\n\n",
+        "level": 4
+      },
+      {
+        "title": "B. Human Executor Busy-Wait Polling",
+        "content": "**File**: `dispatcher.go:133-174`\n\n```go\npollInterval := 100 * time.Millisecond  // Fixed 100ms polling\nfor {\n    status, err := d.humanExecutor.GetCallStatus(task.TaskID)\n    // ...\n    time.Sleep(pollInterval)  // Always 100ms regardless of backoff\n}\n```\n\n**Issue**: Fixed 100ms poll interval even if the call is likely to take longer. No exponential backoff or adaptive polling.\n\n**Fix**: Implement exponential backoff with a maximum interval:\n```go\npollInterval := 100 * time.Millisecond\nmaxInterval := 5 * time.Second\nfor {\n    // ... check status\n    time.Sleep(pollInterval)\n    pollInterval = min(pollInterval * 2, maxInterval)\n}\n```\n\n---\n\n",
+        "level": 4
+      },
+      {
+        "title": "4. Redundant Computations",
+        "content": "\n",
+        "level": 3
+      },
+      {
+        "title": "A. Circular Dependency Detection — No Memoization",
+        "content": "**File**: `scheduler.go:89-107`\n\n```go\nfunc (s *SchedulerImpl) detectCircularDependencies(taskID string, dependencies []string, visited map[string]bool) error {\n    visited[taskID] = true\n    for _, dep := range dependencies {\n        if visited[dep] {  // Only checks direct deps\n            return fmt.Errorf(...)\n        }\n        if task, exists := s.taskMap[dep]; exists {\n            if err := s.detectCircularDependencies(dep, task.Dependencies, visited); err != nil nil {\n                return err\n            }\n        }\n    }\n    delete(visited, taskID)  // Cleanup - but this is flawed for parallel submits\n    return nil\n}\n```\n\n**Issue**: DFS on every `Submit`. Could be memoized with a \"graph is acyclic\" flag. Also, concurrent submits with overlapping dependencies could cause race conditions on `visited` map.\n\n**Fix**: Add a topological sort cache or incremental cycle detection using Kahn's algorithm.\n\n",
+        "level": 4
+      },
+      {
+        "title": "B. `GetAllTasks` — Deep Copy Every Time",
+        "content": "**File**: `scheduler.go:247-273`\n\n```go\nfunc (s *SchedulerImpl) GetAllTasks() []*types.AgentTask {\n    // Creates deep copies of every task, every call\n    taskCopy := *task\n    if len(task.Dependencies) > 0 {\n        taskCopy.Dependencies = make([]string, len(task.Dependencies))\n        copy(taskCopy.Dependencies, task.Dependencies)\n    }\n    // ... more deep copies for Metadata, Input\n}\n```\n\n**Issue**: Expensive deep copy on every call, even if most callers just need status.\n\n**Fix**: Add a `GetTaskIDs()` or `GetTaskStatuses()` method that returns only what's needed. Deep copy only when full task data is required.\n\n",
+        "level": 4
+      },
+      {
+        "title": "C. `GetDependencyGraph` — Unnecessary Copy",
+        "content": "**File**: `scheduler.go:276-291`\n\n```go\nresult[id] = deps  // Creates new slice for every task\n```\n\n**Issue**: Creates new slices when original dependencies are already immutable after task submission.\n\n**Fix**: Return read-only view or use slice header sharing.\n\n---\n\n",
+        "level": 4
+      },
+      {
+        "title": "5. Summary of Actionable Items (Priority Order)",
+        "content": "| Priority | Issue | Location | Impact |\n|----------|-------|----------|--------|\n| **High** | Busy-wait with `time.After` in `runTaskLoop` | orchestrator.go:131 | CPU/memory under load |\n| **High** | Fixed 100ms polling in human executor | dispatcher.go:173 | Unnecessary wakeups |\n| **Medium** | `parseSLA` called every retry | orchestrator.go:170 | CPU waste on string parsing |\n| **Medium** | `getPriority` recalculates on every sort | scheduler.go:184-186 | Redundant Atoi calls |\n| **Low** | `GetAllTasks` deep copies everything | scheduler.go:247-273 | GC pressure |\n| **Low** | Circular dependency has no memoization | scheduler.go:59 | O(n) per submit |\n\n---\n\n**Note**: This is a Go CLI project with no React components, so \"unnecessary re-renders in React\" is not applicable. The codebase is well-structured with proper interface/implementation separation and uses Go stdlib exclusively in core modules.",
+        "level": 3
+      }
+    ],
+    "codeBlocks": [
+      {
+        "language": "go",
+        "code": "// parseSLA extracts SLA metadata. Missing keys return zero values (use defaults).\nfunc parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int, ...) {\n    // Called every retry attempt, but SLA metadata is immutable"
+      },
+      {
+        "language": "go",
+        "code": "type parsedSLA struct {\n    timeoutMs   int\n    maxRetries  int\n    failureClass string\n    backoff     string\n    parsed      bool\n}\n\n// In executeTask, cache SLA parsing:\nslaOnce := sync.Once{}\nvar sla parsedSLA\nslaOnce.Do(func() {\n    sla.timeoutMs, sla.maxRetries, sla.failureClass, sla.backoff = parseSLA(task.Metadata)\n    sla.parsed = true\n})"
+      },
+      {
+        "language": "go",
+        "code": "// Called during every GetReadyTasks sort\nsort.SliceStable(candidates, func(i, j int) bool {\n    return getPriority(candidates[i]) > getPriority(candidates[j])\n})"
+      },
+      {
+        "language": "go",
+        "code": "available := o.workerLimit - len(o.workerSem)\nif available <= 0 {\n    select {\n    case <-ctx.Done():\n        return\n    case <-time.After(100 * time.Millisecond):  // ← This is inside select, fires immediately if nothing else\n    }\n    continue\n}"
+      },
+      {
+        "language": "go",
+        "code": "var timer *time.Timer\nif timer == nil {\n    timer = time.NewTimer(100 * time.Millisecond)\n}\nselect {\ncase <-ctx.Done():\n    return\ncase <-o.taskSubmitted:\ncase <-timer.C:\n    timer.Reset(100 * time.Millisecond)\n}"
+      },
+      {
+        "language": "go",
+        "code": "pollInterval := 100 * time.Millisecond  // Fixed 100ms polling\nfor {\n    status, err := d.humanExecutor.GetCallStatus(task.TaskID)\n    // ...\n    time.Sleep(pollInterval)  // Always 100ms regardless of backoff\n}"
+      },
+      {
+        "language": "go",
+        "code": "pollInterval := 100 * time.Millisecond\nmaxInterval := 5 * time.Second\nfor {\n    // ... check status\n    time.Sleep(pollInterval)\n    pollInterval = min(pollInterval * 2, maxInterval)\n}"
+      },
+      {
+        "language": "go",
+        "code": "func (s *SchedulerImpl) detectCircularDependencies(taskID string, dependencies []string, visited map[string]bool) error {\n    visited[taskID] = true\n    for _, dep := range dependencies {\n        if visited[dep] {  // Only checks direct deps\n            return fmt.Errorf(...)\n        }\n        if task, exists := s.taskMap[dep]; exists {\n            if err := s.detectCircularDependencies(dep, task.Dependencies, visited); err != nil nil {\n                return err\n            }\n        }\n    }\n    delete(visited, taskID)  // Cleanup - but this is flawed for parallel submits\n    return nil\n}"
+      },
+      {
+        "language": "go",
+        "code": "func (s *SchedulerImpl) GetAllTasks() []*types.AgentTask {\n    // Creates deep copies of every task, every call\n    taskCopy := *task\n    if len(task.Dependencies) > 0 {\n        taskCopy.Dependencies = make([]string, len(task.Dependencies))\n        copy(taskCopy.Dependencies, task.Dependencies)\n    }\n    // ... more deep copies for Metadata, Input\n}"
+      },
+      {
+        "language": "go",
+        "code": "result[id] = deps  // Creates new slice for every task"
+      }
+    ]
+  },
+  "rawOutputPreview": "Based on my analysis, this is a **Go CLI project** (not React), so there are no React re-renders to analyze. Here's my performance analysis:\n\n---\n\n## Performance Optimization Report\n\n### 1. N+1 Query Patterns\n**Not applicable** — This project uses an in-memory `MemoryStateStore` (map-based), not a database. No ORM/DAL patterns that would cause N+1 issues.\n\n---\n\n### 2. Caching Opportunities\n\n#### A. SLA Parsing — `parseSLA` called on every retry\n**File**: `orchestrator.go:261-282`\n\n```go\n// parseSLA extracts SLA metadata. Missing keys return zero values (use defaults).\nfunc parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int, ...) {\n    // Called every retry attempt, but SLA metadata is immutable\n```\n\n**Issue**: `parseSLA` does `strconv.Atoi` conversions on every retry attempt for the same `task.Metadata`. SLA metadata never changes during execution.\n\n**Fix**: Cache parsed SLA on first call:\n```go\ntype parsedSLA struct {\n    timeoutMs   int\n    maxRetries  int\n    failureClass string\n    backoff     string\n    parsed      bool\n}\n\n// In executeTask, cache SLA parsing:\nslaOnce := sync.Once{}\nvar sla parsedSLA\nslaOnce.Do(func() {\n    sla.timeoutMs, sla.maxRetries, sla.failureClass, sla.backoff = parseSLA(task.Metadata)\n    sla.parsed = true\n})\n```\n\n#### B. Priority Calculation — `getPriority` recalculates on every sort\n**File**: `scheduler.go:214-227`\n\n```go\n// Called during every GetReadyTasks sort\nsort.SliceStable(candidates, func(i, j int) bool {\n    return getPriority(candidates[i]) > getPriority(candidates[j])\n})\n```\n\n**Fix**: Pre-calculate and cache priority in task struct or memoize per call.\n\n#### C. Contract Lookup in `ValidateInput`/`ValidateOutput`\n**File**: `executor.go:203-236, 238-272`\n\nBoth methods acquire `RLock`, then do map lookup and iteration. The contract schema doesn't change at runtime.\n\n**Fix**: Use `sync.RWMutex` properly — reads already do `RLock`, which is correct. But consider caching validated schemas if schema count grows la",
+  "rawOutputLength": 6465
+}

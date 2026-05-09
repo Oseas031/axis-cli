@@ -63,6 +63,23 @@ func (e *ContractExecutorImpl) SetToolRegistry(tr *tool.Registry) {
 	e.toolRegistry = tr
 }
 
+// safeMarshal JSON-marshals a value with panic recovery.
+// Returns an error if marshaling fails or if a panic occurs.
+func safeMarshal(v any) ([]byte, error) {
+	var result []byte
+	var err error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("panic during JSON marshal: %v", r)
+				result = nil
+			}
+		}()
+		result, err = json.Marshal(v)
+	}()
+	return result, err
+}
+
 // Execute executes a contract: validates input, runs the provider (with optional
 // multi-turn tool loop), and validates output.
 func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) (*types.ExecutionResult, error) {
@@ -157,7 +174,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *to
 					})
 					continue
 				}
-				content, _ := json.Marshal(result)
+				content, _ := safeMarshal(result)
 				history = append(history, types.ModelMessage{
 					Role:       "tool",
 					ToolCallID: tc.ID,

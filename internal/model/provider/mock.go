@@ -27,7 +27,7 @@ func (m *MockModelProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 				"tool_result": last.Content,
 			}
 			output["contract_id"] = req.ContractID
-			return &ModelResponse{Output: output}, nil
+			return &ModelResponse{Output: output, InputTokens: 100, OutputTokens: 50}, nil
 		}
 	}
 
@@ -42,6 +42,8 @@ func (m *MockModelProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 				ToolCalls: []types.ToolCall{
 					{ID: "call-1", Name: toolName, Input: toolInput},
 				},
+				InputTokens:  100,
+				OutputTokens: 50,
 			}, nil
 		}
 	}
@@ -54,5 +56,5 @@ func (m *MockModelProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 	output["contract_id"] = req.ContractID
 	output["status"] = "completed"
 	output["provider"] = "mock"
-	return &ModelResponse{Output: output}, nil
+	return &ModelResponse{Output: output, InputTokens: 100, OutputTokens: 50}, nil
 }

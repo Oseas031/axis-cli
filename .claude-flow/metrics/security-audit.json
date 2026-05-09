@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-05-09T07:51:38.181Z",
+  "mode": "headless",
+  "workerType": "audit",
+  "model": "haiku",
+  "durationMs": 125286,
+  "executionId": "audit_1778312972895_pdmw9z",
+  "success": true,
+  "findings": {
+    "vulnerabilities": [
+      {
+        "severity": "high",
+        "file": "internal/model/tool/bash.go",
+        "line": 40,
+        "description": "BashTool executes arbitrary user-provided shell commands via exec.CommandContext. #nosec G204 annotation acknowledges this - arbitrary command execution is severe if user input reaches this function."
+      },
+      {
+        "severity": "medium",
+        "file": "internal/model/tool/http_client.go",
+        "line": 96,
+        "description": "Error message leaks internal system information via err.Error() directly in user-facing output."
+      },
+      {
+        "severity": "medium",
+        "file": "internal/model/tool/http_client.go",
+        "line": 111,
+        "description": "Error message leaks internal system information via err.Error()."
+      },
+      {
+        "severity": "medium",
+        "file": "internal/model/tool/http_client.go",
+        "line": 118,
+        "description": "Error message leaks internal system information via err.Error()."
+      },
+      {
+        "severity": "medium",
+        "file": "internal/model/tool/file_read.go",
+        "line": 65,
+        "description": "File read error exposes internal file path via err.Error() in response."
+      },
+      {
+        "severity": "medium",
+        "file": "internal/model/tool/file_write.go",
+        "line": 71,
+        "description": "Directory creation error exposes internal path via err.Error()."
+      },
+      {
+        "severity": "medium",
+        "file": "internal/model/tool/file_write.go",
+        "line": 75,
+        "description": "File write error exposes internal path via err.Error()."
+      },
+      {
+        "severity": "medium",
+        "file": ".claude/helpers/statusline.js",
+        "line": 180,
+        "description": "Uses execSync with shell string containing pipes - vulnerable to shell metacharacter injection if values were user-controlled. Static strings currently but pattern is risky."
+      },
+      {
+        "severity": "medium",
+        "file": ".claude/helpers/statusline.js",
+        "line": 200,
+        "description": "Uses execSync with complex shell string with pipes and awk - same concern, uses shell string instead of execFileSync."
+      }
+    ],
+    "riskScore": 45,
+    "recommendations": [
+      "Consider implementing a command allowlist for BashTool instead of unrestricted execution",
+      "Sanitize error messages before returning them - avoid raw err.Error() which may expose system paths",
+      "Refactor statusline.js to use execFileSync with argument arrays instead of execSync with shell strings, following the pattern already implemented in getUserInfo()",
+      "Add input validation for all user-controlled parameters before shell commands or file operations",
+      "Add gosec to CI/CD pipeline to catch these issues automatically",
+      "Add proper timeout handling and resource limits for bash tool execution"
+    ]
+  },
+  "rawOutputPreview": "## Security Audit Report\n\n### Vulnerability Summary\n\n| Severity | Count | Key Issues |\n|----------|-------|------------|\n| **HIGH** | 1 | BashTool arbitrary command execution |\n| **MEDIUM** | 7 | Error messages leaking internal paths (4), statusline.js execSync shell strings (2) |\n| **LOW** | 0 | No hardcoded secrets, SQL injection, XSS, or insecure deserialization found |\n\n### JSON Report\n\n```json\n{\n  \"vulnerabilities\": [\n    {\n      \"severity\": \"high\",\n      \"file\": \"internal/model/tool/bash.go\",\n      \"line\": 40,\n      \"description\": \"BashTool executes arbitrary user-provided shell commands via exec.CommandContext. #nosec G204 annotation acknowledges this - arbitrary command execution is severe if user input reaches this function.\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \"internal/model/tool/http_client.go\",\n      \"line\": 96,\n      \"description\": \"Error message leaks internal system information via err.Error() directly in user-facing output.\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \"internal/model/tool/http_client.go\",\n      \"line\": 111,\n      \"description\": \"Error message leaks internal system information via err.Error().\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \"internal/model/tool/http_client.go\",\n      \"line\": 118,\n      \"description\": \"Error message leaks internal system information via err.Error().\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \"internal/model/tool/file_read.go\",\n      \"line\": 65,\n      \"description\": \"File read error exposes internal file path via err.Error() in response.\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \"internal/model/tool/file_write.go\",\n      \"line\": 71,\n      \"description\": \"Directory creation error exposes internal path via err.Error().\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \"internal/model/tool/file_write.go\",\n      \"line\": 75,\n      \"description\": \"File write error exposes internal path via err.Error().\"\n    },\n    {\n      \"severity\": \"med",
+  "rawOutputLength": 3659
+}

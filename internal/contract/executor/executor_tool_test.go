@@ -37,7 +37,7 @@ func TestContractExecutor_Execute_ToolCallAndResult(t *testing.T) {
 	reg.Register(&fixedTool{
 		name:   "bash",
 		result: map[string]any{"stdout": "hello", "exit_code": 0},
-	})
+	}, nil)
 	exec.SetToolRegistry(reg)
 
 	contract := &types.AgentContract{
@@ -167,7 +167,7 @@ func TestContractExecutor_Execute_ToolProviderError(t *testing.T) {
 	reg.Register(&fixedTool{
 		name:   "bash",
 		result: map[string]any{"stdout": "ok", "exit_code": 0},
-	})
+	}, nil)
 	exec.SetToolRegistry(reg)
 
 	contract := &types.AgentContract{
