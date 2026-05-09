@@ -13,7 +13,49 @@ const (
 	AutonomyLevelDecide                       // Can decide on task approach
 	AutonomyLevelPlan                         // Can plan and create tasks
 	AutonomyLevelLearn                        // Can learn and improve
+	AutonomyLevelFull                         // Maximum autonomy level
 )
+
+// Backward compatibility aliases for T16/T17 (same values)
+const (
+	AutonomyLevelNone   = AutonomyLevelExecute // 0 - No autonomy
+	AutonomyLevelLow    = AutonomyLevelDecide  // 1 - Low autonomy
+	AutonomyLevelMedium = AutonomyLevelPlan    // 2 - Medium autonomy
+	AutonomyLevelHigh   = AutonomyLevelLearn   // 3 - High autonomy
+)
+
+// String returns a string representation of the autonomy level.
+func (a AutonomyLevel) String() string {
+	switch a {
+	case AutonomyLevelExecute:
+		return "execute"
+	case AutonomyLevelDecide:
+		return "decide"
+	case AutonomyLevelPlan:
+		return "plan"
+	case AutonomyLevelLearn:
+		return "learn"
+	case AutonomyLevelFull:
+		return "full"
+	default:
+		return "unknown"
+	}
+}
+
+// IsValid checks if the autonomy level is within valid bounds.
+func (a AutonomyLevel) IsValid() bool {
+	return (a >= AutonomyLevelExecute && a <= AutonomyLevelFull) ||
+		(a >= AutonomyLevelNone && a <= AutonomyLevelHigh)
+}
+
+// CanTransitionTo checks if a transition to the target level is valid.
+func (a AutonomyLevel) CanTransitionTo(target AutonomyLevel) bool {
+	diff := int(target) - int(a)
+	if diff < 0 {
+		diff = -diff
+	}
+	return diff <= 1 && target.IsValid()
+}
 
 // SelfContext represents the complete context of an agent at a point in time.
 type SelfContext struct {
