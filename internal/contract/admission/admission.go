@@ -61,8 +61,19 @@ func validateSLA(task *types.AgentTask) error {
 		}
 	}
 	if v, ok := task.Metadata[types.SLAKeyFailureClass]; ok {
-		if v == "" {
-			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s for task %s must be non-empty if present", types.SLAKeyFailureClass, task.TaskID))
+		if v != types.FailureClassRetryable && v != types.FailureClassFatal && v != types.FailureClassDegradable {
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s=%q for task %s must be one of: retryable, fatal, degradable", types.SLAKeyFailureClass, v, task.TaskID))
+		}
+	}
+	if v, ok := task.Metadata[types.SLAKeyPriority]; ok {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 || n > 255 {
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s=%q for task %s must be an integer in [0,255]", types.SLAKeyPriority, v, task.TaskID))
+		}
+	}
+	if v, ok := task.Metadata[types.SLAKeyBackoff]; ok {
+		if v != types.BackoffFixed && v != types.BackoffLinear && v != types.BackoffExponential {
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s=%q for task %s must be one of: fixed, linear, exponential", types.SLAKeyBackoff, v, task.TaskID))
 		}
 	}
 	return nil

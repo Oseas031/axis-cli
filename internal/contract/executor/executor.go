@@ -3,10 +3,12 @@ package executor
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
 	"github.com/axis-cli/axis/internal/model/provider"
+	"github.com/axis-cli/axis/internal/model/tool"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -20,9 +22,10 @@ type ContractExecutor interface {
 
 // ContractExecutorImpl implements contract execution
 type ContractExecutorImpl struct {
-	mu        sync.RWMutex
-	contracts map[string]*types.AgentContract
-	provider  provider.ModelProvider
+	mu           sync.RWMutex
+	contracts    map[string]*types.AgentContract
+	provider     provider.ModelProvider
+	toolRegistry *tool.Registry
 }
 
 // NewContractExecutor creates a new contract executor
@@ -53,7 +56,15 @@ func (e *ContractExecutorImpl) SetProvider(p provider.ModelProvider) {
 	e.provider = p
 }
 
-// Execute executes a contract: validates input, runs the provider, validates output.
+// SetToolRegistry sets the tool registry for the contract executor.
+func (e *ContractExecutorImpl) SetToolRegistry(tr *tool.Registry) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.toolRegistry = tr
+}
+
+// Execute executes a contract: validates input, runs the provider (with optional
+// multi-turn tool loop), and validates output.
 func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) (*types.ExecutionResult, error) {
 	if err := e.ValidateInput(contractID, input); err != nil {
 		return &types.ExecutionResult{
@@ -63,10 +74,28 @@ func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) 
 
 	e.mu.RLock()
 	p := e.provider
+	tr := e.toolRegistry
 	e.mu.RUnlock()
 
 	if p != nil {
 		req := &provider.ModelRequest{ContractID: contractID, Input: input}
+
+		// Add tools if a registry is available with registered tools.
+		hasTools := false
+		if tr != nil {
+			tools := tr.List()
+			if len(tools) > 0 {
+				req.Tools = tools
+				hasTools = true
+			}
+		}
+
+		// Multi-turn loop for tool-based execution.
+		if hasTools {
+			return e.executeMultiTurn(p, tr, req, contractID)
+		}
+
+		// Single-pass execution (backward compatible path).
 		resp, err := p.Execute(context.Background(), req)
 		if err != nil {
 			return &types.ExecutionResult{
@@ -86,6 +115,71 @@ func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) 
 	return &types.ExecutionResult{
 		Output: map[string]any{"status": "validated"},
 	}, nil
+}
+
+// executeMultiTurn runs a multi-turn tool-calling loop with a maximum of 10 turns.
+func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
+	var history []types.ModelMessage
+	maxTurns := 10
+
+	for turn := 0; turn < maxTurns; turn++ {
+		req.History = history
+		resp, err := p.Execute(context.Background(), req)
+		if err != nil {
+			return &types.ExecutionResult{
+				Error: fmt.Sprintf("provider execution failed: %v", err),
+			}, err
+		}
+
+		if len(resp.ToolCalls) > 0 {
+			assistantMsg := types.ModelMessage{
+				Role:      "assistant",
+				ToolCalls: resp.ToolCalls,
+			}
+			history = append(history, assistantMsg)
+
+			for _, tc := range resp.ToolCalls {
+				toolImpl, ok := tr.Get(tc.Name)
+				if !ok {
+					history = append(history, types.ModelMessage{
+						Role:       "tool",
+						ToolCallID: tc.ID,
+						Content:    fmt.Sprintf("error: tool %s not found", tc.Name),
+					})
+					continue
+				}
+				result, execErr := toolImpl.Execute(context.Background(), tc.Input)
+				if execErr != nil {
+					history = append(history, types.ModelMessage{
+						Role:       "tool",
+						ToolCallID: tc.ID,
+						Content:    fmt.Sprintf("error: %v", execErr),
+					})
+					continue
+				}
+				content, _ := json.Marshal(result)
+				history = append(history, types.ModelMessage{
+					Role:       "tool",
+					ToolCallID: tc.ID,
+					Content:    string(content),
+				})
+			}
+			continue
+		}
+
+		if resp.Output != nil {
+			if err := e.ValidateOutput(contractID, resp.Output); err != nil {
+				return &types.ExecutionResult{
+					Error: fmt.Sprintf("output validation failed: %v", err),
+				}, err
+			}
+			return &types.ExecutionResult{Output: resp.Output}, nil
+		}
+	}
+
+	return &types.ExecutionResult{
+		Error: "tool execution exceeded maximum turn limit (10)",
+	}, fmt.Errorf("tool execution exceeded maximum turn limit (10)")
 }
 
 // ValidateInput validates input against the contract schema

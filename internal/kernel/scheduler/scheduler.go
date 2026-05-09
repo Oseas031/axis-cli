@@ -3,6 +3,8 @@ package scheduler
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -170,33 +172,58 @@ func (s *SchedulerImpl) GetReadyTasks(limit int) ([]*types.AgentTask, error) {
 		return nil, types.NewAgentError(types.ErrSchedulerNotRunning, "scheduler is not running")
 	}
 
-	readyTasks := make([]*types.AgentTask, 0)
+	// First pass: collect candidates without changing state
+	candidates := make([]*types.AgentTask, 0)
 	for _, task := range s.queue {
-		if task.Status == types.TaskStatusPending {
-			if s.areDependenciesCompleted(task.Dependencies) {
-				task.Status = types.TaskStatusRunning
-				now := time.Now()
-				task.StartedAt = &now
-
-				state := types.TaskState{
-					Task:      task,
-					UpdatedAt: time.Now(),
-				}
-				if err := s.stateStore.Save(task.TaskID, state); err != nil {
-					task.Status = types.TaskStatusPending
-					task.StartedAt = nil
-					return nil, fmt.Errorf("failed to update task state: %w", err)
-				}
-
-				readyTasks = append(readyTasks, task)
-				if limit > 0 && len(readyTasks) >= limit {
-					break
-				}
-			}
+		if task.Status == types.TaskStatusPending && s.areDependenciesCompleted(task.Dependencies) {
+			candidates = append(candidates, task)
 		}
 	}
 
-	return readyTasks, nil
+	// Sort by priority descending; stable sort preserves FIFO for equal priority
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return getPriority(candidates[i]) > getPriority(candidates[j])
+	})
+
+	if limit > 0 && len(candidates) > limit {
+		candidates = candidates[:limit]
+	}
+
+	// Second pass: mark selected tasks as Running and persist
+	for _, task := range candidates {
+		task.Status = types.TaskStatusRunning
+		now := time.Now()
+		task.StartedAt = &now
+
+		state := types.TaskState{
+			Task:      task,
+			UpdatedAt: time.Now(),
+		}
+		if err := s.stateStore.Save(task.TaskID, state); err != nil {
+			task.Status = types.TaskStatusPending
+			task.StartedAt = nil
+			return nil, fmt.Errorf("failed to update task state: %w", err)
+		}
+	}
+
+	return candidates, nil
+}
+
+// getPriority extracts the sla.priority value from task metadata.
+// Returns 128 (default priority) if missing or invalid.
+func getPriority(task *types.AgentTask) int {
+	if task.Metadata == nil {
+		return 128
+	}
+	v, ok := task.Metadata[types.SLAKeyPriority]
+	if !ok {
+		return 128
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 || n > 255 {
+		return 128
+	}
+	return n
 }
 
 // areDependenciesCompleted checks if all dependencies are done (completed or failed).

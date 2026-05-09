@@ -230,6 +230,47 @@ func TestAdmissionValidator_Validate_SLA_NoMetadata(t *testing.T) {
 	}
 }
 
+func TestAdmissionValidator_Validate_SLA_ValidFailureClass(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+
+	// All three valid failure classes should pass
+	for _, fc := range []string{types.FailureClassRetryable, types.FailureClassFatal, types.FailureClassDegradable} {
+		task := &types.AgentTask{
+			TaskID:     "task-1",
+			ContractID: "default",
+			Input:      map[string]any{"message": "hello"},
+			Metadata:   map[string]string{types.SLAKeyFailureClass: fc},
+		}
+		if err := av.Validate(task); err != nil {
+			t.Errorf("Task with failure_class=%s should pass: %v", fc, err)
+		}
+	}
+}
+
+func TestAdmissionValidator_Validate_SLA_InvalidFailureClass(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "default",
+		Input:      map[string]any{"message": "hello"},
+		Metadata:   map[string]string{types.SLAKeyFailureClass: "transient"},
+	}
+
+	if err := av.Validate(task); err == nil {
+		t.Error("Task with invalid failure_class should be rejected")
+	}
+}
+
 func TestAdmissionValidator_Validate_SLA_EmptyFailureClass(t *testing.T) {
 	ce := contractexec.NewContractExecutor()
 	if err := ce.RegisterContract(testDefaultContract()); err != nil {
@@ -245,11 +286,11 @@ func TestAdmissionValidator_Validate_SLA_EmptyFailureClass(t *testing.T) {
 	}
 
 	if err := av.Validate(task); err == nil {
-		t.Error("Task with empty sla.failure_class should be rejected")
+		t.Error("Task with empty failure_class should be rejected")
 	}
 }
 
-func TestAdmissionValidator_Validate_SLA_ValidFailureClass(t *testing.T) {
+func TestAdmissionValidator_Validate_SLA_ValidPriority(t *testing.T) {
 	ce := contractexec.NewContractExecutor()
 	if err := ce.RegisterContract(testDefaultContract()); err != nil {
 		t.Fatalf("Failed to register contract: %v", err)
@@ -260,11 +301,91 @@ func TestAdmissionValidator_Validate_SLA_ValidFailureClass(t *testing.T) {
 		TaskID:     "task-1",
 		ContractID: "default",
 		Input:      map[string]any{"message": "hello"},
-		Metadata:   map[string]string{types.SLAKeyFailureClass: "transient"},
+		Metadata:   map[string]string{types.SLAKeyPriority: "128"},
 	}
 
 	if err := av.Validate(task); err != nil {
-		t.Errorf("Task with valid sla.failure_class should pass: %v", err)
+		t.Errorf("Task with valid sla.priority should pass: %v", err)
+	}
+}
+
+func TestAdmissionValidator_Validate_SLA_PriorityOutOfRange(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+
+	for _, val := range []string{"-1", "256", "999"} {
+		task := &types.AgentTask{
+			TaskID:     "task-1",
+			ContractID: "default",
+			Input:      map[string]any{"message": "hello"},
+			Metadata:   map[string]string{types.SLAKeyPriority: val},
+		}
+		if err := av.Validate(task); err == nil {
+			t.Errorf("Task with sla.priority=%s should be rejected (out of range)", val)
+		}
+	}
+}
+
+func TestAdmissionValidator_Validate_SLA_PriorityNotInteger(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "default",
+		Input:      map[string]any{"message": "hello"},
+		Metadata:   map[string]string{types.SLAKeyPriority: "abc"},
+	}
+
+	if err := av.Validate(task); err == nil {
+		t.Error("Task with non-integer sla.priority should be rejected")
+	}
+}
+
+func TestAdmissionValidator_Validate_SLA_ValidBackoff(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+
+	for _, val := range []string{types.BackoffFixed, types.BackoffLinear, types.BackoffExponential} {
+		task := &types.AgentTask{
+			TaskID:     "task-1",
+			ContractID: "default",
+			Input:      map[string]any{"message": "hello"},
+			Metadata:   map[string]string{types.SLAKeyBackoff: val},
+		}
+		if err := av.Validate(task); err != nil {
+			t.Errorf("Task with sla.backoff=%s should pass: %v", val, err)
+		}
+	}
+}
+
+func TestAdmissionValidator_Validate_SLA_InvalidBackoff(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "default",
+		Input:      map[string]any{"message": "hello"},
+		Metadata:   map[string]string{types.SLAKeyBackoff: "unknown"},
+	}
+
+	if err := av.Validate(task); err == nil {
+		t.Error("Task with invalid sla.backoff should be rejected")
 	}
 }
 

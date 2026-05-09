@@ -3,6 +3,7 @@ package orchestrator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/scheduler"
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/model/provider"
+	"github.com/axis-cli/axis/internal/model/tool"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -55,8 +57,11 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleManager := lifecycle.NewLifecycleManager()
 	sched := scheduler.NewScheduler(stateStore, lifecycleManager)
+	toolRegistry := tool.NewRegistry()
+	toolRegistry.Register(tool.NewBashTool())
 	contractExec := contractexec.NewContractExecutor()
 	contractExec.SetProvider(provider.NewMockModelProvider())
+	contractExec.SetToolRegistry(toolRegistry)
 	humanExec := humanexec.NewHumanExecutor()
 	dispatch := dispatcher.NewDispatcher(contractExec, humanExec)
 	admissionValidator := admission.NewAdmissionValidator(contractExec)
@@ -159,9 +164,9 @@ func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 	}
 }
 
-// executeTask executes a single task with SLA timeout and retry behavior.
+// executeTask executes a single task with SLA timeout, failure class routing, and retry behavior.
 func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
-	timeoutMs, maxRetries := parseSLA(task.Metadata)
+	timeoutMs, maxRetries, failureClass, backoff := parseSLA(task.Metadata)
 
 	// Check current status to ensure idempotency
 	currentStatus, err := o.scheduler.GetStatus(task.TaskID)
@@ -180,6 +185,11 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 		return
 	}
 
+	// Fatal failure class: no retry allowed
+	if failureClass == types.FailureClassFatal {
+		maxRetries = 0
+	}
+
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		result, dispatchErr := func() (*types.TaskResult, error) {
 			execCtx := ctx
@@ -190,7 +200,14 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 			}
 			return o.dispatcher.Dispatch(execCtx, task)
 		}()
-		if dispatchErr == nil && result != nil && result.Status == types.TaskStatusCompleted {
+
+		// Check for success (for degradable tasks, a Completed result is accepted even with an error)
+		success := dispatchErr == nil && result != nil && result.Status == types.TaskStatusCompleted
+		if !success && failureClass == types.FailureClassDegradable && result != nil && result.Status == types.TaskStatusCompleted {
+			success = true
+		}
+
+		if success {
 			if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err != nil {
 				time.Sleep(100 * time.Millisecond)
 				if err2 := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err2 != nil {
@@ -201,8 +218,19 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 			return
 		}
 
+		// For degradable tasks with dependency errors, retry once (skip dependency check)
+		if failureClass == types.FailureClassDegradable && dispatchErr != nil {
+			var ae *types.AgentError
+			if errors.As(dispatchErr, &ae) && ae.Code == types.ErrDependencyNotReady {
+				log.Printf("Task %s attempt %d/%d dependency not ready (degradable), retrying: %v", task.TaskID, attempt+1, maxRetries+1, dispatchErr)
+				time.Sleep(backoffDelay(backoff, attempt))
+				continue
+			}
+		}
+
 		if attempt < maxRetries {
 			log.Printf("Task %s attempt %d/%d failed, retrying: %v", task.TaskID, attempt+1, maxRetries+1, dispatchErr)
+			time.Sleep(backoffDelay(backoff, attempt))
 			continue
 		}
 
@@ -229,7 +257,10 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 }
 
 // parseSLA extracts SLA metadata. Missing keys return zero values (use defaults).
-func parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int) {
+func parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int, failureClass string, backoff string) {
+	if metadata == nil {
+		return
+	}
 	if v, ok := metadata[types.SLAKeyTimeoutMs]; ok {
 		if n, err := strconv.Atoi(v); err == nil {
 			timeoutMs = n
@@ -240,7 +271,30 @@ func parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int) {
 			maxRetries = n
 		}
 	}
+	if v, ok := metadata[types.SLAKeyFailureClass]; ok {
+		failureClass = v
+	}
+	if v, ok := metadata[types.SLAKeyBackoff]; ok {
+		backoff = v
+	}
 	return
+}
+
+// backoffDelay calculates the delay before a retry attempt based on strategy.
+func backoffDelay(strategy string, attempt int) time.Duration {
+	base := 100 * time.Millisecond
+	switch strategy {
+	case types.BackoffExponential:
+		d := base * (1 << attempt)
+		if d > 30*time.Second {
+			d = 30 * time.Second
+		}
+		return d
+	case types.BackoffLinear:
+		return base * time.Duration(attempt+1)
+	default: // fixed
+		return base
+	}
 }
 
 // SubmitTask submits a task to the orchestrator after admission validation.

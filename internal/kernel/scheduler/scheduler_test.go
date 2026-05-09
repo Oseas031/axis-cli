@@ -530,3 +530,92 @@ func TestScheduler_GetDependencyGraph(t *testing.T) {
 		t.Errorf("Task c should have 2 deps, got %v", graph["c"])
 	}
 }
+
+func TestScheduler_GetReadyTasks_PrioritySorting(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycle := &mockLifecycleChecker{running: true}
+	sched := NewScheduler(stateStore, lifecycle)
+
+	tasks := []*types.AgentTask{
+		{TaskID: "low", ContractID: "c", Metadata: map[string]string{types.SLAKeyPriority: "50"}},
+		{TaskID: "high", ContractID: "c", Metadata: map[string]string{types.SLAKeyPriority: "200"}},
+		{TaskID: "medium", ContractID: "c", Metadata: map[string]string{types.SLAKeyPriority: "128"}},
+		{TaskID: "default", ContractID: "c"}, // no priority → 128
+	}
+	for _, task := range tasks {
+		if err := sched.Submit(task); err != nil {
+			t.Fatalf("Failed to submit task %s: %v", task.TaskID, err)
+		}
+	}
+
+	ready, err := sched.GetReadyTasks(0)
+	if err != nil {
+		t.Fatalf("GetReadyTasks failed: %v", err)
+	}
+	if len(ready) != 4 {
+		t.Fatalf("Expected 4 ready tasks, got %d", len(ready))
+	}
+
+	// Expected order: high (200), medium (128), default (128), low (50)
+	expected := []string{"high", "medium", "default", "low"}
+	for i, task := range ready {
+		if task.TaskID != expected[i] {
+			t.Errorf("Position %d: expected %s, got %s", i, expected[i], task.TaskID)
+		}
+	}
+}
+
+func TestScheduler_GetReadyTasks_PriorityPreservesFIFO(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycle := &mockLifecycleChecker{running: true}
+	sched := NewScheduler(stateStore, lifecycle)
+
+	// Submit two tasks with same priority; FIFO order should be preserved
+	tasks := []*types.AgentTask{
+		{TaskID: "first", ContractID: "c", Metadata: map[string]string{types.SLAKeyPriority: "100"}},
+		{TaskID: "second", ContractID: "c", Metadata: map[string]string{types.SLAKeyPriority: "100"}},
+	}
+	for _, task := range tasks {
+		if err := sched.Submit(task); err != nil {
+			t.Fatalf("Failed to submit task %s: %v", task.TaskID, err)
+		}
+	}
+
+	ready, err := sched.GetReadyTasks(0)
+	if err != nil {
+		t.Fatalf("GetReadyTasks failed: %v", err)
+	}
+	if len(ready) != 2 {
+		t.Fatalf("Expected 2 ready tasks, got %d", len(ready))
+	}
+	if ready[0].TaskID != "first" || ready[1].TaskID != "second" {
+		t.Errorf("Expected FIFO order first,second for same priority, got %s,%s", ready[0].TaskID, ready[1].TaskID)
+	}
+}
+
+func TestScheduler_GetReadyTasks_PriorityLimit(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycle := &mockLifecycleChecker{running: true}
+	sched := NewScheduler(stateStore, lifecycle)
+
+	tasks := []*types.AgentTask{
+		{TaskID: "low", ContractID: "c", Metadata: map[string]string{types.SLAKeyPriority: "10"}},
+		{TaskID: "high", ContractID: "c", Metadata: map[string]string{types.SLAKeyPriority: "200"}},
+	}
+	for _, task := range tasks {
+		if err := sched.Submit(task); err != nil {
+			t.Fatalf("Failed to submit task %s: %v", task.TaskID, err)
+		}
+	}
+
+	ready, err := sched.GetReadyTasks(1)
+	if err != nil {
+		t.Fatalf("GetReadyTasks failed: %v", err)
+	}
+	if len(ready) != 1 {
+		t.Fatalf("Expected 1 ready task, got %d", len(ready))
+	}
+	if ready[0].TaskID != "high" {
+		t.Errorf("Expected high-priority task first with limit, got %s", ready[0].TaskID)
+	}
+}
