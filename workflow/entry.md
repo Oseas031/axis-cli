@@ -31,7 +31,7 @@ CLI / Shell 行为变化必须补行为测试或可执行验证命令。
 ### 2. 新功能 / 新规格
 
 ```text
-wf-doc-004 + wf-occams + wf-pr-check + wf-ci + wf-doc-006
+wf-doc-004 + wf-pr-check + wf-ci + wf-doc-006
 ```
 
 执行要求：先写或确认 specs 与 `workflow-binding.md`，再实现。  
