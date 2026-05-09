@@ -181,17 +181,21 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 	}
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
-		execCtx := ctx
-		if timeoutMs > 0 {
-			var cancel context.CancelFunc
-			execCtx, cancel = context.WithTimeout(ctx, time.Duration(timeoutMs)*time.Millisecond)
-			defer cancel()
-		}
-
-		result, dispatchErr := o.dispatcher.Dispatch(execCtx, task)
+		result, dispatchErr := func() (*types.TaskResult, error) {
+			execCtx := ctx
+			if timeoutMs > 0 {
+				var cancel context.CancelFunc
+				execCtx, cancel = context.WithTimeout(ctx, time.Duration(timeoutMs)*time.Millisecond)
+				defer cancel()
+			}
+			return o.dispatcher.Dispatch(execCtx, task)
+		}()
 		if dispatchErr == nil && result != nil && result.Status == types.TaskStatusCompleted {
 			if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err != nil {
-				log.Printf("Error updating task status to completed: %v", err)
+				time.Sleep(100 * time.Millisecond)
+				if err2 := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err2 != nil {
+					log.Printf("ERROR: Task %s completed but status persistence failed after retry: %v", task.TaskID, err2)
+				}
 			}
 			log.Printf("Task %s completed with status %s", task.TaskID, result.Status)
 			return
@@ -214,7 +218,10 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 				fmt.Sprintf("retry exhausted (%d attempts)", maxRetries+1), retryErr)
 		}
 		if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed); err != nil {
-			log.Printf("Error updating task status to failed: %v", err)
+			time.Sleep(100 * time.Millisecond)
+			if err2 := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusFailed); err2 != nil {
+				log.Printf("ERROR: Task %s failed but status persistence failed after retry: %v", task.TaskID, err2)
+			}
 		}
 		log.Printf("Task %s failed: %s", task.TaskID, retryErr.Error())
 		return
@@ -239,11 +246,11 @@ func parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int) {
 // SubmitTask submits a task to the orchestrator after admission validation.
 func (o *Orchestrator) SubmitTask(task *types.AgentTask) error {
 	if err := o.admissionValidator.Validate(task); err != nil {
-		return err
+		return fmt.Errorf("submit %s: admission rejected: %w", task.TaskID, err)
 	}
 
 	if err := o.scheduler.Submit(task); err != nil {
-		return err
+		return fmt.Errorf("submit %s: scheduling failed: %w", task.TaskID, err)
 	}
 
 	// Notify task loop that a task was submitted
