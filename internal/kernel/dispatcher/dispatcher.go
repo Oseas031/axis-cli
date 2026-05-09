@@ -4,6 +4,7 @@ package dispatcher
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
@@ -60,6 +61,12 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 
 	select {
 	case <-timeoutCtx.Done():
+		// Capture any late-arriving goroutine error
+		select {
+		case err := <-errChan:
+			log.Printf("Task %s timed out; underlying error: %v", task.TaskID, err)
+		default:
+		}
 		timeoutErr := types.NewAgentError(types.ErrTaskTimeout, fmt.Sprintf("task %s timed out", task.TaskID))
 		return &types.TaskResult{
 			TaskID:    task.TaskID,
@@ -94,7 +101,7 @@ func (d *DispatcherImpl) executeTask(task *types.AgentTask) (*types.TaskResult, 
 			Status:    types.TaskStatusFailed,
 			Error:     execResult.Error,
 			Completed: time.Now(),
-		}, err
+		}, fmt.Errorf("dispatch: contract %s execute: %w", task.ContractID, err)
 	}
 
 	return &types.TaskResult{
@@ -134,7 +141,7 @@ func (d *DispatcherImpl) executeHumanTask(task *types.AgentTask) (*types.TaskRes
 				Status:    types.TaskStatusFailed,
 				Error:     fmt.Sprintf("call status check failed: %v", err),
 				Completed: time.Now(),
-			}, err
+			}, fmt.Errorf("call status check failed: %v", err)
 		}
 
 		switch status {

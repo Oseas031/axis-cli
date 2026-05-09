@@ -568,6 +568,120 @@ func TestOrchestrator_TaskWithTimeoutRetry(t *testing.T) {
 	}
 }
 
+func TestOrchestrator_GetAllTasks(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx := context.Background()
+	defer orch.Shutdown(ctx)
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	// Submit a few tasks
+	for _, taskID := range []string{"a", "b", "c"} {
+		task := &types.AgentTask{
+			TaskID:     taskID,
+			ContractID: "default",
+			Input:      map[string]any{"message": "test"},
+		}
+		if err := orch.SubmitTask(task); err != nil {
+			t.Fatalf("Failed to submit task %s: %v", taskID, err)
+		}
+	}
+
+	tasks := orch.GetAllTasks()
+	if len(tasks) != 3 {
+		t.Errorf("Expected 3 tasks, got %d", len(tasks))
+	}
+
+	seen := make(map[string]bool)
+	for _, task := range tasks {
+		seen[task.TaskID] = true
+	}
+	for _, taskID := range []string{"a", "b", "c"} {
+		if !seen[taskID] {
+			t.Errorf("Expected task %s in GetAllTasks result", taskID)
+		}
+	}
+}
+
+func TestOrchestrator_GetAllTasks_Empty(t *testing.T) {
+	orch := NewOrchestrator()
+	tasks := orch.GetAllTasks()
+	if len(tasks) != 0 {
+		t.Errorf("Expected 0 tasks from fresh orchestrator, got %d", len(tasks))
+	}
+}
+
+func TestOrchestrator_GetDependencyGraph(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx := context.Background()
+	defer orch.Shutdown(ctx)
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	// Submit tasks with dependencies: a depends on b, b depends on c
+	taskA := &types.AgentTask{
+		TaskID:       "a",
+		ContractID:   "default",
+		Input:        map[string]any{"message": "test"},
+		Dependencies: []string{"b"},
+	}
+	taskB := &types.AgentTask{
+		TaskID:       "b",
+		ContractID:   "default",
+		Input:        map[string]any{"message": "test"},
+		Dependencies: []string{"c"},
+	}
+	taskC := &types.AgentTask{
+		TaskID:     "c",
+		ContractID: "default",
+		Input:      map[string]any{"message": "test"},
+	}
+
+	for _, task := range []*types.AgentTask{taskA, taskB, taskC} {
+		if err := orch.SubmitTask(task); err != nil {
+			t.Fatalf("Failed to submit task %s: %v", task.TaskID, err)
+		}
+	}
+
+	graph := orch.GetDependencyGraph()
+	if len(graph) == 0 {
+		t.Fatal("Expected non-empty dependency graph")
+	}
+
+	// Verify dependency relationships
+	if deps, ok := graph["a"]; !ok {
+		t.Error("Expected task 'a' in dependency graph")
+	} else if len(deps) != 1 || deps[0] != "b" {
+		t.Errorf("Expected task 'a' to depend on ['b'], got %v", deps)
+	}
+
+	if deps, ok := graph["b"]; !ok {
+		t.Error("Expected task 'b' in dependency graph")
+	} else if len(deps) != 1 || deps[0] != "c" {
+		t.Errorf("Expected task 'b' to depend on ['c'], got %v", deps)
+	}
+}
+
+func TestOrchestrator_GetDependencyGraph_Empty(t *testing.T) {
+	orch := NewOrchestrator()
+	graph := orch.GetDependencyGraph()
+	if len(graph) != 0 {
+		t.Errorf("Expected empty dependency graph from fresh orchestrator, got %v", graph)
+	}
+}
+
+func TestOrchestrator_ResolveCall(t *testing.T) {
+	orch := NewOrchestrator()
+	err := orch.ResolveCall("nonexistent-call", map[string]any{"output": "test"})
+	if err == nil {
+		t.Error("Expected error resolving non-existent call, got nil")
+	}
+}
+
 func waitForTaskStatus(t *testing.T, orch *Orchestrator, taskID string, expected types.TaskStatus) types.TaskStatus {
 	t.Helper()
 
