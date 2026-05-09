@@ -323,9 +323,11 @@ func TestOrchestrator_MultipleTasks(t *testing.T) {
 }
 
 func TestOrchestrator_ParseSLA_Valid(t *testing.T) {
-	timeoutMs, maxRetries := parseSLA(map[string]string{
-		types.SLAKeyTimeoutMs:  "5000",
-		types.SLAKeyMaxRetries: "2",
+	timeoutMs, maxRetries, failureClass, backoff := parseSLA(map[string]string{
+		types.SLAKeyTimeoutMs:    "5000",
+		types.SLAKeyMaxRetries:   "2",
+		types.SLAKeyFailureClass: "fatal",
+		types.SLAKeyBackoff:      "linear",
 	})
 	if timeoutMs != 5000 {
 		t.Errorf("Expected timeoutMs=5000, got %d", timeoutMs)
@@ -333,28 +335,48 @@ func TestOrchestrator_ParseSLA_Valid(t *testing.T) {
 	if maxRetries != 2 {
 		t.Errorf("Expected maxRetries=2, got %d", maxRetries)
 	}
+	if failureClass != "fatal" {
+		t.Errorf("Expected failureClass=fatal, got %s", failureClass)
+	}
+	if backoff != "linear" {
+		t.Errorf("Expected backoff=linear, got %s", backoff)
+	}
 }
 
 func TestOrchestrator_ParseSLA_Missing(t *testing.T) {
-	timeoutMs, maxRetries := parseSLA(nil)
+	timeoutMs, maxRetries, failureClass, backoff := parseSLA(nil)
 	if timeoutMs != 0 {
 		t.Errorf("Expected default timeoutMs=0, got %d", timeoutMs)
 	}
 	if maxRetries != 0 {
 		t.Errorf("Expected default maxRetries=0, got %d", maxRetries)
 	}
+	if failureClass != "" {
+		t.Errorf("Expected default failureClass=empty, got %s", failureClass)
+	}
+	if backoff != "" {
+		t.Errorf("Expected default backoff=empty, got %s", backoff)
+	}
 }
 
 func TestOrchestrator_ParseSLA_Invalid(t *testing.T) {
-	timeoutMs, maxRetries := parseSLA(map[string]string{
-		types.SLAKeyTimeoutMs:  "not-a-number",
-		types.SLAKeyMaxRetries: "xyz",
+	timeoutMs, maxRetries, failureClass, backoff := parseSLA(map[string]string{
+		types.SLAKeyTimeoutMs:    "not-a-number",
+		types.SLAKeyMaxRetries:   "xyz",
+		types.SLAKeyFailureClass: "bad-value",
+		types.SLAKeyBackoff:      "unknown",
 	})
 	if timeoutMs != 0 {
 		t.Errorf("Invalid timeoutMs should default to 0, got %d", timeoutMs)
 	}
 	if maxRetries != 0 {
 		t.Errorf("Invalid maxRetries should default to 0, got %d", maxRetries)
+	}
+	if failureClass != "bad-value" {
+		t.Errorf("failureClass should pass through as-is, got %s", failureClass)
+	}
+	if backoff != "unknown" {
+		t.Errorf("backoff should pass through as-is, got %s", backoff)
 	}
 }
 
@@ -679,6 +701,117 @@ func TestOrchestrator_ResolveCall(t *testing.T) {
 	err := orch.ResolveCall("nonexistent-call", map[string]any{"output": "test"})
 	if err == nil {
 		t.Error("Expected error resolving non-existent call, got nil")
+	}
+}
+
+func TestOrchestrator_BackoffDelay_Default(t *testing.T) {
+	d := backoffDelay("", 0)
+	if d != 100*time.Millisecond {
+		t.Errorf("Expected default backoff 100ms, got %v", d)
+	}
+	d = backoffDelay("fixed", 5)
+	if d != 100*time.Millisecond {
+		t.Errorf("Expected fixed backoff 100ms, got %v", d)
+	}
+}
+
+func TestOrchestrator_BackoffDelay_Linear(t *testing.T) {
+	d := backoffDelay("linear", 0)
+	if d != 100*time.Millisecond {
+		t.Errorf("Expected linear backoff[0]=100ms, got %v", d)
+	}
+	d = backoffDelay("linear", 2)
+	if d != 300*time.Millisecond {
+		t.Errorf("Expected linear backoff[2]=300ms, got %v", d)
+	}
+}
+
+func TestOrchestrator_BackoffDelay_Exponential(t *testing.T) {
+	d := backoffDelay("exponential", 0)
+	if d != 100*time.Millisecond {
+		t.Errorf("Expected exp backoff[0]=100ms, got %v", d)
+	}
+	d = backoffDelay("exponential", 2)
+	if d != 400*time.Millisecond {
+		t.Errorf("Expected exp backoff[2]=400ms, got %v", d)
+	}
+	d = backoffDelay("exponential", 10)
+	if d > 30*time.Second {
+		t.Errorf("Expected exp backoff[10] capped at 30s, got %v", d)
+	}
+}
+
+func TestOrchestrator_FatalFailureClass(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+
+	failingContract := &types.AgentContract{
+		ContractID: "fatal-fail",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "msg", Type: types.FieldTypeString, Required: false}},
+		},
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{{Name: "required", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	if err := orch.RegisterContract(failingContract); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Failed to start orchestrator: %v", err)
+	}
+
+	// fatal failure class with max_retries=3: should not retry, immediate fail
+	task := &types.AgentTask{
+		TaskID:     "fatal-task",
+		ContractID: "fatal-fail",
+		Input:      map[string]any{"msg": "test"},
+		Metadata: map[string]string{
+			types.SLAKeyMaxRetries:   "3",
+			types.SLAKeyFailureClass: types.FailureClassFatal,
+		},
+	}
+	if err := orch.SubmitTask(task); err != nil {
+		t.Fatalf("Failed to submit task: %v", err)
+	}
+
+	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusFailed)
+	if status != types.TaskStatusFailed {
+		t.Errorf("Expected fatal task to fail, got %s", status)
+	}
+}
+
+func TestOrchestrator_DegradableFailureClass_CompletesNormally(t *testing.T) {
+	orch := NewOrchestrator()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Failed to start orchestrator: %v", err)
+	}
+
+	// degradable task that completes normally
+	task := &types.AgentTask{
+		TaskID:     "degradable-ok",
+		ContractID: "default",
+		Input:      map[string]any{"message": "test"},
+		Metadata: map[string]string{
+			types.SLAKeyFailureClass: types.FailureClassDegradable,
+		},
+	}
+	if err := orch.SubmitTask(task); err != nil {
+		t.Fatalf("Failed to submit task: %v", err)
+	}
+
+	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusCompleted)
+	if status != types.TaskStatusCompleted {
+		t.Errorf("Expected degradable task to complete, got %s", status)
 	}
 }
 

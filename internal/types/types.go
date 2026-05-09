@@ -88,6 +88,22 @@ const (
 	SLAKeyTimeoutMs    = "sla.timeout_ms"
 	SLAKeyMaxRetries   = "sla.max_retries"
 	SLAKeyFailureClass = "sla.failure_class"
+	SLAKeyPriority     = "sla.priority"
+	SLAKeyBackoff      = "sla.backoff"
+)
+
+// Failure class values for SLAKeyFailureClass
+const (
+	FailureClassRetryable  = "retryable"
+	FailureClassFatal      = "fatal"
+	FailureClassDegradable = "degradable"
+)
+
+// Backoff strategy values for SLAKeyBackoff
+const (
+	BackoffFixed       = "fixed"
+	BackoffLinear      = "linear"
+	BackoffExponential = "exponential"
 )
 
 // TaskMetadataKeyExecutor selects the executor type for dispatch.
@@ -144,6 +160,35 @@ func NewAgentErrorWithCause(code ErrorCode, message string, cause error) *AgentE
 type ExecutionResult struct {
 	Output map[string]any `json:"output"`
 	Error  string         `json:"error,omitempty"`
+}
+
+// ToolDefinition describes a tool available to the model provider.
+type ToolDefinition struct {
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Parameters  []FieldDef `json:"parameters"`
+}
+
+// ToolCall represents a request from the provider to invoke a tool.
+type ToolCall struct {
+	ID    string         `json:"id"`
+	Name  string         `json:"name"`
+	Input map[string]any `json:"input"`
+}
+
+// ToolResult is the result of a tool execution.
+type ToolResult struct {
+	CallID string         `json:"call_id"`
+	Output map[string]any `json:"output"`
+	Error  string         `json:"error,omitempty"`
+}
+
+// ModelMessage represents a single turn in a multi-turn conversation.
+type ModelMessage struct {
+	Role       string     `json:"role"` // "user" | "assistant" | "tool"
+	Content    string     `json:"content,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 }
 
 // HumanCallRequest represents a request to call a human
