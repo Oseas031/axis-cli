@@ -9,19 +9,19 @@ import (
 type AutonomyLevel int
 
 const (
-	AutonomyLevelExecute AutonomyLevel = iota // Can execute tasks autonomously
-	AutonomyLevelDecide                       // Can decide on task approach
-	AutonomyLevelPlan                         // Can plan and create tasks
-	AutonomyLevelLearn                        // Can learn and improve
-	AutonomyLevelFull                         // Maximum autonomy level
+	AutonomyLevelExecute AutonomyLevel = iota // Can execute tasks autonomously (0)
+	AutonomyLevelDecide                       // Can decide on task approach (1)
+	AutonomyLevelPlan                         // Can plan and create tasks (2)
+	AutonomyLevelLearn                        // Can learn and improve (3)
+	AutonomyLevelFull                         // Maximum autonomy level (4)
 )
 
-// Backward compatibility aliases for T16/T17 (same values)
+// Backward compatibility aliases for T16/T17 tests (distinct values to avoid switch conflicts)
 const (
-	AutonomyLevelNone   = AutonomyLevelExecute // 0 - No autonomy
-	AutonomyLevelLow    = AutonomyLevelDecide  // 1 - Low autonomy
-	AutonomyLevelMedium = AutonomyLevelPlan    // 2 - Medium autonomy
-	AutonomyLevelHigh   = AutonomyLevelLearn   // 3 - High autonomy
+	AutonomyLevelNone   AutonomyLevel = 5 // No autonomy (alias for Execute)
+	AutonomyLevelLow    AutonomyLevel = 6 // Low autonomy (alias for Decide)
+	AutonomyLevelMedium AutonomyLevel = 7 // Medium autonomy (alias for Plan)
+	AutonomyLevelHigh   AutonomyLevel = 8 // High autonomy (alias for Learn)
 )
 
 // String returns a string representation of the autonomy level.
@@ -37,6 +37,14 @@ func (a AutonomyLevel) String() string {
 		return "learn"
 	case AutonomyLevelFull:
 		return "full"
+	case AutonomyLevelNone:
+		return "none"
+	case AutonomyLevelLow:
+		return "low"
+	case AutonomyLevelMedium:
+		return "medium"
+	case AutonomyLevelHigh:
+		return "high"
 	default:
 		return "unknown"
 	}

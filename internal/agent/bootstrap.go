@@ -8,25 +8,45 @@ import (
 	"github.com/axis-cli/axis/internal/types"
 )
 
-// SchedulerAccess is the interface for scheduler operations needed by BootstrapOrchestrator.
+// SchedulerAccess is the interface for scheduler operations needed by BootstrapLoop.
 type SchedulerAccess interface {
 	SubmitTask(task *types.AgentTask) error
 	GetAllTasks() []*types.AgentTask
 	GetDependencyGraph() map[string][]string
 }
 
-// BootstrapOrchestrator wraps the base Orchestrator with self-iteration tracking.
-// It manages the bootstrap loop that allows agents to spawn follow-up tasks.
-type BootstrapOrchestrator struct {
+// BootstrapLoop is the interface for bootstrap loop management.
+// It manages the self-iteration loop that allows agents to spawn follow-up tasks.
+type BootstrapLoop interface {
+	// SubmitSelfIterationTask submits a task with self-context injection and loop tracking.
+	SubmitSelfIterationTask(task *types.AgentTask) error
+	// TrackIteration increments and returns the iteration count for a task.
+	TrackIteration(taskID string) int
+	// GetIterationCount returns the current iteration count for a task.
+	GetIterationCount(taskID string) int
+	// IsIterationAllowed checks if a task can proceed with another iteration.
+	IsIterationAllowed(taskID string) bool
+	// ResetIteration resets the iteration count for a task.
+	ResetIteration(taskID string)
+	// GetLoopStatus returns the loop tracking status for all tasks.
+	GetLoopStatus() map[string]int
+	// GetAllTasks returns all tasks from the scheduler.
+	GetAllTasks() []*types.AgentTask
+	// GetDependencyGraph returns the dependency graph from the scheduler.
+	GetDependencyGraph() map[string][]string
+}
+
+// bootstrapOrchestrator is the internal implementation of BootstrapLoop.
+type bootstrapOrchestrator struct {
 	scheduler     SchedulerAccess
 	loopTracking  map[string]int
 	maxIterations int
 	mu            sync.RWMutex
 }
 
-// NewBootstrapOrchestrator creates a new BootstrapOrchestrator with the given scheduler and max iterations.
-func NewBootstrapOrchestrator(scheduler SchedulerAccess, maxIterations int) *BootstrapOrchestrator {
-	return &BootstrapOrchestrator{
+// NewBootstrapOrchestrator creates a new BootstrapLoop implementation with the given scheduler and max iterations.
+func NewBootstrapOrchestrator(scheduler SchedulerAccess, maxIterations int) BootstrapLoop {
+	return &bootstrapOrchestrator{
 		scheduler:     scheduler,
 		loopTracking:  make(map[string]int),
 		maxIterations: maxIterations,
@@ -34,9 +54,7 @@ func NewBootstrapOrchestrator(scheduler SchedulerAccess, maxIterations int) *Boo
 }
 
 // SubmitSelfIterationTask submits a task with self-context injection and loop tracking.
-// It checks if the loop count exceeds maxIterations, injects SelfContext into metadata,
-// and submits to the scheduler.
-func (bo *BootstrapOrchestrator) SubmitSelfIterationTask(task *types.AgentTask) error {
+func (bo *bootstrapOrchestrator) SubmitSelfIterationTask(task *types.AgentTask) error {
 	bo.mu.Lock()
 	defer bo.mu.Unlock()
 
@@ -66,7 +84,7 @@ func (bo *BootstrapOrchestrator) SubmitSelfIterationTask(task *types.AgentTask) 
 }
 
 // buildSelfContextMetadata builds metadata from self context for task injection.
-func (bo *BootstrapOrchestrator) buildSelfContextMetadata(task *types.AgentTask) map[string]string {
+func (bo *bootstrapOrchestrator) buildSelfContextMetadata(task *types.AgentTask) map[string]string {
 	metadata := make(map[string]string)
 
 	// Inject loop iteration count
@@ -92,7 +110,7 @@ func (bo *BootstrapOrchestrator) buildSelfContextMetadata(task *types.AgentTask)
 }
 
 // TrackIteration increments and returns the iteration count for a task.
-func (bo *BootstrapOrchestrator) TrackIteration(taskID string) int {
+func (bo *bootstrapOrchestrator) TrackIteration(taskID string) int {
 	bo.mu.Lock()
 	defer bo.mu.Unlock()
 	bo.loopTracking[taskID]++
@@ -100,28 +118,28 @@ func (bo *BootstrapOrchestrator) TrackIteration(taskID string) int {
 }
 
 // GetIterationCount returns the current iteration count for a task.
-func (bo *BootstrapOrchestrator) GetIterationCount(taskID string) int {
+func (bo *bootstrapOrchestrator) GetIterationCount(taskID string) int {
 	bo.mu.RLock()
 	defer bo.mu.RUnlock()
 	return bo.loopTracking[taskID]
 }
 
 // IsIterationAllowed checks if a task can proceed with another iteration.
-func (bo *BootstrapOrchestrator) IsIterationAllowed(taskID string) bool {
+func (bo *bootstrapOrchestrator) IsIterationAllowed(taskID string) bool {
 	bo.mu.RLock()
 	defer bo.mu.RUnlock()
 	return bo.loopTracking[taskID] < bo.maxIterations
 }
 
 // ResetIteration resets the iteration count for a task.
-func (bo *BootstrapOrchestrator) ResetIteration(taskID string) {
+func (bo *bootstrapOrchestrator) ResetIteration(taskID string) {
 	bo.mu.Lock()
 	defer bo.mu.Unlock()
 	delete(bo.loopTracking, taskID)
 }
 
 // GetLoopStatus returns the loop tracking status for all tasks.
-func (bo *BootstrapOrchestrator) GetLoopStatus() map[string]int {
+func (bo *bootstrapOrchestrator) GetLoopStatus() map[string]int {
 	bo.mu.RLock()
 	defer bo.mu.RUnlock()
 	status := make(map[string]int, len(bo.loopTracking))
@@ -132,11 +150,11 @@ func (bo *BootstrapOrchestrator) GetLoopStatus() map[string]int {
 }
 
 // GetAllTasks returns all tasks from the scheduler.
-func (bo *BootstrapOrchestrator) GetAllTasks() []*types.AgentTask {
+func (bo *bootstrapOrchestrator) GetAllTasks() []*types.AgentTask {
 	return bo.scheduler.GetAllTasks()
 }
 
 // GetDependencyGraph returns the dependency graph from the scheduler.
-func (bo *BootstrapOrchestrator) GetDependencyGraph() map[string][]string {
+func (bo *bootstrapOrchestrator) GetDependencyGraph() map[string][]string {
 	return bo.scheduler.GetDependencyGraph()
 }

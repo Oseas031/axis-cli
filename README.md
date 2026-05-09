@@ -91,7 +91,7 @@ Axis 当前仍需要早期工程结构，但它们不是终点：
 
 ## 当前状态
 
-Milestone 1 ✅ | Milestone 2 ✅ | Milestone 3 Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ | M4 🚧
+Milestone 1 ✅ | Milestone 2 ✅ | Milestone 3 ✅ | M4 ✅ | M5 Phase 5.1-5.4 ✅
 
 Axis 已具备：
 
@@ -103,7 +103,11 @@ Axis 已具备：
 - M4 Phase 4.1：Anthropic / OpenAI 真实 LLM provider、token accounting、safe JSON
 - M4 Phase 4.2：FileReadTool、FileWriteTool、HTTPClientTool、tool permission scopes
 - M4 Phase 4.3：Circuit breaker、provider wiring、test coverage (provider 91.8%, tool 93.7%, executor 95.1%)
-- M4 Phase 4.4：CLI `--provider` flag、shell `tools` command（进行中）
+- M4 Phase 4.4：CLI `--provider` flag、shell `tools` command
+- M5 Phase 5.1：AgentExecutor 接口、MockAgentExecutor、orchestrator 注入
+- M5 Phase 5.2：SelfContext、ContextBuilder、ContextCompressor
+- M5 Phase 5.3：self-iteration contracts（analyze/implement/validate/update-docs/review/spawn）
+- M5 Phase 5.4：BootstrapOrchestrator 循环跟踪、FollowUpTaskGenerator、AutonomyTransition 规则引擎
 
 ## 快速开始
 
@@ -160,12 +164,18 @@ Windows 本地开发建议输出到 `axis-dev.exe`，避免覆盖或锁定根目
 
 ## 当前最重要的下一步
 
-Milestone 4：
+M5 Phase 5.5：
 
 ```text
-- 真实 LLM 集成（OpenAI / Anthropic / 本地模型）
-- 更多工具（文件读写、HTTP client）
-- 安全沙箱
+- File-backed StateStore（持久化状态存储）
+- 错误码扩展（自迭代相关错误）
+- SLA for self-iteration（自迭代任务的 SLA 配置）
 ```
 
-在 M1-M3 验证了调度、执行、工具调用的基础能力后，M4 将打通真实 LLM 作为推理后端。
+M5 Phase 5.6（自举完成）：
+
+```text
+- 完整 bootstrap loop 执行
+- 自主权升级/降级生效
+- 自生成后续任务验证
+```

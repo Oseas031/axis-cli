@@ -31,17 +31,6 @@ type AgentExecutionResult struct {
 	Error            string
 }
 
-// AutonomyLevel represents the level of autonomy an agent has earned.
-type AutonomyLevel int
-
-const (
-	AutonomyLevelNone   AutonomyLevel = 0
-	AutonomyLevelLow    AutonomyLevel = 1
-	AutonomyLevelMedium AutonomyLevel = 2
-	AutonomyLevelHigh   AutonomyLevel = 3
-	AutonomyLevelFull   AutonomyLevel = 4
-)
-
 // AutonomyDelta represents a change in autonomy level.
 type AutonomyDelta struct {
 	Delta  int // positive for earned, negative for lost
@@ -54,14 +43,4 @@ type ValidationSummary struct {
 	TestsFailed  int
 	Coverage     float64
 	IsAcceptable bool
-}
-
-// SelfContext contains the agent's self-modeling information.
-type SelfContext struct {
-	AgentID        string
-	Name           string
-	Capabilities   []string
-	CurrentTask    string
-	CompletedTasks int
-	EarnedAutonomy AutonomyLevel
 }

@@ -135,14 +135,7 @@ func (d *DispatcherImpl) executeAgentTask(task *types.AgentTask) (*types.TaskRes
 		}, fmt.Errorf("agent executor not configured")
 	}
 
-	selfContext := &agent.SelfContext{
-		AgentID:        "agent-001",
-		Name:           "MockAgent",
-		Capabilities:   []string{"code_generation", "debugging", "refactoring", "analysis"},
-		CurrentTask:    task.TaskID,
-		CompletedTasks: 0,
-		EarnedAutonomy: agent.AutonomyLevelLow,
-	}
+	selfContext := agent.NewSelfContext(task.TaskID)
 
 	agentReq := &agent.AgentExecutionRequest{
 		Task:        task,
