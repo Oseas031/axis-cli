@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-09T08:45:43.041Z",
+  "timestamp": "2026-05-09T10:00:43.104Z",
   "projectRoot": "C:\\Users\\ASUS\\Desktop\\axis-cli",
   "structure": {
     "hasPackageJson": false,
@@ -7,5 +7,5 @@
     "hasClaudeConfig": true,
     "hasClaudeFlow": true
   },
-  "scannedAt": 1778316343041
+  "scannedAt": 1778320843105
 }

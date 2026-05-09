@@ -1,112 +1,128 @@
 {
-  "timestamp": "2026-05-09T08:44:47.177Z",
+  "timestamp": "2026-05-09T09:57:15.046Z",
   "mode": "headless",
   "workerType": "optimize",
   "model": "sonnet",
-  "durationMs": 59455,
-  "executionId": "optimize_1778316227722_fspw4s",
+  "durationMs": 55676,
+  "executionId": "optimize_1778320579370_7uhtco",
   "success": true,
   "findings": {
     "sections": [
       {
-        "title": "Performance Analysis: Axis CLI (Go)",
-        "content": "\n**Note:** This is a Go CLI application with no React components. The \"re-renders\" finding is N/A.\n\n---\n\n",
+        "title": "Performance Optimization Analysis",
+        "content": "\n",
         "level": 2
       },
       {
         "title": "1. N+1 Query Patterns",
-        "content": "\n**Issue in `scheduler.GetReadyTasks`** (lines 167-209)\n```go\n// BUG: Iterates all tasks, then calls areDependenciesCompleted which does ANOTHER map lookup\nfor _, task := range s.queue {\n    if task.Status == types.TaskStatusPending && s.areDependenciesCompleted(task.Dependencies) {\n        candidates = append(candidates, task)\n    }\n}\n```\n\nThe `areDependenciesCompleted` (line 230) performs a `taskMap` lookup for each dependency, per task:\n```go\nfunc (s *SchedulerImpl) areDependenciesCompleted(dependencies []string) bool {\n    for _, depID := range dependencies {\n        task, exists := s.taskMap[depID]  // N+1 lookups!\n        // ...\n    }\n}\n```\n\n**Fix:** Batch-load tasks during the first pass:\n```go\n// Pre-fetch all dependency tasks in one pass\ndepTasks := make(map[string]*types.AgentTask, len(dependencies))\nfor _, depID := range dependencies {\n    if t, ok := s.taskMap[depID]; ok {\n        depTasks[depID] = t\n    }\n}\n// Then check using the cached map\n```\n\n---\n\n",
+        "content": "\n**Not applicable** — This codebase uses in-memory state storage (`MemoryStateStore`), not a database. There are no N+1 query issues.\n\n---\n\n",
         "level": 3
       },
       {
-        "title": "2. Caching Opportunities",
-        "content": "\n**A. `Registry.List()` allocates on every call** (tool.go:62-70)\n```go\nfunc (r *Registry) List() []types.ToolDefinition {\n    r.mu.RLock()\n    defer r.mu.RUnlock()\n    defs := make([]types.ToolDefinition, 0, len(r.tools))  // ALLOCATES every call!\n    for _, t := range r.tools {\n        defs = append(defs, t.Schema())  // Also calls Schema() repeatedly\n    }\n    return defs\n}\n```\n\n**Fix:** Cache the combined schema slice with invalidation on Register:\n```go\ntype Registry struct {\n    mu           sync.RWMutex\n    tools        map[string]Tool\n    scopes       map[string][]string\n    cachedDefs   []types.ToolDefinition  // invalidate on Register/Delete\n    cacheValid   bool\n}\n```\n\n**B. `MemoryStateStore` has no read-through cache** - every Load hits the map + mutex.\n\n**C. `parseSLA` is called per-task execution** (orchestrator.go:170) - consider caching parsed SLA:\n```go\n// Current: called on every executeTask\ntimeoutMs, maxRetries, failureClass, backoff := parseSLA(task.Metadata)\n```\n\n---\n\n",
+        "title": "2. React Re-renders",
+        "content": "\n**Not applicable** — This is a Go CLI application with no React components.\n\n---\n\n",
         "level": 3
       },
       {
-        "title": "3. Memory Leaks",
-        "content": "\n**A. Goroutine leak in `Dispatcher.Dispatch`** (dispatcher.go:45-60)\n```go\ngo func() {\n    select {\n    case <-ctx.Done():\n        return  // Orphaned if parent context cancels before select\n    case <-timeoutCtx.Done():\n        return  // Same here\n    default:\n        result, err := d.executeTask(task)\n        // ...\n    }\n}()\n```\nIf `ctx.Done()` fires between the goroutine start and the select, the goroutine exits cleanly. But if `timeoutCtx` fires first and the parent context fires *after*, the result channels may never be read.\n\n**Fix:** Use `sync.WaitGroup` with timeout or `context.AfterFunc`:\n```go\ngo func() {\n    defer wg.Done()\n    result, err := d.executeTask(task)\n    if err != nil {\n        errChan <- err\n    } else {\n        resultChan <- result\n    }\n}()\n// Select on both timeout and result\n```\n\n**B. `history` slice grows unbounded in multi-turn execution** (executor.go:140)\n```go\nvar history []types.ModelMessage  // Appends every turn, never trimmed\nmaxTurns := 10\n```\n10 turns is a hard limit, so not a major leak, but consider pre-allocating:\n```go\nhistory := make([]types.ModelMessage, 0, maxTurns*2)\n```\n\n---\n\n",
+        "title": "3. Caching Opportunities",
+        "content": "\n",
         "level": 3
       },
       {
-        "title": "4. Redundant Computations",
-        "content": "\n**A. `time.Now()` called 3x per state save** (scheduler.go:294-322)\n```go\nnow := time.Now()\nswitch status {\ncase types.TaskStatusRunning:\n    task.StartedAt = &now\ncase types.TaskStatusCompleted, types.TaskStatusFailed:\n    task.CompletedAt = &now\n}\nstate := types.TaskState{\n    Task:      task,\n    UpdatedAt: time.Now(),  // Called again!\n}\n```\n\n**Fix:** Reuse the same `now` value.\n\n**B. `sort.SliceStable` allocates closure** (scheduler.go:184-186)\n```go\nsort.SliceStable(candidates, func(i, j int) bool {\n    return getPriority(candidates[i]) > getPriority(candidates[j])\n})\n```\n`getPriority` parses metadata string → int for each comparison. With 100 tasks, this is O(n log n) string conversions.\n\n**Fix:** Pre-compute priorities during first pass:\n```go\nfor _, task := range s.queue {\n    if task.Status == types.TaskStatusPending && s.areDependenciesCompleted(task.Dependencies) {\n        task.priority = getPriority(task)  // Cache it\n        candidates = append(candidates, task)\n    }\n}\n```\n\n**C. `orchestrator.runTaskLoop` polls with 100ms sleep** when empty (line 151):\n```go\ncase <-time.After(100 * time.Millisecond):\n```\nConsider using `taskSubmitted` channel more efficiently - it already signals on new task.\n\n---\n\n",
+        "title": "3.1 **Contract Validation Results Caching** (`executor.go:220-253`)",
+        "content": "\n`ValidateInput` and `ValidateOutput` repeatedly look up contracts under read lock on every task execution. Contracts are registered once but validated on every dispatch.\n\n```go\n// CURRENT: Every call locks and looks up\nfunc (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string]any) error {\n    e.mu.RLock()\n    defer e.mu.RUnlock()\n    contract, exists := e.contracts[contractID]\n    // ...\n}\n```\n\n**Suggestion**: Cache validated contracts after registration since they don't change:\n\n```go\ntype ContractExecutorImpl struct {\n    mu             sync.RWMutex\n    contracts      map[string]*types.AgentContract\n    validatedCache map[string]*validatedContract // Add this\n}\n```\n\n",
+        "level": 4
+      },
+      {
+        "title": "3.2 **Priority Parsing in Hot Path** (`scheduler.go:214-227`)",
+        "content": "\n`getPriority` parses string metadata via `strconv.Atoi` on every call. `GetReadyTasks` calls this for every candidate task.\n\n```go\nfunc getPriority(task *types.AgentTask) int {\n    // String parsing on every call\n    n, err := strconv.Atoi(v)\n}\n```\n\n**Suggestion**: Cache parsed priority in a separate map or compute once during submission.\n\n---\n\n",
+        "level": 4
+      },
+      {
+        "title": "4. Memory Leaks",
+        "content": "\n",
         "level": 3
       },
       {
-        "title": "5. Lock Contention",
-        "content": "\n**A. `GetAllTasks` takes a full read lock** (scheduler.go:247) and does deep copies:\n```go\nfunc (s *SchedulerImpl) GetAllTasks() []*types.AgentTask {\n    s.mu.RLock()\n    defer s.mu.RUnlock()\n    // ... deep copies of every field\n}\n```\nIf called frequently (e.g., for status polling), this serializes all workers.\n\n**B. Multiple sequential locks in `executeTask`** (orchestrator.go:169-187):\n1. `scheduler.GetStatus` → RLock\n2. `scheduler.UpdateTaskStatus` → Lock\n\nCould combine into single lock if called together.\n\n---\n\n",
+        "title": "4.1 **Human Task Polling goroutine** (`dispatcher.go:178-236`)",
+        "content": "\nWhen `executeHumanTask` times out, the goroutine continues running until `deadline`. Under high load with many human task timeouts, this could accumulate.\n\n```go\nfor {\n    status, err := d.humanExecutor.GetCallStatus(task.TaskID)\n    // ...\n    time.Sleep(pollInterval) // goroutine blocked here until deadline\n}\n```\n\n",
+        "level": 4
+      },
+      {
+        "title": "4.2 **History Growth in Multi-Turn Execution** (`executor.go:139-217`)",
+        "content": "\nThe `history` slice grows unbounded within `executeMultiTurn`. For long-running tool loops, this accumulates in memory.\n\n```go\nvar history []types.ModelMessage\n// Grows every turn: history = append(history, ...)\n```\n\n**Suggestion**: Add a hard limit on history size with oldest-entry eviction.\n\n---\n\n",
+        "level": 4
+      },
+      {
+        "title": "5. Redundant Computations",
+        "content": "\n",
         "level": 3
+      },
+      {
+        "title": "5.1 **Time.Now() Called Twice Per State Save** (`scheduler.go:196-201`)",
+        "content": "\n```go\nnow := time.Now()           // First call\ntask.StartedAt = &now\nstate := types.TaskState{\n    Task:      task,\n    UpdatedAt: time.Now(),  // Second call - redundant\n}\n```\n\n**Fix**: Reuse `now`.\n\n",
+        "level": 4
+      },
+      {
+        "title": "5.2 **Multiple Map Lookups in `areDependenciesCompleted`** (`scheduler.go:230-244`)",
+        "content": "\n```go\nfunc (s *SchedulerImpl) areDependenciesCompleted(dependencies []string) bool {\n    for _, depID := range dependencies {\n        task, exists := s.taskMap[depID]  // Map lookup\n        if !exists {\n            return false\n        }\n        // ... status check\n    }\n    return true\n}\n```\n\nCalled from `GetReadyTasks` which iterates over the entire queue. Each dependency check does a map lookup.\n\n**Suggestion**: Consider caching dependency resolution or using a batch lookup.\n\n",
+        "level": 4
+      },
+      {
+        "title": "5.3 **Deep Copy Overhead in `GetAllTasks`** (`scheduler.go:247-273`)",
+        "content": "\nCreates full deep copies of all task data including slices and maps. With thousands of tasks, this is expensive.\n\n```go\ntaskCopy := *task\nif len(task.Dependencies) > 0 {\n    taskCopy.Dependencies = make([]string, len(task.Dependencies))\n    copy(taskCopy.Dependencies, task.Dependencies)\n}\nif task.Metadata != nil {\n    taskCopy.Metadata = make(map[string]string, len(task.Metadata))\n    // ...\n}\n```\n\n",
+        "level": 4
+      },
+      {
+        "title": "5.4 **String Concatenation in `detectCircularDependencies`** (`scheduler.go:89-107`)",
+        "content": "\n```go\nfunc (s *SchedulerImpl) detectCircularDependencies(...) error {\n    visited[taskID] = true\n    for _, dep := range dependencies {\n        if visited[dep] {\n            return fmt.Errorf(\"circular dependency involving task %s\", dep)\n        }\n        // ...\n    }\n}\n```\n\n**Note**: Minor, but cycle detection with DFS has O(n) complexity per submission.\n\n---\n\n",
+        "level": 4
       },
       {
         "title": "Summary Table",
-        "content": "| Issue | Severity | Impact |\n|-------|----------|--------|\n| N+1 dependency lookups | Medium | O(n×d) → O(n+d) |\n| Registry.List() allocation | Low | Per-call GC pressure |\n| Goroutine leak potential | Medium | Resource exhaustion under cancellation |\n| Redundant time.Now() calls | Low | Minor CPU waste |\n| sort.SliceStable with string parsing | Medium | O(n log n) → O(n) |\n| 100ms polling interval | Low | Latency for new tasks |\n\nThe N+1 dependency lookup in `GetReadyTasks` is the highest-impact finding.",
+        "content": "| Category | Issue | Severity | Location |\n|----------|-------|----------|----------|\n| Cache | Contract validation not cached | Medium | `executor.go:220` |\n| Cache | Priority parsing repeated | Low | `scheduler.go:214` |\n| Memory | Goroutine accumulation on human task timeout | Medium | `dispatcher.go:195` |\n| Memory | Unbounded history in multi-turn | Low | `executor.go:140` |\n| Compute | `time.Now()` called twice | Low | `scheduler.go:196-201` |\n| Compute | Map lookups per dependency check | Low | `scheduler.go:230` |\n| Compute | Deep copy overhead in GetAllTasks | Medium | `scheduler.go:247` |",
         "level": 3
       }
     ],
     "codeBlocks": [
       {
         "language": "go",
-        "code": "// BUG: Iterates all tasks, then calls areDependenciesCompleted which does ANOTHER map lookup\nfor _, task := range s.queue {\n    if task.Status == types.TaskStatusPending && s.areDependenciesCompleted(task.Dependencies) {\n        candidates = append(candidates, task)\n    }\n}"
+        "code": "// CURRENT: Every call locks and looks up\nfunc (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string]any) error {\n    e.mu.RLock()\n    defer e.mu.RUnlock()\n    contract, exists := e.contracts[contractID]\n    // ...\n}"
       },
       {
         "language": "go",
-        "code": "func (s *SchedulerImpl) areDependenciesCompleted(dependencies []string) bool {\n    for _, depID := range dependencies {\n        task, exists := s.taskMap[depID]  // N+1 lookups!\n        // ...\n    }\n}"
+        "code": "type ContractExecutorImpl struct {\n    mu             sync.RWMutex\n    contracts      map[string]*types.AgentContract\n    validatedCache map[string]*validatedContract // Add this\n}"
       },
       {
         "language": "go",
-        "code": "// Pre-fetch all dependency tasks in one pass\ndepTasks := make(map[string]*types.AgentTask, len(dependencies))\nfor _, depID := range dependencies {\n    if t, ok := s.taskMap[depID]; ok {\n        depTasks[depID] = t\n    }\n}\n// Then check using the cached map"
+        "code": "func getPriority(task *types.AgentTask) int {\n    // String parsing on every call\n    n, err := strconv.Atoi(v)\n}"
       },
       {
         "language": "go",
-        "code": "func (r *Registry) List() []types.ToolDefinition {\n    r.mu.RLock()\n    defer r.mu.RUnlock()\n    defs := make([]types.ToolDefinition, 0, len(r.tools))  // ALLOCATES every call!\n    for _, t := range r.tools {\n        defs = append(defs, t.Schema())  // Also calls Schema() repeatedly\n    }\n    return defs\n}"
+        "code": "for {\n    status, err := d.humanExecutor.GetCallStatus(task.TaskID)\n    // ...\n    time.Sleep(pollInterval) // goroutine blocked here until deadline\n}"
       },
       {
         "language": "go",
-        "code": "type Registry struct {\n    mu           sync.RWMutex\n    tools        map[string]Tool\n    scopes       map[string][]string\n    cachedDefs   []types.ToolDefinition  // invalidate on Register/Delete\n    cacheValid   bool\n}"
+        "code": "var history []types.ModelMessage\n// Grows every turn: history = append(history, ...)"
       },
       {
         "language": "go",
-        "code": "// Current: called on every executeTask\ntimeoutMs, maxRetries, failureClass, backoff := parseSLA(task.Metadata)"
+        "code": "now := time.Now()           // First call\ntask.StartedAt = &now\nstate := types.TaskState{\n    Task:      task,\n    UpdatedAt: time.Now(),  // Second call - redundant\n}"
       },
       {
         "language": "go",
-        "code": "go func() {\n    select {\n    case <-ctx.Done():\n        return  // Orphaned if parent context cancels before select\n    case <-timeoutCtx.Done():\n        return  // Same here\n    default:\n        result, err := d.executeTask(task)\n        // ...\n    }\n}()"
+        "code": "func (s *SchedulerImpl) areDependenciesCompleted(dependencies []string) bool {\n    for _, depID := range dependencies {\n        task, exists := s.taskMap[depID]  // Map lookup\n        if !exists {\n            return false\n        }\n        // ... status check\n    }\n    return true\n}"
       },
       {
         "language": "go",
-        "code": "go func() {\n    defer wg.Done()\n    result, err := d.executeTask(task)\n    if err != nil {\n        errChan <- err\n    } else {\n        resultChan <- result\n    }\n}()\n// Select on both timeout and result"
+        "code": "taskCopy := *task\nif len(task.Dependencies) > 0 {\n    taskCopy.Dependencies = make([]string, len(task.Dependencies))\n    copy(taskCopy.Dependencies, task.Dependencies)\n}\nif task.Metadata != nil {\n    taskCopy.Metadata = make(map[string]string, len(task.Metadata))\n    // ...\n}"
       },
       {
         "language": "go",
-        "code": "var history []types.ModelMessage  // Appends every turn, never trimmed\nmaxTurns := 10"
-      },
-      {
-        "language": "go",
-        "code": "history := make([]types.ModelMessage, 0, maxTurns*2)"
-      },
-      {
-        "language": "go",
-        "code": "now := time.Now()\nswitch status {\ncase types.TaskStatusRunning:\n    task.StartedAt = &now\ncase types.TaskStatusCompleted, types.TaskStatusFailed:\n    task.CompletedAt = &now\n}\nstate := types.TaskState{\n    Task:      task,\n    UpdatedAt: time.Now(),  // Called again!\n}"
-      },
-      {
-        "language": "go",
-        "code": "sort.SliceStable(candidates, func(i, j int) bool {\n    return getPriority(candidates[i]) > getPriority(candidates[j])\n})"
-      },
-      {
-        "language": "go",
-        "code": "for _, task := range s.queue {\n    if task.Status == types.TaskStatusPending && s.areDependenciesCompleted(task.Dependencies) {\n        task.priority = getPriority(task)  // Cache it\n        candidates = append(candidates, task)\n    }\n}"
-      },
-      {
-        "language": "go",
-        "code": "case <-time.After(100 * time.Millisecond):"
-      },
-      {
-        "language": "go",
-        "code": "func (s *SchedulerImpl) GetAllTasks() []*types.AgentTask {\n    s.mu.RLock()\n    defer s.mu.RUnlock()\n    // ... deep copies of every field\n}"
+        "code": "func (s *SchedulerImpl) detectCircularDependencies(...) error {\n    visited[taskID] = true\n    for _, dep := range dependencies {\n        if visited[dep] {\n            return fmt.Errorf(\"circular dependency involving task %s\", dep)\n        }\n        // ...\n    }\n}"
       }
     ]
   },
-  "rawOutputPreview": "## Performance Analysis: Axis CLI (Go)\n\n**Note:** This is a Go CLI application with no React components. The \"re-renders\" finding is N/A.\n\n---\n\n### 1. N+1 Query Patterns\n\n**Issue in `scheduler.GetReadyTasks`** (lines 167-209)\n```go\n// BUG: Iterates all tasks, then calls areDependenciesCompleted which does ANOTHER map lookup\nfor _, task := range s.queue {\n    if task.Status == types.TaskStatusPending && s.areDependenciesCompleted(task.Dependencies) {\n        candidates = append(candidates, task)\n    }\n}\n```\n\nThe `areDependenciesCompleted` (line 230) performs a `taskMap` lookup for each dependency, per task:\n```go\nfunc (s *SchedulerImpl) areDependenciesCompleted(dependencies []string) bool {\n    for _, depID := range dependencies {\n        task, exists := s.taskMap[depID]  // N+1 lookups!\n        // ...\n    }\n}\n```\n\n**Fix:** Batch-load tasks during the first pass:\n```go\n// Pre-fetch all dependency tasks in one pass\ndepTasks := make(map[string]*types.AgentTask, len(dependencies))\nfor _, depID := range dependencies {\n    if t, ok := s.taskMap[depID]; ok {\n        depTasks[depID] = t\n    }\n}\n// Then check using the cached map\n```\n\n---\n\n### 2. Caching Opportunities\n\n**A. `Registry.List()` allocates on every call** (tool.go:62-70)\n```go\nfunc (r *Registry) List() []types.ToolDefinition {\n    r.mu.RLock()\n    defer r.mu.RUnlock()\n    defs := make([]types.ToolDefinition, 0, len(r.tools))  // ALLOCATES every call!\n    for _, t := range r.tools {\n        defs = append(defs, t.Schema())  // Also calls Schema() repeatedly\n    }\n    return defs\n}\n```\n\n**Fix:** Cache the combined schema slice with invalidation on Register:\n```go\ntype Registry struct {\n    mu           sync.RWMutex\n    tools        map[string]Tool\n    scopes       map[string][]string\n    cachedDefs   []types.ToolDefinition  // invalidate on Register/Delete\n    cacheValid   bool\n}\n```\n\n**B. `MemoryStateStore` has no read-through cache** - every Load hits the map + mutex.\n\n**C. `parseSLA` is called per-task execution*",
-  "rawOutputLength": 5688
+  "rawOutputPreview": "Based on my analysis of this Go codebase, here are the performance findings:\n\n---\n\n## Performance Optimization Analysis\n\n### 1. N+1 Query Patterns\n\n**Not applicable** — This codebase uses in-memory state storage (`MemoryStateStore`), not a database. There are no N+1 query issues.\n\n---\n\n### 2. React Re-renders\n\n**Not applicable** — This is a Go CLI application with no React components.\n\n---\n\n### 3. Caching Opportunities\n\n#### 3.1 **Contract Validation Results Caching** (`executor.go:220-253`)\n\n`ValidateInput` and `ValidateOutput` repeatedly look up contracts under read lock on every task execution. Contracts are registered once but validated on every dispatch.\n\n```go\n// CURRENT: Every call locks and looks up\nfunc (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string]any) error {\n    e.mu.RLock()\n    defer e.mu.RUnlock()\n    contract, exists := e.contracts[contractID]\n    // ...\n}\n```\n\n**Suggestion**: Cache validated contracts after registration since they don't change:\n\n```go\ntype ContractExecutorImpl struct {\n    mu             sync.RWMutex\n    contracts      map[string]*types.AgentContract\n    validatedCache map[string]*validatedContract // Add this\n}\n```\n\n#### 3.2 **Priority Parsing in Hot Path** (`scheduler.go:214-227`)\n\n`getPriority` parses string metadata via `strconv.Atoi` on every call. `GetReadyTasks` calls this for every candidate task.\n\n```go\nfunc getPriority(task *types.AgentTask) int {\n    // String parsing on every call\n    n, err := strconv.Atoi(v)\n}\n```\n\n**Suggestion**: Cache parsed priority in a separate map or compute once during submission.\n\n---\n\n### 4. Memory Leaks\n\n#### 4.1 **Human Task Polling goroutine** (`dispatcher.go:178-236`)\n\nWhen `executeHumanTask` times out, the goroutine continues running until `deadline`. Under high load with many human task timeouts, this could accumulate.\n\n```go\nfor {\n    status, err := d.humanExecutor.GetCallStatus(task.TaskID)\n    // ...\n    time.Sleep(pollInterval) // goroutine blocked here u",
+  "rawOutputLength": 4840
 }
