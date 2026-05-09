@@ -17,5 +17,5 @@ func (e *EchoModelProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 	output["contract_id"] = req.ContractID
 	output["status"] = "ok"
 	output["provider"] = "echo"
-	return &ModelResponse{Output: output}, nil
+	return &ModelResponse{Output: output, InputTokens: 100, OutputTokens: 50}, nil
 }

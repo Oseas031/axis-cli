@@ -637,3 +637,42 @@ func TestContractExecutor_ValidateEnum_IntFloat64InEnum(t *testing.T) {
 		t.Errorf("Float64 42 should be valid int 42 in enum: %v", err)
 	}
 }
+
+func TestSafeMarshal_NormalInput(t *testing.T) {
+	input := map[string]any{"key": "value", "num": 42}
+	data, err := safeMarshal(input)
+	if err != nil {
+		t.Fatalf("safeMarshal should not error on normal input: %v", err)
+	}
+	if len(data) == 0 {
+		t.Error("safeMarshal should return non-empty data")
+	}
+}
+
+func TestSafeMarshal_PanicRecovery(t *testing.T) {
+	// safeMarshal should recover from panic and return error
+	// Use a type that actually panics during marshaling
+	panicStruct := &struct {
+		Name string
+	}{
+		Name: "test",
+	}
+	panicProvider := &panicJSONProvider{data: panicStruct}
+
+	data, err := safeMarshal(panicProvider)
+	if err == nil {
+		t.Error("safeMarshal should return error when marshal panics")
+	}
+	if data != nil && len(data) > 0 {
+		t.Error("safeMarshal should return nil or empty data when marshal panics")
+	}
+}
+
+// panicJSONProvider is a type that panics when marshaled
+type panicJSONProvider struct {
+	data any
+}
+
+func (p *panicJSONProvider) MarshalJSON() ([]byte, error) {
+	panic("intentional panic for testing")
+}
