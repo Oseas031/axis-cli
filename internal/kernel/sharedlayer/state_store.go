@@ -2,6 +2,7 @@
 package sharedlayer
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/axis-cli/axis/internal/types"
@@ -41,7 +42,7 @@ func (s *MemoryStateStore) Load(taskID string) (types.TaskState, error) {
 	defer s.mu.RUnlock()
 	state, exists := s.states[taskID]
 	if !exists {
-		return types.TaskState{}, nil
+		return types.TaskState{}, fmt.Errorf("task %s not found", taskID)
 	}
 	return state, nil
 }

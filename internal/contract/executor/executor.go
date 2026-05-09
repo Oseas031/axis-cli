@@ -2,9 +2,13 @@
 package executor
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
+	"github.com/axis-cli/axis/internal/model/provider"
+	"github.com/axis-cli/axis/internal/model/tool"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -18,8 +22,10 @@ type ContractExecutor interface {
 
 // ContractExecutorImpl implements contract execution
 type ContractExecutorImpl struct {
-	mu        sync.RWMutex
-	contracts map[string]*types.AgentContract
+	mu           sync.RWMutex
+	contracts    map[string]*types.AgentContract
+	provider     provider.ModelProvider
+	toolRegistry *tool.Registry
 }
 
 // NewContractExecutor creates a new contract executor
@@ -33,11 +39,32 @@ func NewContractExecutor() *ContractExecutorImpl {
 func (e *ContractExecutorImpl) RegisterContract(contract *types.AgentContract) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+
+	// Check if contract already exists
+	if _, exists := e.contracts[contract.ContractID]; exists {
+		return fmt.Errorf("contract %s already exists", contract.ContractID)
+	}
+
 	e.contracts[contract.ContractID] = contract
 	return nil
 }
 
-// Execute executes a contract with input validation
+// SetProvider sets the model provider for execution.
+func (e *ContractExecutorImpl) SetProvider(p provider.ModelProvider) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.provider = p
+}
+
+// SetToolRegistry sets the tool registry for the contract executor.
+func (e *ContractExecutorImpl) SetToolRegistry(tr *tool.Registry) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.toolRegistry = tr
+}
+
+// Execute executes a contract: validates input, runs the provider (with optional
+// multi-turn tool loop), and validates output.
 func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) (*types.ExecutionResult, error) {
 	if err := e.ValidateInput(contractID, input); err != nil {
 		return &types.ExecutionResult{
@@ -45,11 +72,114 @@ func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) 
 		}, err
 	}
 
-	// In milestone 1, we just validate and return a placeholder result
-	// Actual execution will be handled by the dispatcher
+	e.mu.RLock()
+	p := e.provider
+	tr := e.toolRegistry
+	e.mu.RUnlock()
+
+	if p != nil {
+		req := &provider.ModelRequest{ContractID: contractID, Input: input}
+
+		// Add tools if a registry is available with registered tools.
+		hasTools := false
+		if tr != nil {
+			tools := tr.List()
+			if len(tools) > 0 {
+				req.Tools = tools
+				hasTools = true
+			}
+		}
+
+		// Multi-turn loop for tool-based execution.
+		if hasTools {
+			return e.executeMultiTurn(p, tr, req, contractID)
+		}
+
+		// Single-pass execution (backward compatible path).
+		resp, err := p.Execute(context.Background(), req)
+		if err != nil {
+			return &types.ExecutionResult{
+				Error: fmt.Sprintf("provider execution failed: %v", err),
+			}, err
+		}
+		if err := e.ValidateOutput(contractID, resp.Output); err != nil {
+			return &types.ExecutionResult{
+				Error: fmt.Sprintf("output validation failed: %v", err),
+			}, err
+		}
+		return &types.ExecutionResult{
+			Output: resp.Output,
+		}, nil
+	}
+
 	return &types.ExecutionResult{
 		Output: map[string]any{"status": "validated"},
 	}, nil
+}
+
+// executeMultiTurn runs a multi-turn tool-calling loop with a maximum of 10 turns.
+func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
+	var history []types.ModelMessage
+	maxTurns := 10
+
+	for turn := 0; turn < maxTurns; turn++ {
+		req.History = history
+		resp, err := p.Execute(context.Background(), req)
+		if err != nil {
+			return &types.ExecutionResult{
+				Error: fmt.Sprintf("provider execution failed: %v", err),
+			}, err
+		}
+
+		if len(resp.ToolCalls) > 0 {
+			assistantMsg := types.ModelMessage{
+				Role:      "assistant",
+				ToolCalls: resp.ToolCalls,
+			}
+			history = append(history, assistantMsg)
+
+			for _, tc := range resp.ToolCalls {
+				toolImpl, ok := tr.Get(tc.Name)
+				if !ok {
+					history = append(history, types.ModelMessage{
+						Role:       "tool",
+						ToolCallID: tc.ID,
+						Content:    fmt.Sprintf("error: tool %s not found", tc.Name),
+					})
+					continue
+				}
+				result, execErr := toolImpl.Execute(context.Background(), tc.Input)
+				if execErr != nil {
+					history = append(history, types.ModelMessage{
+						Role:       "tool",
+						ToolCallID: tc.ID,
+						Content:    fmt.Sprintf("error: %v", execErr),
+					})
+					continue
+				}
+				content, _ := json.Marshal(result)
+				history = append(history, types.ModelMessage{
+					Role:       "tool",
+					ToolCallID: tc.ID,
+					Content:    string(content),
+				})
+			}
+			continue
+		}
+
+		if resp.Output != nil {
+			if err := e.ValidateOutput(contractID, resp.Output); err != nil {
+				return &types.ExecutionResult{
+					Error: fmt.Sprintf("output validation failed: %v", err),
+				}, err
+			}
+			return &types.ExecutionResult{Output: resp.Output}, nil
+		}
+	}
+
+	return &types.ExecutionResult{
+		Error: "tool execution exceeded maximum turn limit (10)",
+	}, fmt.Errorf("tool execution exceeded maximum turn limit (10)")
 }
 
 // ValidateInput validates input against the contract schema
@@ -59,7 +189,7 @@ func (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string
 
 	contract, exists := e.contracts[contractID]
 	if !exists {
-		return fmt.Errorf("contract %s not found", contractID)
+		return types.NewAgentError(types.ErrContractNotFound, fmt.Sprintf("contract %s not found", contractID))
 	}
 
 	if contract.InputSchema == nil {
@@ -69,17 +199,17 @@ func (e *ContractExecutorImpl) ValidateInput(contractID string, input map[string
 	for _, field := range contract.InputSchema.Fields {
 		value, exists := input[field.Name]
 		if field.Required && !exists {
-			return fmt.Errorf("required field %s is missing", field.Name)
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("required field %s is missing", field.Name))
 		}
 
 		if exists {
 			if err := e.validateFieldType(field.Name, value, field.Type); err != nil {
-				return err
+				return types.NewAgentErrorWithCause(types.ErrContractInputInvalid, "input validation failed", err)
 			}
 
 			if len(field.Enum) > 0 {
 				if err := e.validateEnum(field.Name, value, field.Type, field.Enum); err != nil {
-					return err
+					return types.NewAgentErrorWithCause(types.ErrContractInputInvalid, "input validation failed", err)
 				}
 			}
 		}
@@ -95,7 +225,7 @@ func (e *ContractExecutorImpl) ValidateOutput(contractID string, output map[stri
 
 	contract, exists := e.contracts[contractID]
 	if !exists {
-		return fmt.Errorf("contract %s not found", contractID)
+		return types.NewAgentError(types.ErrContractNotFound, fmt.Sprintf("contract %s not found", contractID))
 	}
 
 	if contract.OutputSchema == nil {
@@ -105,12 +235,18 @@ func (e *ContractExecutorImpl) ValidateOutput(contractID string, output map[stri
 	for _, field := range contract.OutputSchema.Fields {
 		value, exists := output[field.Name]
 		if field.Required && !exists {
-			return fmt.Errorf("required field %s is missing", field.Name)
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("required field %s is missing", field.Name))
 		}
 
 		if exists {
 			if err := e.validateFieldType(field.Name, value, field.Type); err != nil {
-				return err
+				return types.NewAgentErrorWithCause(types.ErrContractInputInvalid, "input validation failed", err)
+			}
+
+			if len(field.Enum) > 0 {
+				if err := e.validateEnum(field.Name, value, field.Type, field.Enum); err != nil {
+					return types.NewAgentErrorWithCause(types.ErrContractInputInvalid, "input validation failed", err)
+				}
 			}
 		}
 	}
@@ -173,7 +309,15 @@ func (e *ContractExecutorImpl) validateEnum(fieldName string, value any, fieldTy
 		if !ok {
 			// JSON numbers are float64 by default
 			if floatVal, ok := value.(float64); ok {
+				// Check if the float value is within int range
+				if floatVal < float64(-1<<63) || floatVal > float64(1<<63-1) {
+					return fmt.Errorf("field %s value %f is out of int range", fieldName, floatVal)
+				}
 				intValue = int(floatVal)
+				// Check for precision loss
+				if float64(intValue) != floatVal {
+					return fmt.Errorf("field %s value %f has fractional part, cannot convert to int", fieldName, floatVal)
+				}
 			} else {
 				return fmt.Errorf("field %s enum validation expects int, got %T", fieldName, value)
 			}

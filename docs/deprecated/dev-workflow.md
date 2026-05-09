@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [ '*' ]
 
+# Standard: Pre-commit hook installation for local development
+# See .github/workflows/CODING_STANDARDS.md section 4.2
 jobs:
   pre-commit-checks:
     name: Pre-commit Checks
@@ -18,6 +20,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.26'
+
+      - name: Install pre-commit hook
+        run: |
+          chmod +x scripts/install-hooks.sh
+          bash scripts/install-hooks.sh
 
       - name: Format check
         run: |

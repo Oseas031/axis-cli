@@ -18,8 +18,8 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: docs/deprecated/ci-cd-quality-improvement-workflow.md
-    documentation: docs/deprecated/ci-cd-quality-improvement-workflow.md
+    file: docs/deprecated/workflows/ci-cd-quality-improvement-workflow.md
+    documentation: docs/deprecated/workflows/ci-cd-quality-improvement-workflow.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -45,8 +45,8 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: docs/deprecated/software-engineering-paradigm-workflow-improvement.md
-    documentation: docs/deprecated/software-engineering-paradigm-workflow-improvement.md
+    file: docs/deprecated/workflows/software-engineering-paradigm-workflow-improvement.md
+    documentation: docs/deprecated/workflows/software-engineering-paradigm-workflow-improvement.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -72,8 +72,8 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: docs/deprecated/comprehensive-automation-workflows.md
-    documentation: docs/deprecated/comprehensive-automation-workflows.md
+    file: docs/deprecated/workflows/comprehensive-automation-workflows.md
+    documentation: docs/deprecated/workflows/comprehensive-automation-workflows.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -135,19 +135,47 @@ workflows:
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T10:45:00Z
-    updated_at: 2026-05-08T10:45:00Z
+    updated_at: 2026-05-08T14:25:00Z
     metrics:
       success_rate: 1.0
       avg_duration: 0s
       last_execution: null
 
-  - id: wf-doc-005
+  - id: wf-entry
     name: Entry Point Workflow
     version: 1.0.0
     semver: "1.0.0"
     git_hash: null
-    timestamp: "20260508105000"
+    timestamp: "20260508142500"
     status: active
+    category: meta
+    type: dispatcher
+    triggers:
+      - manual
+    dependencies:
+      - wf-doc-004
+    implicit_dependencies: []
+    dependents: []
+    file: workflow/entry.md
+    documentation: workflow/entry.md
+    owner: "devops-team"
+    reviewers:
+      - "tech-lead"
+    created_at: 2026-05-08T14:25:00Z
+    updated_at: 2026-05-08T14:25:00Z
+    metrics:
+      success_rate: 1.0
+      avg_duration: 0s
+      last_execution: null
+    note: "Single authoritative entry point that routes all tasks to upstream workflows. Supercedes wf-doc-005."
+
+  - id: wf-doc-005
+    name: Entry Point Workflow (Legacy)
+    version: 1.0.0
+    semver: "1.0.0"
+    git_hash: null
+    timestamp: "20260508105000"
+    status: deprecated
     category: meta
     type: dispatcher
     triggers:
@@ -156,21 +184,19 @@ workflows:
     dependencies:
       - wf-doc-004
     implicit_dependencies: []
-    dependents:
-      - wf-ci
-      - wf-security
-      - wf-cd
+    dependents: []
     file: docs/deprecated/workflows/entry-workflow.md
     documentation: docs/deprecated/workflows/entry-workflow.md
     owner: "devops-team"
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T10:50:00Z
-    updated_at: 2026-05-08T10:50:00Z
+    updated_at: 2026-05-08T14:48:00Z
     metrics:
       success_rate: 1.0
       avg_duration: 0s
       last_execution: null
+    note: "Deprecated on 2026-05-08 - old dispatcher-style entry workflow replaced by wf-entry (workflow/entry.md) lightweight routing"
 
   # Implementation Workflows (Planned)
   - id: wf-dev
@@ -179,7 +205,7 @@ workflows:
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508110000"
-    status: active
+    status: deprecated
     category: development
     type: automation
     triggers:
@@ -188,17 +214,18 @@ workflows:
     dependencies: []
     implicit_dependencies: []
     dependents: []
-    file: .github/workflows/dev-workflow.yml
-    documentation: .github/workflows/dev-workflow.yml
+    file: docs/deprecated/dev-workflow.md
+    documentation: docs/deprecated/dev-workflow.md
     owner: "dev-team"
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T11:00:00Z
-    updated_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-09T14:55:00Z
     metrics:
       success_rate: null
       avg_duration: null
       last_execution: null
+    note: "Deprecated on 2026-05-09 - pre-commit hook handles local checks; CI duplicate removed per Zero Control."
 
   - id: wf-pr-check
     name: PR Quality Check Workflow
@@ -215,7 +242,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/pr-check-workflow.yml
-    documentation: workflow/pr-check-workflow.md
+    documentation: .github/workflows/pr-check-workflow.yml
     owner: "quality-team"
     reviewers:
       - "tech-lead"
@@ -301,7 +328,7 @@ workflows:
     implicit_dependencies: []
     dependents: []
     file: .github/workflows/cd-workflow.yml
-    documentation: /cd-worklow.mdd
+    documentation: .github/workflows/cd-workflow.yml
     owner: "devops-team"
     reviewers:
       - "tech-lead"
@@ -337,7 +364,7 @@ workflows:
       success_rate: null
       avg_duration: null
       last_execution: null
-    note: "Deprecated - docs job is now part of CI workflow (wf-ci)"
+    note: "Deprecated as a standalone workflow - the docs generation job was merged into wf-ci (ci.yml), which is the canonical owner of ci.yml. This entry shares the same file as wf-ci for historical traceability; all docs automation now runs under wf-ci."
 
   - id: wf-monitoring
     name: Monitoring Workflow
@@ -360,11 +387,12 @@ workflows:
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T11:00:00Z
-    updated_at: 2026-05-08T11:00:00Z
+    updated_at: 2026-05-09T14:55:00Z
     metrics:
       success_rate: null
       avg_duration: null
       last_execution: null
+    note: "Simplified 2026-05-09 - removed unused benchmark/coverage/ci-metrics jobs; retained only dependency-health."
 
   - id: wf-release
     name: Release Workflow
@@ -372,7 +400,7 @@ workflows:
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508120000"
-    status: active
+    status: deprecated
     category: cd
     type: automation
     triggers:
@@ -381,17 +409,18 @@ workflows:
       - wf-ci
     implicit_dependencies: []
     dependents: []
-    file: .github/workflows/release.yml
-    documentation: .github/workflows/release.yml
+    file: .github/workflows/cd-workflow.yml
+    documentation: .github/workflows/cd-workflow.yml
     owner: "devops-team"
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T12:00:00Z
-    updated_at: 2026-05-08T12:35:00Z
+    updated_at: 2026-05-08T14:25:00Z
     metrics:
       success_rate: null
       avg_duration: null
       last_execution: null
+    note: "Deprecated on 2026-05-08 - original standalone release.yml was deleted; functionality was merged into cd-workflow.yml (wf-cd). This entry retained for historical reference only."
 
   - id: wf-occams
     name: Occam's Razor Architecture Simplification
@@ -399,7 +428,7 @@ workflows:
     semver: "1.0.0"
     git_hash: null
     timestamp: "20260508120000"
-    status: active
+    status: deprecated
     category: documentation
     type: architecture
     triggers:
@@ -413,11 +442,12 @@ workflows:
     reviewers:
       - "tech-lead"
     created_at: 2026-05-08T12:00:00Z
-    updated_at: 2026-05-08T12:35:00Z
+    updated_at: 2026-05-09T14:45:00Z
     metrics:
       success_rate: 1.0
       avg_duration: 0s
       last_execution: null
+    note: "Deprecated on 2026-05-09 - principle absorbed into design philosophy; no longer a separate workflow. Entry.md principles are now applied directly."
 
 # Workflow Categories
 categories:
@@ -476,5 +506,4 @@ type_values:
   - value: dispatcher
     description: Workflow dispatcher/router
   - value: automation
-    description: Automated execution workflow
     description: Automated execution workflow

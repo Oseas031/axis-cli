@@ -26,6 +26,18 @@ func TestLifecycleManager_Shutdown(t *testing.T) {
 	}
 }
 
+func TestLifecycleManager_ShutdownWithExpiredContext(t *testing.T) {
+	mgr := NewLifecycleManager()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := mgr.Shutdown(ctx)
+	if err == nil {
+		t.Error("Shutdown with expired context should return context error")
+	}
+}
+
 func TestLifecycleManager_ShutdownTwice(t *testing.T) {
 	mgr := NewLifecycleManager()
 

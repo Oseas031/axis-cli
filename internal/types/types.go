@@ -1,7 +1,10 @@
 // Package types provides core data types for the agent system.
 package types
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // TaskStatus represents the status of a task
 type TaskStatus string
@@ -80,10 +83,112 @@ type AgentContract struct {
 	OutputSchema *OutputSchema `json:"output_schema"`
 }
 
+// SLA metadata keys stored in AgentTask.Metadata
+const (
+	SLAKeyTimeoutMs    = "sla.timeout_ms"
+	SLAKeyMaxRetries   = "sla.max_retries"
+	SLAKeyFailureClass = "sla.failure_class"
+	SLAKeyPriority     = "sla.priority"
+	SLAKeyBackoff      = "sla.backoff"
+)
+
+// Failure class values for SLAKeyFailureClass
+const (
+	FailureClassRetryable  = "retryable"
+	FailureClassFatal      = "fatal"
+	FailureClassDegradable = "degradable"
+)
+
+// Backoff strategy values for SLAKeyBackoff
+const (
+	BackoffFixed       = "fixed"
+	BackoffLinear      = "linear"
+	BackoffExponential = "exponential"
+)
+
+// TaskMetadataKeyExecutor selects the executor type for dispatch.
+// Values: "model" (default) or "human".
+const TaskMetadataKeyExecutor = "executor"
+
+const (
+	ExecutorTypeModel = "model"
+	ExecutorTypeHuman = "human"
+)
+
+// ErrorCode is a stable machine-readable error identifier.
+type ErrorCode string
+
+const (
+	ErrSchedulerNotRunning  ErrorCode = "SCHEDULER_NOT_RUNNING"
+	ErrTaskNotFound         ErrorCode = "TASK_NOT_FOUND"
+	ErrTaskAlreadyExists    ErrorCode = "TASK_ALREADY_EXISTS"
+	ErrDependencyCycle      ErrorCode = "DEPENDENCY_CYCLE"
+	ErrDependencyNotReady   ErrorCode = "DEPENDENCY_NOT_READY"
+	ErrContractNotFound     ErrorCode = "CONTRACT_NOT_FOUND"
+	ErrContractInputInvalid ErrorCode = "CONTRACT_INPUT_INVALID"
+	ErrTaskTimeout          ErrorCode = "TASK_TIMEOUT"
+	ErrTaskRetryExhausted   ErrorCode = "TASK_RETRY_EXHAUSTED"
+)
+
+// AgentError is a structured error with a stable error code.
+type AgentError struct {
+	Code    ErrorCode
+	Message string
+	Cause   error
+}
+
+func (e *AgentError) Error() string {
+	if e.Cause != nil {
+		return fmt.Sprintf("[%s] %s: %v", e.Code, e.Message, e.Cause)
+	}
+	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
+}
+
+func (e *AgentError) Unwrap() error {
+	return e.Cause
+}
+
+func NewAgentError(code ErrorCode, message string) *AgentError {
+	return &AgentError{Code: code, Message: message}
+}
+
+func NewAgentErrorWithCause(code ErrorCode, message string, cause error) *AgentError {
+	return &AgentError{Code: code, Message: message, Cause: cause}
+}
+
 // ExecutionResult represents the result of a contract execution
 type ExecutionResult struct {
 	Output map[string]any `json:"output"`
 	Error  string         `json:"error,omitempty"`
+}
+
+// ToolDefinition describes a tool available to the model provider.
+type ToolDefinition struct {
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Parameters  []FieldDef `json:"parameters"`
+}
+
+// ToolCall represents a request from the provider to invoke a tool.
+type ToolCall struct {
+	ID    string         `json:"id"`
+	Name  string         `json:"name"`
+	Input map[string]any `json:"input"`
+}
+
+// ToolResult is the result of a tool execution.
+type ToolResult struct {
+	CallID string         `json:"call_id"`
+	Output map[string]any `json:"output"`
+	Error  string         `json:"error,omitempty"`
+}
+
+// ModelMessage represents a single turn in a multi-turn conversation.
+type ModelMessage struct {
+	Role       string     `json:"role"` // "user" | "assistant" | "tool"
+	Content    string     `json:"content,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 }
 
 // HumanCallRequest represents a request to call a human

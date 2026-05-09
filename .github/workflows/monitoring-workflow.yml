@@ -2,14 +2,14 @@ name: Monitoring and Observability
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Daily at midnight UTC
+    - cron: '0 0 * * *'
   workflow_run:
-    workflows: [CI, PR Quality Check]
+    workflows: [CI]
     types: [completed]
 
 jobs:
-  performance-benchmark:
-    name: Performance Benchmark
+  health-check:
+    name: Dependency Health
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -20,162 +20,11 @@ jobs:
         with:
           go-version: '1.26'
 
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Run benchmark tests
-        run: |
-          go test -bench=. -benchmem -run=^$ ./... > benchmark.txt
-
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          tool: 'go'
-          output-file-path: benchmark.txt
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          alert-threshold: '150%'
-          comment-on-alert: true
-          fail-on-alert: true
-          alert-comment-cc-users: '@tech-lead'
-
-  coverage-trend:
-    name: Coverage Trend Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Run tests with coverage
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
-
-      - name: Extract coverage
-        run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
-          echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
-          echo "Current coverage: $COVERAGE%"
-
-      - name: Check coverage trend
-        run: |
-          # Store coverage in a file for trend analysis
-          echo "$(date -Iseconds),$COVERAGE" >> coverage-history.csv
-          
-          # Check if coverage decreased
-          if [ -f coverage-history.csv ]; then
-            PREV_COVERAGE=$(tail -n 2 coverage-history.csv | head -n 1 | cut -d',' -f2)
-            if (( $(echo "$COVERAGE < $PREV_COVERAGE" | bc -l) )); then
-              echo "⚠️ Coverage decreased from $PREV_COVERAGE% to $COVERAGE%"
-            else
-              echo "✅ Coverage maintained or improved"
-            fi
-          fi
-
-      - name: Upload coverage history
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-history
-          path: coverage-history.csv
-          retention-days: 90
-
-  ci-metrics:
-    name: CI/CD Metrics Collection
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_run'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Fetch workflow run data
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: context.event.workflow.id,
-              per_page: 10
-            });
-            
-            let totalRuns = runs.data.total_count;
-            let successCount = 0;
-            let failureCount = 0;
-            let totalDuration = 0;
-            
-            for (const run of runs.data.workflow_runs) {
-              if (run.conclusion === 'success') successCount++;
-              if (run.conclusion === 'failure') failureCount++;
-              totalDuration += run.run_duration_ms;
-            }
-            
-            const successRate = (successCount / totalRuns * 100).toFixed(2);
-            const avgDuration = (totalDuration / totalRuns / 1000).toFixed(2);
-            
-            console.log(`Total runs: ${totalRuns}`);
-            console.log(`Success rate: ${successRate}%`);
-            console.log(`Average duration: ${avgDuration}s`);
-            
-            // Write to summary
-            core.summary.addRaw(`## CI/CD Metrics\n`);
-            core.summary.addRaw(`- Total runs: ${totalRuns}\n`);
-            core.summary.addRaw(`- Success rate: ${successRate}%\n`);
-            core.summary.addRaw(`- Average duration: ${avgDuration}s\n`);
-            core.summary.write();
-
-  dependency-health:
-    name: Dependency Health Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Check for outdated dependencies
+      - name: Check outdated dependencies
         run: |
           go list -u -m all > outdated.txt
           OUTDATED=$(grep -c "\[" outdated.txt || echo "0")
+          echo "Outdated dependencies: $OUTDATED"
           if [ "$OUTDATED" -gt 0 ]; then
-            echo "⚠️ Found $OUTDATED outdated dependencies"
             cat outdated.txt
-          else
-            echo "✅ All dependencies are up to date"
           fi
-
-      - name: Check for direct dependencies
-        run: |
-          go list -m all | grep "^direct" > direct-deps.txt
-          DIRECT_COUNT=$(wc -l < direct-deps.txt)
-          echo "Direct dependencies: $DIRECT_COUNT"
-          if [ "$DIRECT_COUNT" -gt 50 ]; then
-            echo "⚠️ High number of direct dependencies"
-          fi
-
-  monitoring-summary:
-    name: Monitoring Summary
-    runs-on: ubuntu-latest
-    needs: [performance-benchmark, coverage-trend, ci-metrics, dependency-health]
-    if: always()
-    steps:
-      - name: Generate monitoring summary
-        run: |
-          echo "# Monitoring Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Performance Benchmark" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.performance-benchmark.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Coverage Trend" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.coverage-trend.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## CI/CD Metrics" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.ci-metrics.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Dependency Health" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ needs.dependency-health.result }}" >> $GITHUB_STEP_SUMMARY

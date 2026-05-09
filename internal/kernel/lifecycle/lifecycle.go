@@ -18,6 +18,7 @@ type LifecycleManagerImpl struct {
 	running bool
 	cancel  context.CancelFunc
 	done    chan struct{}
+	once    sync.Once
 }
 
 // NewLifecycleManager creates a new lifecycle manager
@@ -37,7 +38,9 @@ func (lm *LifecycleManagerImpl) monitorContext(ctx context.Context) {
 	<-ctx.Done()
 	lm.mu.Lock()
 	lm.running = false
-	close(lm.done)
+	lm.once.Do(func() {
+		close(lm.done)
+	})
 	lm.mu.Unlock()
 }
 

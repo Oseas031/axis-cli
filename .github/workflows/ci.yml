@@ -7,14 +7,95 @@ on:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
+      - '.github/config/registry.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
+      - '.github/config/registry.yml'
 
+# Standard: Event type check before accessing event properties
+# See .github/workflows/CODING_STANDARDS.md section 1.1
 jobs:
+  validate-registry:
+    name: Validate Registry
+    runs-on: ubuntu-latest
+    # on: paths filter above already gates this job — only runs when
+    # .github/config/registry.yml is among the changed paths.
+    # Note: github.event.pull_request.changed_files is an integer count,
+    # not a file list, so we cannot use contains() on it for path checks.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Validate registry
+        run: |
+          python3 << 'EOF'
+          import yaml
+          import sys
+          import os
+          import glob
+
+          with open('.github/config/registry.yml', 'r') as f:
+              registry = yaml.safe_load(f)
+
+          required_fields = ['id', 'name', 'version', 'status', 'category', 'file']
+          workflow_ids = set()
+          errors = []
+
+          for workflow in registry.get('workflows', []):
+              # Check required fields
+              for field in required_fields:
+                  if field not in workflow:
+                      errors.append(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
+
+              # Skip further validation if required fields are missing
+              if 'id' not in workflow or 'file' not in workflow:
+                  continue
+
+              # Check for duplicate IDs
+              if workflow['id'] in workflow_ids:
+                  errors.append(f"❌ Duplicate workflow ID: {workflow['id']}")
+              workflow_ids.add(workflow['id'])
+
+              # Check if file exists with better error messages
+              if not os.path.exists(workflow['file']):
+                  errors.append(f"❌ Workflow file does not exist: {workflow['file']}")
+                  if workflow['file'].startswith('docs/deprecated/'):
+                      suggestions = glob.glob('docs/deprecated/workflows/*.md')
+                      if suggestions:
+                          errors.append(f"💡 Did you mean one of these?")
+                          for s in suggestions[:3]:
+                              errors.append(f"   - {s}")
+
+              # Check if documentation exists with better error messages
+              if 'documentation' in workflow and not os.path.exists(workflow['documentation']):
+                  errors.append(f"❌ Documentation file does not exist: {workflow['documentation']}")
+                  if workflow['documentation'].startswith('/'):
+                      errors.append(f"💡 Absolute path detected. Use relative path from repository root.")
+                  if 'worklow' in workflow['documentation']:
+                      errors.append(f"💡 Typo detected: 'worklow' should be 'workflow'")
+
+          if errors:
+              print("❌ Registry validation failed:")
+              for error in errors:
+                  print(error)
+              sys.exit(1)
+
+          print("✅ Registry validation passed")
+          print(f"✅ Validated {len(workflow_ids)} workflows")
+          EOF
+
   format:
     name: Format
     runs-on: ubuntu-latest
