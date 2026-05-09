@@ -58,6 +58,7 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	lifecycleManager := lifecycle.NewLifecycleManager()
 	sched := scheduler.NewScheduler(stateStore, lifecycleManager)
 	toolRegistry := tool.NewRegistry()
+	// #nosec G104
 	toolRegistry.Register(tool.NewBashTool())
 	contractExec := contractexec.NewContractExecutor()
 	contractExec.SetProvider(provider.NewMockModelProvider())

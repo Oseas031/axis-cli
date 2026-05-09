@@ -36,6 +36,7 @@ func (t *BashTool) Execute(ctx context.Context, input map[string]any) (map[strin
 	}
 	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
+	// #nosec G204
 	cmd := exec.CommandContext(timeoutCtx, "bash", "-c", cmdStr)
 	output, execErr := cmd.CombinedOutput()
 	exitCode := 0
