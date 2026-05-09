@@ -230,6 +230,44 @@ func TestAdmissionValidator_Validate_SLA_NoMetadata(t *testing.T) {
 	}
 }
 
+func TestAdmissionValidator_Validate_SLA_EmptyFailureClass(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "default",
+		Input:      map[string]any{"message": "hello"},
+		Metadata:   map[string]string{types.SLAKeyFailureClass: ""},
+	}
+
+	if err := av.Validate(task); err == nil {
+		t.Error("Task with empty sla.failure_class should be rejected")
+	}
+}
+
+func TestAdmissionValidator_Validate_SLA_ValidFailureClass(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "default",
+		Input:      map[string]any{"message": "hello"},
+		Metadata:   map[string]string{types.SLAKeyFailureClass: "transient"},
+	}
+
+	if err := av.Validate(task); err != nil {
+		t.Errorf("Task with valid sla.failure_class should pass: %v", err)
+	}
+}
+
 func testDefaultContract() *types.AgentContract {
 	return &types.AgentContract{
 		ContractID: "default",
