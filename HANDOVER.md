@@ -240,9 +240,9 @@ Axis 的默认交互面遵循 **"bash is all you need"**：
 2. ✅ 生成里程碑1验收报告 - 已完成
 3. ✅ M2 全部完成（T0-T7）
 4. ✅ M3 Phase 1 全部完成（ModelProvider + 覆盖率 + DAG/SLA 补全）
-5. 执行 M3 Phase 2: ModelProvider 可配置化
-6. 执行 M3 Phase 2: HumanExecutor 路由
-7. 推送并验证 CI 通过
+5. 执行 M3 Phase 3: SLA 策略引擎
+6. 执行 M3 Phase 3: 工具调用层
+7. 创建 PR 到 main 触发 CI 验证
 
 ## 项目结构
 
