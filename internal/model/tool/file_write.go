@@ -67,11 +67,11 @@ func (t *FileWriteTool) Execute(ctx context.Context, input map[string]any) (map[
 
 	// Create parent directories if they don't exist
 	parentDir := filepath.Dir(path)
-	if err := os.MkdirAll(parentDir, 0755); err != nil {
+	if err := os.MkdirAll(parentDir, 0750); err != nil {
 		return map[string]any{"error": "failed to create parent directory: " + err.Error()}, nil
 	}
 
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		return map[string]any{"error": err.Error()}, nil
 	}
 

@@ -105,7 +105,7 @@ func (t *HTTPClientTool) Execute(ctx context.Context, input map[string]any) (map
 		}
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return map[string]any{"error": "request failed: " + err.Error()}, nil

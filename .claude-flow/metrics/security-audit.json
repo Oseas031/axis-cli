@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-05-09T08:13:18.062Z",
+  "timestamp": "2026-05-09T08:58:06.356Z",
   "mode": "headless",
   "workerType": "audit",
   "model": "haiku",
-  "durationMs": 50863,
-  "executionId": "audit_1778314347199_je536a",
+  "durationMs": 70597,
+  "executionId": "audit_1778317015759_9gdnuw",
   "success": true,
   "findings": {
     "vulnerabilities": [
@@ -12,49 +12,44 @@
         "severity": "high",
         "file": "internal/model/tool/bash.go",
         "line": 40,
-        "description": "BashTool allows arbitrary command execution via exec.CommandContext with user-controlled input. The #nosec G204 annotation disables security checks. While this is intentional for an agent system, any LLM prompt injection could lead to arbitrary shell commands on the host."
+        "description": "Command injection via unsanitized bash command execution. User-controlled input is passed directly to 'bash -c' without validation. An attacker who can submit tasks could execute arbitrary shell commands on the system."
       },
       {
         "severity": "medium",
-        "file": ".claude/helpers/statusline.js",
-        "line": 180,
-        "description": "execSync with shell string containing pipes: 'ps aux 2>/dev/null | grep -c agentic-flow || echo \"0\"'. Although static, the pattern uses shell metacharacters and could be risky if modified to include user input."
+        "file": "internal/model/tool/http_client.go",
+        "line": 72,
+        "description": "SSRF risk - HTTP client tool allows requests to arbitrary URLs after host validation. If allowed hosts list is misconfigured or empty, attackers could probe internal services, cloud metadata endpoints (169.254.169.254), or internal infrastructure."
       },
       {
         "severity": "medium",
-        "file": ".claude/helpers/statusline.js",
-        "line": 200,
-        "description": "execSync with complex shell string using awk and variable interpolation: 'ps aux | grep -E \"(node|agentic|claude)\" | grep -v grep | awk \\'{sum += \\$6} END {print int(sum/1024)}\\''. Uses shell strings instead of execFileSync pattern."
-      },
-      {
-        "severity": "medium",
-        "file": ".claude/helpers/statusline.js",
-        "line": 218,
-        "description": "execSync with shell string containing pipes and regex: 'ps aux 2>/dev/null | grep -c \"claude-flow.*agent\" || echo \"0\"'. Shell metacharacter injection risk if the pattern were user-controlled."
+        "file": "internal/model/tool/file_write.go",
+        "line": 74,
+        "description": "File write lacks atomic operations and file type restrictions. Could overwrite critical files if path validation is bypassed via symlinks or if allowed directory is a symlink to sensitive location."
       },
       {
         "severity": "low",
-        "file": ".claude/helpers/metrics-db.mjs",
-        "line": 228,
-        "description": "execSync('ps aux 2>/dev/null || echo \"\"', ...) - static string with shell:true implicit. Low risk as input is not user-controlled, but inconsistent with the execFileSync pattern used elsewhere."
+        "file": "internal/model/tool/file_read.go",
+        "line": 63,
+        "description": "Path traversal protection relies on strings.HasPrefix after filepath.Clean. While filepath.Clean resolves '..' components, symlinks within allowed directories could still leak files outside intended scope."
       },
       {
         "severity": "low",
-        "file": ".claude/helpers/statusline.cjs",
-        "line": 52,
-        "description": "safeExec function uses execSync with shell strings. Comment acknowledges this is a known pattern but the shell:true interpretation is implicit."
+        "file": ".claude/helpers/statusline.js",
+        "line": 75,
+        "description": "execFileSync with shell:false could still be risky if git args contain special characters, though defense-in-depth approach is noted in comments."
       }
     ],
-    "riskScore": 28,
+    "riskScore": 47,
     "recommendations": [
-      "Consider sanitizing bash tool input by restricting allowed commands or using a sandboxed shell (e.g., busybox ash, docker container) for the BashTool execution",
-      "Refactor statusline.js to use execFileSync with argument arrays instead of execSync with shell strings, following the pattern already implemented in getUserInfo() at line 52",
-      "Add input validation/allowlisting to BashTool to restrict which commands can be executed",
-      "The Go core (internal/) is well-structured with no hardcoded secrets, proper error handling, and the cobra dependency is up-to-date",
-      "No SQL injection risk - the scheduler uses in-memory storage with no external database",
-      "HTTP client has proper host allowlist validation preventing SSRF attacks"
+      "Remove or replace BashTool command execution with a safe alternative (e.g., allowlist of predefined commands, or use exec.Command without shell interpretation)",
+      "Add URL blocklist for http_client tool (e.g., block 169.254.169.254, 10.0.0.0/8, 172.16.0.0/12 internal ranges)",
+      "Implement atomic file writes (write to temp file then rename) in file_write.go to prevent partial writes",
+      "Add file type/suffix restrictions for file_write tool to prevent writing executable content",
+      "Resolve symlinks in allowed directories before validation to prevent symlink-based bypasses",
+      "Add resource limits (CPU, memory, file descriptors) to bash command execution",
+      "Consider adding audit logging for all tool executions"
     ]
   },
-  "rawOutputPreview": "```json\n{\n  \"vulnerabilities\": [\n    {\n      \"severity\": \"high\",\n      \"file\": \"internal/model/tool/bash.go\",\n      \"line\": 40,\n      \"description\": \"BashTool allows arbitrary command execution via exec.CommandContext with user-controlled input. The #nosec G204 annotation disables security checks. While this is intentional for an agent system, any LLM prompt injection could lead to arbitrary shell commands on the host.\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \".claude/helpers/statusline.js\",\n      \"line\": 180,\n      \"description\": \"execSync with shell string containing pipes: 'ps aux 2>/dev/null | grep -c agentic-flow || echo \\\"0\\\"'. Although static, the pattern uses shell metacharacters and could be risky if modified to include user input.\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \".claude/helpers/statusline.js\",\n      \"line\": 200,\n      \"description\": \"execSync with complex shell string using awk and variable interpolation: 'ps aux | grep -E \\\"(node|agentic|claude)\\\" | grep -v grep | awk \\\\'{sum += \\\\$6} END {print int(sum/1024)}\\\\''. Uses shell strings instead of execFileSync pattern.\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \".claude/helpers/statusline.js\",\n      \"line\": 218,\n      \"description\": \"execSync with shell string containing pipes and regex: 'ps aux 2>/dev/null | grep -c \\\"claude-flow.*agent\\\" || echo \\\"0\\\"'. Shell metacharacter injection risk if the pattern were user-controlled.\"\n    },\n    {\n      \"severity\": \"low\",\n      \"file\": \".claude/helpers/metrics-db.mjs\",\n      \"line\": 228,\n      \"description\": \"execSync('ps aux 2>/dev/null || echo \\\"\\\"', ...) - static string with shell:true implicit. Low risk as input is not user-controlled, but inconsistent with the execFileSync pattern used elsewhere.\"\n    },\n    {\n      \"severity\": \"low\",\n      \"file\": \".claude/helpers/statusline.cjs\",\n      \"line\": 52,\n      \"description\": \"safeExec function uses execSync with shell strings. Comment acknowledges this is a known ",
-  "rawOutputLength": 3402
+  "rawOutputPreview": "```json\n{\n  \"vulnerabilities\": [\n    {\n      \"severity\": \"high\",\n      \"file\": \"internal/model/tool/bash.go\",\n      \"line\": 40,\n      \"description\": \"Command injection via unsanitized bash command execution. User-controlled input is passed directly to 'bash -c' without validation. An attacker who can submit tasks could execute arbitrary shell commands on the system.\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \"internal/model/tool/http_client.go\",\n      \"line\": 72,\n      \"description\": \"SSRF risk - HTTP client tool allows requests to arbitrary URLs after host validation. If allowed hosts list is misconfigured or empty, attackers could probe internal services, cloud metadata endpoints (169.254.169.254), or internal infrastructure.\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"file\": \"internal/model/tool/file_write.go\",\n      \"line\": 74,\n      \"description\": \"File write lacks atomic operations and file type restrictions. Could overwrite critical files if path validation is bypassed via symlinks or if allowed directory is a symlink to sensitive location.\"\n    },\n    {\n      \"severity\": \"low\",\n      \"file\": \"internal/model/tool/file_read.go\",\n      \"line\": 63,\n      \"description\": \"Path traversal protection relies on strings.HasPrefix after filepath.Clean. While filepath.Clean resolves '..' components, symlinks within allowed directories could still leak files outside intended scope.\"\n    },\n    {\n      \"severity\": \"low\",\n      \"file\": \".claude/helpers/statusline.js\",\n      \"line\": 75,\n      \"description\": \"execFileSync with shell:false could still be risky if git args contain special characters, though defense-in-depth approach is noted in comments.\"\n    }\n  ],\n  \"riskScore\": 47,\n  \"recommendations\": [\n    \"Remove or replace BashTool command execution with a safe alternative (e.g., allowlist of predefined commands, or use exec.Command without shell interpretation)\",\n    \"Add URL blocklist for http_client tool (e.g., block 169.254.169.254, 10.0.0.0/8, 172.",
+  "rawOutputLength": 2494
 }

@@ -221,7 +221,9 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 	var toolCalls []types.ToolCall
 	for _, tc := range choice.Message.ToolCalls {
 		var args map[string]any
-		json.Unmarshal([]byte(tc.Function.Arguments), &args)
+		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
+			args = map[string]any{"error": "failed to parse arguments"}
+		}
 		toolCalls = append(toolCalls, types.ToolCall{
 			ID:    tc.ID,
 			Name:  tc.Function.Name,
