@@ -114,6 +114,63 @@ func TestRuleEngine_EvaluateTransition_Downgrade(t *testing.T) {
 	}
 }
 
+func TestRuleEngine_EvaluateTransition_DowngradeFromFull(t *testing.T) {
+	re := NewRuleEngine(nil)
+
+	evidence := CompetenceEvidence{
+		TasksCompleted:     20,
+		SuccessRate:        0.3,
+		ValidationPassRate: 0.4,
+	}
+
+	transition := re.EvaluateTransition(AutonomyLevelFull, evidence)
+
+	if !transition.IsDowngrade() {
+		t.Error("Expected downgrade from Full to Learn")
+	}
+	if transition.To != AutonomyLevelLearn {
+		t.Errorf("To = %v, want %v", transition.To, AutonomyLevelLearn)
+	}
+}
+
+func TestRuleEngine_EvaluateTransition_DowngradeFromLearn(t *testing.T) {
+	re := NewRuleEngine(nil)
+
+	evidence := CompetenceEvidence{
+		TasksCompleted:     20,
+		SuccessRate:        0.35,
+		ValidationPassRate: 0.5,
+	}
+
+	transition := re.EvaluateTransition(AutonomyLevelLearn, evidence)
+
+	if !transition.IsDowngrade() {
+		t.Error("Expected downgrade from Learn to Plan")
+	}
+	if transition.To != AutonomyLevelPlan {
+		t.Errorf("To = %v, want %v", transition.To, AutonomyLevelPlan)
+	}
+}
+
+func TestRuleEngine_EvaluateTransition_DowngradeFromDecide(t *testing.T) {
+	re := NewRuleEngine(nil)
+
+	evidence := CompetenceEvidence{
+		TasksCompleted:     20,
+		SuccessRate:        0.3,
+		ValidationPassRate: 0.4,
+	}
+
+	transition := re.EvaluateTransition(AutonomyLevelDecide, evidence)
+
+	if !transition.IsDowngrade() {
+		t.Error("Expected downgrade from Decide to Execute")
+	}
+	if transition.To != AutonomyLevelExecute {
+		t.Errorf("To = %v, want %v", transition.To, AutonomyLevelExecute)
+	}
+}
+
 func TestRuleEngine_EvaluateTransition_NoUpgradeAtMaxLevel(t *testing.T) {
 	re := NewRuleEngine(nil)
 
@@ -147,8 +204,9 @@ func TestRuleEngine_EvaluateTransition_NoDowngradeAtMinLevel(t *testing.T) {
 	if !transition.IsNoChange() {
 		t.Error("Expected no change at min level")
 	}
-	if transition.Reason != "already at minimum autonomy level" {
-		t.Errorf("Reason = %v, want 'already at minimum autonomy level'", transition.Reason)
+	// At minimum level, can't downgrade further, so "insufficient evidence" is the correct reason
+	if transition.Reason != "insufficient evidence for transition" {
+		t.Errorf("Reason = %v, want 'insufficient evidence for transition'", transition.Reason)
 	}
 }
 
@@ -491,6 +549,51 @@ func TestRuleEngine_WithAuditLogger(t *testing.T) {
 
 	if len(auditLogs) == 0 {
 		t.Error("Expected audit logs to be written")
+	}
+}
+
+func TestLevelName_Invalid(t *testing.T) {
+	// Test the default case for invalid autonomy level
+	name := levelName(AutonomyLevel(99))
+	if name != "unknown" {
+		t.Errorf("levelName(invalid) = %v, want unknown", name)
+	}
+}
+
+func TestRuleEngine_EvaluateTransition_NoTasksCompleted(t *testing.T) {
+	re := NewRuleEngine(nil)
+
+	// No tasks completed - should get "no tasks completed yet" reason
+	evidence := CompetenceEvidence{
+		TasksCompleted:     0,
+		SuccessRate:        0.0,
+		ValidationPassRate: 0.0,
+	}
+
+	transition := re.EvaluateTransition(AutonomyLevelDecide, evidence)
+
+	if !transition.IsNoChange() {
+		t.Error("Expected no change transition")
+	}
+	if transition.Reason != "no tasks completed yet" {
+		t.Errorf("Reason = %v, want 'no tasks completed yet'", transition.Reason)
+	}
+}
+
+func TestRuleEngine_EvaluateTransition_InsufficientTasksForDowngrade(t *testing.T) {
+	re := NewRuleEngine(nil)
+
+	// Low success rate but TasksCompleted < UpgradeMinTasksCompleted (10)
+	evidence := CompetenceEvidence{
+		TasksCompleted:     5,
+		SuccessRate:        0.3,
+		ValidationPassRate: 0.4,
+	}
+
+	transition := re.EvaluateTransition(AutonomyLevelPlan, evidence)
+
+	if !transition.IsNoChange() {
+		t.Error("Expected no change - downgrade requires minimum tasks")
 	}
 }
 

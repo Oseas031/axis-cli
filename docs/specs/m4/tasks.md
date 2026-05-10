@@ -32,13 +32,13 @@
 | T14 | Update CLI to support provider selection | P2 | ✅ Done |
 | T15 | Update shell to show available tools | P2 | ✅ Done |
 
-## Phase 4.4: Documentation 🚧
+## Phase 4.4: Documentation ✅
 
 | ID | Task | Priority | Status |
 |----|------|----------|--------|
-| T16 | Update CLAUDE.md with M4 status | P2 | 🚧 In Progress |
-| T17 | Update current-progress.md | P2 | ⏳ Pending |
-| T18 | Add provider usage examples | P3 | ⏳ Pending |
+| T16 | Update CLAUDE.md with M4 status | P2 | ✅ Done |
+| T17 | Update current-progress.md | P2 | ✅ Done |
+| T18 | Add provider usage examples | P3 | ✅ Done |
 
 ## Dependencies
 

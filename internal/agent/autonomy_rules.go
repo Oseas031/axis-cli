@@ -55,14 +55,16 @@ func levelName(level AutonomyLevel) string {
 
 // EvaluateTransition evaluates the evidence and returns the appropriate transition.
 func (re *RuleEngine) EvaluateTransition(currentLevel AutonomyLevel, evidence CompetenceEvidence) AutonomyTransition {
+	// Check for downgrade first (critical) - even at max level
+	if currentLevel != AutonomyLevelExecute && // Can't downgrade from minimum
+		evidence.SuccessRate < DowngradeMaxSuccessRate &&
+		evidence.TasksCompleted >= UpgradeMinTasksCompleted {
+		return re.evaluateDowngrade(currentLevel, evidence)
+	}
+
 	// Check if already at max level - this is "insufficient evidence" since we can't go higher
 	if currentLevel == AutonomyLevelFull {
 		return re.logNoTransition(currentLevel, evidence)
-	}
-
-	// Check for downgrade first (critical)
-	if evidence.SuccessRate < DowngradeMaxSuccessRate && evidence.TasksCompleted >= UpgradeMinTasksCompleted {
-		return re.evaluateDowngrade(currentLevel, evidence)
 	}
 
 	// Check for upgrade
