@@ -4,6 +4,7 @@ package agent
 import (
 	"context"
 
+	"github.com/axis-cli/axis/internal/agent/judgement"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -27,6 +28,7 @@ type AgentExecutionResult struct {
 	Output           map[string]any
 	FollowUpTasks    []*types.AgentTask
 	ValidationResult *ValidationSummary
+	JudgementResult  *judgement.JudgementResult
 	AutonomyDelta    AutonomyDelta
 	Error            string
 }

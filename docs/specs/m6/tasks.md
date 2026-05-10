@@ -33,7 +33,7 @@
 
 | ID | Task | Priority | Status | Notes |
 |----|------|----------|--------|-------|
-| T13 | AgentExecutionResult + JudgementResult | P0 | ⏳ Pending | |
+| T13 | AgentExecutionResult + JudgementResult | P0 | ✅ Done | JudgementResult field added to AgentExecutionResult |
 | T14 | BootstrapOrchestrator judgement support | P1 | ⏳ Pending | |
 | T15 | CLI judgement result display | P2 | ⏳ Pending | |
 
