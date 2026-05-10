@@ -6,7 +6,7 @@
 **项目定位**：Agent 原生调度系统；Agent 自因化的早期执行底座
 **核心能力**：任务调度、依赖管理、契约准入、上下文供给、执行编排、验证与反思基础
 **技术栈**：Go 1.26+
-**当前状态**：里程碑1 ✅ | 里程碑2 ✅ (2026-05-08) | 里程碑3 Phase 1-3 ✅ (2026-05-09) | 里程碑4 ✅ | 里程碑5 ✅ (2026-05-10)
+**当前状态**：里程碑1 ✅ | 里程碑2 ✅ (2026-05-08) | 里程碑3 Phase 1-3 ✅ (2026-05-09) | 里程碑4 ✅ | 里程碑5 ✅ (2026-05-10) | 里程碑6 Phase 6.1-6.4 ✅ (2026-05-10)
 
 **重要说明**：
 - **终态**：Agent 原生调度系统，逐步走向 Agent 自因化
@@ -177,6 +177,8 @@ Axis 的默认交互面遵循 **"bash is all you need"**：
 - ✅ 基于 More Context, More Action, Zero Control 修复工作流违背项（PR Check 非阻塞文档上下文提醒，CODING_STANDARDS 指导性规范）
 - ✅ axis shell 交互式 Shell 实现（轻量 CLI 客户端层，不改变核心调度架构）
 - ✅ axis shell 默认合约注册修复（解决 contract default not found，小白路径可跑通）
+- ✅ M6 staticcheck SA4006 警告修复（mock_executor.go followUps 未使用）
+- ✅ M6 staticcheck SA5011 警告修复（context_compressor_test.go nil pointer dereference）
 
 ### 文档（已完成）
 - ✅ 里程碑1检查清单（docs/milestones/milestone1-checklist.md）
@@ -267,11 +269,46 @@ axis-cli/
 │   ├── model/           # 模型层
 │   │   ├── provider/    # ModelProvider 接口 + Mock/Echo 实现
 │   │   └── tool/        # Tool 接口 + ToolRegistry + BashTool
+│   ├── agent/           # Agent 层
+│   │   ├── bootstrap.go  # BootstrapOrchestrator
+│   │   ├── context.go    # SelfContext, AutonomyLevel
+│   │   ├── context_builder.go
+│   │   ├── context_compressor.go
+│   │   ├── executor.go   # AgentExecutor, AgentExecutionResult
+│   │   ├── followup.go   # FollowUpTaskGenerator
+│   │   ├── autonomy.go   # AutonomyTransition, CompetenceEvidence
+│   │   ├── autonomy_rules.go # RuleEngine
+│   │   ├── contracts/    # Self-iteration contracts
+│   │   │   ├── contract.go
+│   │   │   ├── analyze.go
+│   │   │   ├── implement.go
+│   │   │   ├── validate.go
+│   │   │   ├── update.go
+│   │   │   ├── review.go
+│   │   │   ├── spawn.go
+│   │   │   └── judge.go  # self/judge-execution
+│   │   └── judgement/    # Self-Judgement 引擎
+│   │       ├── criteria.go
+│   │       ├── result.go
+│   │       ├── engine.go
+│   │       └── strategies/
+│   │           ├── strategy.go
+│   │           ├── syntax.go
+│   │           ├── semantic.go
+│   │           ├── contract.go
+│   │           ├── test.go
+│   │           └── coverage.go
 │   └── types/           # 核心数据类型 + 错误码
 ├── scripts/             # 工具脚本
 │   ├── pre-commit-hook.py # Pre-commit 验证脚本
 │   └── install-hooks.sh  # Hook 安装脚本
 ├── docs/                 # 文档
+│   └── specs/
+│       ├── m2/          # 里程碑2规格
+│       ├── m3-phase3/   # 里程碑3 Phase 3规格
+│       ├── m4/          # 里程碑4规格
+│       ├── m5/          # 里程碑5规格
+│       └── m6/          # 里程碑6规格
 ├── configs/              # 配置文件
 ├── .github/              # GitHub 配置
 │   ├── workflows/        # GitHub Actions 工作流
@@ -333,6 +370,46 @@ axis-cli/
   - ModelRequest/ModelResponse 扩展（Tools + History + ToolCalls）
   - Multi-turn 执行循环（provider → tool → provider, max 10 turns）
   - MockModelProvider tool-aware
+
+### 里程碑4：真实 LLM 集成（已完成）
+- Anthropic/OpenAI Provider 实现
+- 扩展工具集（文件读写、HTTP client）
+- 工具权限作用域
+- 熔断器
+- CLI `--provider` flag
+- shell `tools` 命令
+
+### 里程碑5：Bootstrap Loop（已完成）
+- AgentExecutor 接口 + MockAgentExecutor
+- AgentRuntimeAdapter（外部 Agent CLI 支持）
+- SelfContext 数据结构
+- ContextBuilder 实现
+- ContextCompressor（3种压缩策略）
+- Self-iteration Contracts（analyze/implement/validate/update/review/spawn）
+- BootstrapOrchestrator（自循环任务调度）
+- FollowUpTaskGenerator
+- AutonomyTransition 数据模型（5级 autonomy level）
+- RuleEngine（基于 competence evidence 的规则引擎）
+
+### 里程碑6：Self-Judgement（进行中）
+**Phase 6.1-6.3（已完成）**：
+- JudgementCriteria / JudgementResult / JudgementItem 数据结构
+- SelfJudgementEngine（加权评分聚合）
+- 5种 ValidationStrategy：
+  - SyntaxValidationStrategy（go fmt/vet）
+  - SemanticValidationStrategy（LLM-based via ModelProvider）
+  - ContractValidationStrategy（契约输出验证）
+  - TestValidationStrategy（测试通过率）
+  - CoverageValidationStrategy（覆盖率阈值）
+- self/judge-execution 契约
+- JudgementResult 集成到 AgentExecutionResult ✅ (T13)
+
+**Phase 6.4-6.5（待处理）**：
+- T14: BootstrapOrchestrator judgement support
+- T15: CLI judgement result display
+- T16: Unit tests for each strategy
+- T17: Integration tests
+- T18: Documentation update
 
 ## 关键技术决策
 
@@ -415,7 +492,7 @@ axis-cli/
 
 ---
 
-**交接时间**：2026-05-09 14:00
-**交接状态**：M1 ✅ | M2 ✅ | M3 Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅（覆盖率 87.1%）
+**交接时间**：2026-05-10
+**交接状态**：M1 ✅ | M2 ✅ | M3 Phase 1-3 ✅ | M4 ✅ | M5 ✅ | M6 Phase 6.1-6.4 ✅（覆盖率 87.1%+）
 **里程碑1验收**：✅ 通过（2026-05-08）
-**下一步行动**：推送并验证 CI；规划 M4
+**下一步行动**：完成 M6 Phase 6.4-6.5（T14-T18）；持续集成验证
