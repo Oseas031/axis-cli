@@ -145,7 +145,7 @@ func (e *MockAgentExecutor) SetAutonomyLevel(level AutonomyLevel) {
 func (e *MockAgentExecutor) generateDeterministicOutput(task *types.AgentTask, taskType string) map[string]any {
 	result := fmt.Sprintf("completed-%s", task.TaskID)
 
-	followUps := []string{}
+	var followUps []string
 	autonomyDelta := 0
 
 	switch taskType {

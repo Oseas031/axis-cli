@@ -283,6 +283,7 @@ func TestCompress_AllStrategies(t *testing.T) {
 
 		if result == nil {
 			t.Errorf("strategy %v: result should not be nil", strat)
+			continue
 		}
 		if result.TaskID != "task-1" {
 			t.Errorf("strategy %v: TaskID should be preserved", strat)
