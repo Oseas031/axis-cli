@@ -1,1 +1,35 @@
 .claude/settings.local.json
+
+# Build artifacts
+*.exe
+*.exe~
+axis-dev*
+axis.test*
+
+# Coverage and profiling
+*.out
+coverage.*
+
+# Local databases
+*.rvf
+*.rvf.lock
+*.db
+
+# Leaked hook output and exit codes
+$GITHUB_STEP_SUMMARY,
+$GITHUB_ENV
+/0
+/255
+/61
+
+# Stale markers
+.milestone*-acceptance-marker
+
+# Runtime state (axis start)
+.axis/
+
+# IDE local config
+.windsurf/
+.windsurfrules
+.idea/
+.vscode/
