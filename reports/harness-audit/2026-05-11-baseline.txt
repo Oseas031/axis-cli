@@ -1,0 +1,26 @@
+==========================================
+ Axis harness audit  (window: last 30 commits)
+ HEAD: 4e25029  branch: main
+ Date: 2026-05-11T14:18:32Z
+==========================================
+
+[Tier 1] safety gates  (target = 0)
+  untagged commits          (no conv-type / no milestone) : 0 / 30
+  no-milestone on feat/fix  (after chore|docs|refactor... exempt): 4 / 30
+  added build artifacts     (*.exe / *.out / dist/ / ...) : 3
+  HANDOVER.md staleness     (commits behind HEAD)         : 5
+  §1 prohibition hits       (forbidden frameworks added)  : 0
+
+[Tier 2] correctness signals  (trend matters, not absolute)
+  rework markers            (revert / fixup / amend / wip): 0 / 30
+  Spec-RDT references       (in subject or body)          : 5 / 30
+  test-vs-code touch ratio  (test files / non-test .go)   : 0.49  (30 / 61)
+
+[Tier 3] friction  (partial — full version needs .devin/harness-log.jsonl)
+  harness-log.jsonl                                       : not yet wired
+    (lands with Suggestion C — deny-commit hook + session log)
+
+==========================================
+ Done. Trend > absolute. Re-run weekly; archive output to
+ reports/harness-audit/<YYYY-MM-DD>.txt to build a baseline.
+==========================================
