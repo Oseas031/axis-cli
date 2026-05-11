@@ -18,6 +18,16 @@ const (
 	EventMemoryReleased     = "memory.released"
 	EventMemoryForgotten    = "memory.forgotten"
 	EventToolExecuted       = "tool.executed"
+
+	// EventImmunityPromoted is appended by internal/memory/immunity.Store.Promote
+	// when a failed task is explicitly promoted to an Immunity record. See
+	// docs/specs/immunity-memory/.
+	EventImmunityPromoted = "memory.immunity.promoted"
+
+	// EventImmunityForgotten is appended by internal/memory/immunity.Store.Forget
+	// when an Immunity record is soft-marked deprecated. The original
+	// EventImmunityPromoted record is never mutated.
+	EventImmunityForgotten = "memory.immunity.forgotten"
 )
 
 var (
@@ -29,12 +39,12 @@ var (
 
 // EventRecord is the immutable unit of Long-term Memory.
 type EventRecord struct {
-	EventType    string                 `json:"event_type"`
-	EntityID     string                 `json:"entity_id"`
-	Timestamp    time.Time              `json:"timestamp"`
-	Payload      map[string]any         `json:"payload,omitempty"`
-	SourceDigest string                 `json:"source_digest,omitempty"`
-	DeprecatedAt *time.Time             `json:"deprecated_at,omitempty"`
+	EventType    string         `json:"event_type"`
+	EntityID     string         `json:"entity_id"`
+	Timestamp    time.Time      `json:"timestamp"`
+	Payload      map[string]any `json:"payload,omitempty"`
+	SourceDigest string         `json:"source_digest,omitempty"`
+	DeprecatedAt *time.Time     `json:"deprecated_at,omitempty"`
 }
 
 // EventFilter defines query constraints for events.
@@ -49,12 +59,12 @@ type EventFilter struct {
 
 // CompetenceProfile is a derived view from judgement and transition events.
 type CompetenceProfile struct {
-	AgentID       string              `json:"agent_id"`
-	ProjectID     string              `json:"project_id"`
-	LatestScore   float64             `json:"latest_score"`
-	AutonomyLevel string              `json:"autonomy_level"`
-	History       []CompetenceSample  `json:"history"`
-	SourceDigest  string              `json:"source_digest"`
+	AgentID       string             `json:"agent_id"`
+	ProjectID     string             `json:"project_id"`
+	LatestScore   float64            `json:"latest_score"`
+	AutonomyLevel string             `json:"autonomy_level"`
+	History       []CompetenceSample `json:"history"`
+	SourceDigest  string             `json:"source_digest"`
 }
 
 // CompetenceSample is a single competence data point.
