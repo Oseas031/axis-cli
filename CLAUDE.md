@@ -1,4 +1,4 @@
-﻿# AXIS AGENT CONSTITUTION (v1.0 — 2026-05-11)
+﻿# AXIS AGENT CONSTITUTION (v1.1 — 2026-05-12)
 
 Project: **Axis** — Agent-native scheduling system; early execution substrate for Agent autogenesis.
 Core proposition: **More Context, More Action, Zero Control, Controllable Evolution**.
@@ -13,7 +13,7 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 1. **No Web/TUI frameworks** in core or CLI (no React, Vue, gin, echo, fiber)
 2. **No hidden daemons or auto-spawn** (explicit `axis start` only)
 3. **No scheduler/dispatcher/contract semantic changes** without updated Spec-RDT
-4. **No new Agent autonomy** without sandboxed-evolution protocol (isolated workspace -> verification -> promote/discard)
+4. **No new Agent autonomy** without sandboxed-evolution protocol (isolated workspace -> verification -> promote/discard). Promotion is gated by machine-checkable verification criteria, NOT by promoter identity: an Agent that has passed all defined criteria MAY promote its own change. Humans are auditors of last resort, not a required gate.
 5. **No push-based context injection** into provider prompts (contextpack is preview-only, opt-in, non-invasive)
 6. **No unnamespaced metadata keys** (prefix with `context.*`, `tool.*`, `sla.*`, `evolution.*`, `intent.*`, `provider.*`, or `axis.*`)
 7. **No secrets in output** — never log/output API keys, bearer tokens, private keys, credentials
@@ -65,7 +65,7 @@ Axis is spec-first. Specs are implementation contracts, not decorative notes.
 - Required shape: `docs/specs/<feature>/requirements.md`, `design.md`, `tasks.md`
 - Structure-modifying changes = evolution work, not ordinary edits
 - Use Sandboxed Evolution Protocol for: permission semantics, contract changes, workflow changes, context rules, autonomy surfaces
-- Verification is evidence for promotion. It is NOT promotion by itself.
+- **Promotion gate is verification quality, not promoter identity.** A change is promoted when (a) all declared verification criteria pass, (b) a `spec.promoted` (or analogous) event is appended to the event log referencing the verification artifacts and source digest, and (c) the spec status is updated atomically. The promoter may be human or Agent. Verification criteria MUST be machine-checkable and reproducible from the recorded workspace digest; criteria that depend on subjective human judgement are not valid criteria and must be reframed.
 
 ## 6. Semantic Boundaries
 
@@ -156,6 +156,7 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - Auditable by design: every important decision leaves a trace
 - Small contracts over large control planes
 - Progressive evolution: deterministic/local first, adaptive later
+- **Audit, not approval, is the trust mechanism.** Agent-promoted changes leave the same audit trail as human-promoted ones (verification artifacts, source digest, event log entry). Humans intervene by reading the trail and exercising revert/quarantine after the fact, not by gatekeeping promotion before it.
 
 ## 12. Naming & Structure
 

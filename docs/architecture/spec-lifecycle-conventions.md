@@ -69,7 +69,45 @@ Evolution work must separate:
 - promoted changes
 - discarded changes
 
-Verification is evidence for promotion. It is not promotion by itself.
+## Promotion Semantics (CLAUDE.md v1.1)
+
+A status transition is a **promotion**. Promotion is gated by verification quality, not by promoter identity.
+
+### Who may promote
+
+The promoter MAY be human or Agent. The constitution (`CLAUDE.md §1.4`, `§5`, `§11`) does not require a human gate. What it requires is that the verification criteria themselves are machine-checkable.
+
+### What every promotion must do
+
+1. **Pass all declared verification criteria** — every criterion must be reproducible from the recorded workspace digest. Subjective criteria (e.g. "reviewed by a trusted agent", "looks reasonable") are NOT valid criteria and must be reframed before they can gate promotion.
+2. **Emit a `spec.<new-status>` event** to the long-term event log (e.g. `spec.planned`, `spec.in_progress`, `spec.completed`, `spec.deprecated`). The event payload MUST include:
+   - `spec_id` (e.g. `immunity-memory`)
+   - `from_status`, `to_status`
+   - `promoted_by` — actor identifier (human user ID or agent ID); never anonymous
+   - `verification_artifacts` — list of refs (test names, event IDs, digest hashes) that constitute the evidence
+   - `source_digest` — workspace digest at promotion time, for audit reproduction
+3. **Update the spec status atomically** — the status header in `requirements.md`/`tasks.md` and the event log entry MUST be consistent. A reader observing one but not the other indicates a botched promotion that MUST be re-emitted.
+
+### Reversibility
+
+Audit, not approval, is the trust mechanism. Any promoted change can be:
+
+- **reverted** by a counter-event (`spec.demoted`, with `from_status`, `to_status`, reason)
+- **quarantined** by setting `Deprecated` with an explicit replacement reference
+
+Both are themselves promotions in the same sense above and follow the same rules.
+
+### What verification criteria look like (good vs bad)
+
+| Good (machine-checkable) | Bad (subjective) |
+|---|---|
+| `go test -race ./internal/memory/immunity/... passes` | "Code looks clean" |
+| `go list -deps ./internal/kernel/... excludes internal/memory/ledger` | "Doesn't seem to leak abstraction" |
+| `axis context preview --no-flag output byte-identical to golden file` | "Backward compatible" |
+| Event log contains exactly one `memory.immunity.promoted` per CLI invocation | "Works as expected" |
+| `gosec ./... reports zero issues` | "Probably secure enough" |
+
+If a spec's `Acceptance Criteria` section contains "Bad" column language, that spec is not promotion-ready until those criteria are rewritten.
 
 ## Completion Gate
 
