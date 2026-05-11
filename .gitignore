@@ -28,6 +28,18 @@ $GITHUB_ENV
 # Runtime state (axis start)
 .axis/
 
+# Third-party agent runtime state (claude-flow daemon, etc.)
+.claude-flow/
+
+# Auxiliary tools — non-invasive helpers (axis-gui TUI, axis-up updater).
+# Sources live in their own repos; only compiled binaries land here on
+# `axis-up install`. Never commit them to the core repo: this would
+# leak 100MB+ of node_modules / .exe artefacts, drag the §1 "no Web/TUI
+# in core" boundary into the main module graph, and pin a binary
+# release into source history. See docs/tools/README.md for how to
+# fetch them locally.
+tools/
+
 # IDE local config
 .windsurf/
 .windsurfrules
