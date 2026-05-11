@@ -287,10 +287,11 @@ permissions:
 
 ## 11. Agent 原生工作流设计原则
 
-工作流规范遵循 **More Context, More Action, Zero Control**：
+工作流规范遵循 **More Context, More Action, Zero Control, Controllable Evolution**：
 
 - **More Context**：优先输出解释性信息、建议文档路径和调试上下文
 - **More Action**：优先提供可执行的下一步建议，增强 Agent 自主修复能力
 - **Zero Control**：除安全、构建、测试等硬性质量门禁外，经验类检查应优先使用非阻塞提醒
+- **Controllable Evolution**：权限、门禁和自动化升级必须可审计、可回滚，避免把经验性规范固化为永久控制
 
 经验沉淀类检查建议使用 `echo`、Step Summary 或 `continue-on-error` 提供上下文，避免把指导性规范升级为不必要的强制控制。

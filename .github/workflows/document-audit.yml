@@ -9,6 +9,9 @@ on:
     paths:
       - '**.md'
       - 'docs/**'
+      - 'workflow/**'
+      - 'workflows/**'
+      - 'reports/**'
 
 jobs:
   format-check:
@@ -19,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run markdownlint
-        run: markdownlint '**/*.md' || true
+        run: markdownlint '**/*.md' --ignore 'docs/deprecated/**' --ignore 'reports/**' || true
 
   consistency-check:
     name: Consistency Check
@@ -34,8 +37,9 @@ jobs:
           if grep -r "shared_layer" --include="*.md" --include="*.go" . 2>/dev/null; then
             echo "Found outdated shared_layer references"
           fi
-          # Check deprecated workflow references
+          # Check active docs for deprecated workflow references.
+          # Historical archives are excluded to keep this audit actionable.
           DEPRECATED="ci-cd-quality-improvement-workflow comprehensive-automation-workflows entry-workflow software-engineering-paradigm-workflow-improvement"
           for w in $DEPRECATED; do
-            grep -r "$w" --include="*.md" docs/ 2>/dev/null && echo "Deprecated workflow: $w"
+            grep -r "$w" --include="*.md" --exclude-dir=deprecated docs/ workflow/ workflows/ 2>/dev/null && echo "Deprecated workflow reference in active docs: $w"
           done

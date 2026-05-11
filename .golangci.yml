@@ -7,28 +7,57 @@ run:
 linters:
   disable-all: true
   enable:
-    - errcheck
+    # --- Baseline (Go defaults) ---
+    - errcheck       # Unchecked errors — was #3 top bug category
     - gosimple
     - govet
     - ineffassign
     - staticcheck
     - typecheck
     - unused
+
+    # --- Format & style ---
     - gofmt
     - goimports
     - misspell
     - gocyclo
-    - gosec
     - revive
+
+    # --- Security ---
+    - gosec          # G104 exclusion REMOVED — silent error discard was a top bug source
+
+    # --- Bug prevention (NEW — targets top recurring issues) ---
+    - bodyclose      # Unclosed HTTP response bodies → resource leak (#2 bug category)
+    - noctx          # HTTP requests without context.Context → context propagation gap (#4)
+    - nilerr         # Returning nil when err != nil → silent failure (#3)
+    - reassign       # Package variable reassignment → global state bugs (#10)
+    - copyloopvar    # Loop variable capture in goroutines → concurrency bugs (#2)
+
+issues:
+  # Do not limit the number of issues per linter — show all.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-rules:
+    # Test files may use context.Background() freely.
+    - path: _test\.go
+      linters:
+        - noctx
+
+    # Existing gosec G104 violations will be fixed incrementally.
+    # Remove this section once all are resolved.
+    - path: _test\.go
+      linters:
+        - gosec
+      text: "G104"
 
 linters-settings:
   gocyclo:
     min-complexity: 15
-  
+
   gosec:
-    excludes:
-      - G104  # Errors unhandled
-  
+    excludes: []
+
   revive:
     rules:
       - name: exported
@@ -44,3 +73,7 @@ linters-settings:
           - ""
           - ""
           - false
+      # Require context.Context as first parameter in exported functions.
+      - name: context-as-argument
+        severity: warning
+        disabled: false

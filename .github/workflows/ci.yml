@@ -143,16 +143,20 @@ jobs:
         with:
           go-version: '1.26'
 
-      - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
-      - name: Run staticcheck
-        run: staticcheck ./...
+      - name: Run golangci-lint
+        run: golangci-lint run ./...
 
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     needs: [format, vet, lint]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -172,6 +176,7 @@ jobs:
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Check coverage
+        if: matrix.os == 'ubuntu-latest'
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Total coverage: $COVERAGE%"
@@ -181,6 +186,7 @@ jobs:
           fi
 
       - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.out
@@ -213,7 +219,7 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: go build -v -o ${{ matrix.binary_name }} cmd/axis/main.go
+        run: go build -v -o ${{ matrix.binary_name }} ./cmd/axis
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

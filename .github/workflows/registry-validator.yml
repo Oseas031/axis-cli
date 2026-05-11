@@ -1,8 +1,8 @@
-name: Workflow Registry Validator
+﻿name: Workflow Registry Validator
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # 每周日执行
+    - cron: '0 0 * * 0'  # 姣忓懆鏃ユ墽琛?
   workflow_dispatch:
   pull_request:
     branches: [ main, develop ]
@@ -47,7 +47,7 @@ jobs:
               # Check required fields
               for field in required_fields:
                   if field not in workflow:
-                      errors.append(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
+                      errors.append(f"鉂?Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
 
               # Skip further validation if required fields are missing
               if 'id' not in workflow or 'file' not in workflow:
@@ -55,43 +55,43 @@ jobs:
 
               # Check for duplicate IDs
               if workflow['id'] in workflow_ids:
-                  errors.append(f"❌ Duplicate workflow ID: {workflow['id']}")
+                  errors.append(f"鉂?Duplicate workflow ID: {workflow['id']}")
               workflow_ids.add(workflow['id'])
 
               # Check if file exists with better error messages
               if not os.path.exists(workflow['file']):
-                  errors.append(f"❌ Workflow file does not exist: {workflow['file']}")
+                  errors.append(f"鉂?Workflow file does not exist: {workflow['file']}")
                   # Suggest similar files
                   if workflow['file'].startswith('docs/deprecated/'):
                       suggestions = glob.glob('docs/deprecated/workflows/*.md')
                       if suggestions:
-                          errors.append(f"💡 Did you mean one of these?")
+                          errors.append(f"馃挕 Did you mean one of these?")
                           for s in suggestions[:3]:
                               errors.append(f"   - {s}")
                   elif workflow['file'].startswith('.github/workflows/'):
                       actual_files = glob.glob('.github/workflows/*.yml')
                       if actual_files:
-                          errors.append(f"💡 Available workflow files:")
+                          errors.append(f"馃挕 Available workflow files:")
                           for f in actual_files[:5]:
                               errors.append(f"   - {f}")
 
               # Check if documentation exists with better error messages
               if 'documentation' in workflow and not os.path.exists(workflow['documentation']):
-                  errors.append(f"❌ Documentation file does not exist: {workflow['documentation']}")
+                  errors.append(f"鉂?Documentation file does not exist: {workflow['documentation']}")
                   # Check for common typos
                   if workflow['documentation'].startswith('/'):
-                      errors.append(f"💡 Absolute path detected. Use relative path from repository root.")
+                      errors.append(f"馃挕 Absolute path detected. Use relative path from repository root.")
                   if 'worklow' in workflow['documentation']:
-                      errors.append(f"💡 Typo detected: 'worklow' should be 'workflow'")
+                      errors.append(f"馃挕 Typo detected: 'worklow' should be 'workflow'")
 
           if errors:
-              print("❌ Registry validation failed:")
+              print("鉂?Registry validation failed:")
               for error in errors:
                   print(error)
               sys.exit(1)
 
-          print("✅ Registry structure validation passed")
-          print(f"✅ Validated {len(workflow_ids)} workflows")
+          print("鉁?Registry structure validation passed")
+          print(f"鉁?Validated {len(workflow_ids)} workflows")
           EOF
 
       - name: Check for orphaned workflows
@@ -117,14 +117,14 @@ jobs:
 
           # Check for unregistered workflows
           for file in actual_files - registered_files:
-              print(f"⚠️ Workflow file not in registry: {file}")
+              print(f"鈿狅笍 Workflow file not in registry: {file}")
 
           # Check for registered files that don't exist
           for file in registered_files - actual_files:
               if file.endswith('.yml'):
-                  print(f"⚠️ Registered workflow file doesn't exist: {file}")
+                  print(f"鈿狅笍 Registered workflow file doesn't exist: {file}")
 
-          print("✅ Orphaned workflow check completed")
+          print("鉁?Orphaned workflow check completed")
           EOF
 
       - name: Check for circular dependencies
@@ -166,12 +166,12 @@ jobs:
               return False
 
           if has_cycle(graph):
-              print("❌ Circular dependencies detected")
+              print("鉂?Circular dependencies detected")
               # Print the cycle
               for node in graph:
                   print(f"  {node} -> {graph[node]}")
           else:
-              print("✅ No circular dependencies detected")
+              print("鉁?No circular dependencies detected")
           EOF
 
       - name: Generate registry health report
@@ -210,7 +210,7 @@ jobs:
                   sf.write(f'- Deprecated workflows: {deprecated_count}\n')
                   sf.write(f'- Last validated: {datetime.now(timezone.utc).isoformat()}\n')
                   sf.write('\n## Status\n')
-                  sf.write('✅ Registry is healthy\n')
+                  sf.write('鉁?Registry is healthy\n')
           PYEOF
 
   generate-index:
@@ -244,47 +244,42 @@ jobs:
           for workflow in registry.get('workflows', []):
               categories[workflow.get('category', 'uncategorized')].append(workflow)
 
-          # Generate index
+          # Generate lightweight index aligned with the current routing docs.
           with open('workflows/README.md', 'w') as f:
               f.write('# 工作流索引\n\n')
-              f.write('本文档提供了项目中所有工作流的快速索引。\n\n')
-              f.write('本文档由 workflow registry validator 自动生成，请勿手动编辑。\n\n')
-              f.write('---\n\n')
+              f.write('本文档只索引当前有效或仍需追溯的工作流。权威元数据以 .github/config/registry.yml 为准。\n\n')
+              f.write('## 权威入口\n\n')
+              f.write('- workflow/entry.md：任务到最小 workflow 组合的入口路由。\n')
+              f.write('- workflow/meta-workflow-management.md：工作流维护规则与同步清单。\n')
+              f.write('- .github/config/registry.yml：工作流状态、路径、依赖的机器可读注册表。\n\n')
 
-              f.write('## 活跃的 GitHub Actions 工作流\n\n')
-              f.write('| ID | 名称 | 文件路径 | 状态 | 用途 |\n')
-              f.write('|----|------|----------|------|------|\n')
-
+              f.write('## 当前活跃的 GitHub Actions\n\n')
+              f.write('| ID | 名称 | 文件路径 |\n')
+              f.write('|---|---|---|\n')
               for workflow in registry.get('workflows', []):
-                  if workflow.get('status') == 'active' and workflow.get('category') != 'documentation':
-                      f.write(f"| {workflow['id']} | {workflow['name']} | {workflow['file']} | ✅ 活跃 | {workflow.get('description', '')} |\n")
+                  if workflow.get('status') == 'active' and workflow.get('file', '').startswith('.github/workflows/'):
+                      f.write(f"| `{workflow['id']}` | {workflow['name']} | `{workflow['file']}` |\n")
 
-              f.write('\n## 活跃的文档工作流\n\n')
-              f.write('| ID | 名称 | 文件路径 | 状态 | 用途 |\n')
-              f.write('|----|------|----------|------|------|\n')
-
+              f.write('\n## 当前活跃的文档工作流\n\n')
+              f.write('| ID | 名称 | 文件路径 |\n')
+              f.write('|---|---|---|\n')
               for workflow in registry.get('workflows', []):
-                  if workflow.get('status') == 'active' and workflow.get('category') == 'documentation':
-                      f.write(f"| {workflow['id']} | {workflow['name']} | {workflow['file']} | ✅ 活跃 | {workflow.get('description', '')} |\n")
+                  if workflow.get('status') == 'active' and not workflow.get('file', '').startswith('.github/workflows/'):
+                      f.write(f"| `{workflow['id']}` | {workflow['name']} | `{workflow['file']}` |\n")
 
               f.write('\n## 废弃的工作流\n\n')
-              f.write('| ID | 名称 | 文件路径 | 状态 | 废弃原因 |\n')
-              f.write('|----|------|----------|------|----------|\n')
-
+              f.write('| ID | 名称 | 当前处理 |\n')
+              f.write('|---|---|---|\n')
               for workflow in registry.get('workflows', []):
                   if workflow.get('status') == 'deprecated':
-                      f.write(f"| {workflow['id']} | {workflow['name']} | {workflow['file']} | ❌ 废弃 | {workflow.get('note', '')} |\n")
-
-              f.write('\n## 工作流分类\n\n')
-              for category, workflows in sorted(categories.items()):
-                  f.write(f'### {category.capitalize()}\n\n')
-                  for workflow in workflows:
-                      f.write(f"- {workflow['id']}: {workflow['name']}\n")
-                  f.write('\n')
+                      f.write(f"| `{workflow['id']}` | {workflow['name']} | {workflow.get('note', workflow['file'])} |\n")
 
               f.write('\n## 相关文档\n\n')
+              f.write('- [工作流入口路由](../workflow/entry.md)\n')
+              f.write('- [Meta-Workflow 管理](../workflow/meta-workflow-management.md)\n')
               f.write('- [工作流注册表](../.github/config/registry.yml) - 完整的工作流元数据\n')
-              f.write('- [Meta-Workflow 管理](meta-workflow-management.md) - 工作流管理系统\n')
+              f.write('- [工作流最佳实践](../docs/workflow/workflow-best-practices.md)\n')
+              f.write('- [工作流报告索引](../reports/README.md)\n')
 
           print("✅ Workflow index generated")
           EOF
@@ -325,3 +320,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Index Generation" >> $GITHUB_STEP_SUMMARY
           echo "- Status: ${{ needs.generate-index.result }}" >> $GITHUB_STEP_SUMMARY
+
