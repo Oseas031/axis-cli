@@ -1,181 +1,192 @@
 ﻿# Axis
 
-> Agent 原生调度系统。不是为了控制 Agent，而是为了让 Agent 在任务实践中积累胜任力、赢得自主权，并最终生成自身。
+> Agent-native scheduling system. Not to control Agents, but to let Agents earn competence through task practice, gain autonomy, and ultimately generate themselves.
 
-Axis 的目标不是做一个更强的任务队列，也不是做一个包裹 LLM 的工具框架。Axis 的目标是构造一个 **Agent 自因化的执行底座**：让 Agent 能理解任务、组织行动、验证结果、反思失败、生成下一轮任务，并在可靠表现中逐步获得更大的自主权。
+Axis is not a smarter task queue, nor an LLM wrapper framework. Axis is an **Agent autogenesis execution substrate**: enabling Agents to understand tasks, organize actions, validate results, reflect on failures, generate follow-up tasks, and progressively earn greater autonomy through reliable performance.
 
-## 核心命题
+**[Chinese version / 中文版](docs/zh/ROOT-README.md)**
 
-```text
-More Context, More Action, Zero Control
-```
-
-Axis 相信 Agent 需要的不是更密集的外部控制，而是：
-
-- **More Context**：获得足够理解任务、依赖、历史、系统状态和失败原因的上下文
-- **More Action**：拥有执行、组合、验证、修正和生成后续任务的行动能力
-- **Zero Control**：系统提供契约、基础设施和可观测性，但不替 Agent 规定唯一行动路径
-
-## 交互原则
+## Core Thesis
 
 ```text
-bash is all you need
+More Context, More Action, Zero Control, Controllable Evolution
 ```
 
-Axis 默认保持 shell-native：
+- **More Context**: The system provides query infrastructure; Agents actively query and assemble context rather than passively receiving redundant pushes
+- **More Action**: Execution, composition, validation, correction, and follow-up task generation capabilities, with permissions matched to competence
+- **Zero Control**: The system provides contracts, infrastructure, and observability, but does not prescribe a single action path for the Agent
+- **Controllable Evolution**: Self-bootstrapping, self-generation, and self-modification must remain within observable, verifiable, and rollback-safe boundaries
 
-- CLI 优先
-- 可脚本化
-- 可组合
-- 可被人类、CI 和 Agent 调用
-- 不默认引入 Web UI 或复杂 TUI
-
-这不是简陋，而是为了让 Axis 自身也能被 Agent 直接调用、编排和改造。
-
-## 权限哲学
+## Design Principles
 
 ```text
-Competence earns autonomy
+bash is all you need · Competence earns autonomy · Interface is existence
 ```
 
-Axis 的权限边界不是静态文件白名单，而是递进自主权机制：
+- **CLI First**: Scriptable, composable, callable by humans/CI/Agents; no default Web UI or complex TUI
+- **Progressive Autonomy**: The more reliable, the wider the action radius; high-risk operations are not exempt based on executor identity
+- **Interface is Existence**: Humans and Agents implement the same agent interface, with no identity bias
+- **Contract is Structure**: File system / meta-files are the shared contract language for all Agents
+- **Transitional Structures**: workflow/contract/permission/spec are seeds and scaffolding, eventually to be internalized, rewritten, and discarded by Agents
 
-- **Competence**：Agent 在真实任务中展现出的可靠执行能力
-- **Earns**：自主权通过稳定、可验证、可审计的表现逐步赢得
-- **Autonomy**：不只是文件访问权，而是自主决策、独立执行任务的能力
+## Current Status
 
-越可靠，行动半径越大；越不稳定，系统要求更多上下文、验证或人类确认。
+M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Sandboxed Evolution ✅ | Local Control Plane ✅
 
-## 自举起点
+### Completed Capabilities
 
-Axis 的自举不是从第一行自我修改代码开始，而是从外部 Agent 向 Axis 注入可被吸收、固化、执行、反思和演化的思想开始。
+- **Task Scheduling**: FIFO + DAG parallel scheduling, dependency management, 5-worker parallel orchestrator, contract admission, SLA timeout/retry/failure_class strategy engine
+- **LLM Integration**: Anthropic / OpenAI / DeepSeek / MiniMax providers, token accounting, circuit breaker, project-local provider profile management
+- **Tool System**: BashTool (observable execution records), FileReadTool, FileWriteTool, HTTPClientTool, tool permission scopes, multi-turn execution loop
+- **Natural Language Scheduling**: `axis ask` compiles prompts into AgentTask, dry-run preview / explicit submit, never bypasses contracts
+- **Adaptive Context Assembly**: ContextBundle / ReadinessArtifact / ReadinessRegistry / preflight / strict gate, rule-based assembly + budget trimming, preview-first without execution intrusion
+- **Execution-time Context Consumption**: ExecutionContextSummary / ExecutionContextConsumer, Agents declare `context.requested_sources`, dispatcher injects summary
+- **Local Control Plane**: `axis start` launches loopback HTTP control server, cross-process submit/query, `.axis/runtime.json` locator, append-only event log
+- **Sandboxed Evolution Protocol**: Isolated workspace + atomic steps + trace ledger + verification capture + explicit promote/discard gate, full audit trail
+- **Self-Judgement Engine**: SelfJudgementEngine + 5 validation strategies (Syntax/Semantic/Contract/Test/Coverage), self-judgement contract, BootstrapOrchestrator judgement integration
+- **Bootstrap Loop**: BootstrapOrchestrator + FollowUpTaskGenerator + AutonomyTransition rule engine + self-iteration contracts
+- **9+ structured error codes**, Agent Context Query Model, DAG visibility
 
-当前阶段已经是自举起点：
-
-```text
-external thought injection
-  -> architecture / spec / workflow / contract / permission
-  -> implementation path
-  -> execution
-  -> reflection
-  -> self-revision
-```
-
-工程上的 bootstrap loop 只是第一层；更深层目标是 **Autogenesis Loop**。
-
-## Autogenesis Loop
-
-```text
-Perceive self
-  -> Diagnose self
-  -> Redefine self
-  -> Modify self
-  -> Validate self
-  -> Judge self
-  -> Re-authorize self
-  -> Repeat
-```
-
-Axis 最终要支持的不是“Agent 调工具”，而是 Agent 把自身作为对象来理解、修改、验证、评判和重新授权。
-
-## 过渡性结构
-
-Axis 当前仍需要早期工程结构，但它们不是终点：
-
-- **workflow 是临时脚手架**：帮助尚未成熟的 Agent 组织行动
-- **contract 是成长边界**：帮助 Agent 表达任务、验证结果，并最终自我立约
-- **permission rule 是递进自主权机制**：也是 Axis 涅槃前的枷锁，终将被内化、重写和扬弃
-- **spec 是种子**：不是终局蓝图，而是下一阶段演化的发生源
-
-这些结构的使命不是永久控制 Agent，而是帮助 Agent 成长到可以重写它们。
-
-## 当前状态
-
-Milestone 1 ✅ | Milestone 2 ✅ | Milestone 3 ✅ | M4 ✅ | M5 Phase 5.1-5.4 ✅
-
-Axis 已具备：
-
-- Milestone 1：基础任务模型、FIFO 调度、依赖管理、契约执行器、状态存储、编排器、CLI / shell 入口
-- Milestone 2：DAG 并行调度、contract admission、SLA timeout/retry、5-worker 并行 orchestrator、9 个结构化错误码
-- Milestone 3 Phase 1：ModelProvider 接口 + MockModelProvider、ErrDependencyNotReady、SLA failure_class
-- Milestone 3 Phase 2：ModelProvider 可配置化（WithModelProvider）、HumanExecutor 路由、DAG 可见性（dag 命令）
-- Milestone 3 Phase 3：SLA 策略引擎（failure_class 路由 + 退避策略 + 优先级排序）、Tool 接口 + BashTool + 多轮执行循环
-- M4 Phase 4.1：Anthropic / OpenAI 真实 LLM provider、token accounting、safe JSON
-- M4 Phase 4.2：FileReadTool、FileWriteTool、HTTPClientTool、tool permission scopes
-- M4 Phase 4.3：Circuit breaker、provider wiring、test coverage (provider 91.8%, tool 93.7%, executor 95.1%)
-- M4 Phase 4.4：CLI `--provider` flag、shell `tools` command
-- M5 Phase 5.1：AgentExecutor 接口、MockAgentExecutor、orchestrator 注入
-- M5 Phase 5.2：SelfContext、ContextBuilder、ContextCompressor
-- M5 Phase 5.3：self-iteration contracts（analyze/implement/validate/update-docs/review/spawn）
-- M5 Phase 5.4：BootstrapOrchestrator 循环跟踪、FollowUpTaskGenerator、AutonomyTransition 规则引擎
-
-## 快速开始
+## Quick Start
 
 ```bash
 go test ./...
-go build -o axis-dev.exe cmd/axis/main.go
-.\axis-dev.exe run my-task
+go build -o axis-dev.exe ./cmd/axis
 ```
 
-### Provider Selection
+> On Windows, output to `axis-dev.exe` to avoid overwriting or locking an existing `axis.exe` in the project root.
 
-```bash
-# Use Anthropic Claude
-.\axis-dev.exe run my-task --provider anthropic
+### Local Runtime
 
-# Use OpenAI GPT
-.\axis-dev.exe run my-task --provider openai
+Cross-command submit and query requires explicitly starting a local runtime:
 
-# Use Mock (default)
-.\axis-dev.exe run my-task --provider mock
+```powershell
+# Terminal A: start the project-local runtime
+.\axis-dev.exe start
+
+# Terminal B: submit a natural-language task
+.\axis-dev.exe ask "check provider config" --submit --task-id provider-check
+
+# Terminal B: query task status
+.\axis-dev.exe status provider-check
 ```
 
-### Environment Variables
+- `axis start` writes `.axis/runtime.json`, exposes a loopback control server, and appends events to `.axis/events/tasks.jsonl`
+- `axis ask <prompt>` defaults to dry-run preview and does not require a runtime
+- `axis shell` is an in-process session; `run`/`ask --submit`/`status` within the shell share session state and do not silently attach to `axis start`
 
-```bash
-export ANTHROPIC_API_KEY=sk-...
-export OPENAI_API_KEY=sk-...
+### Provider Management
+
+```powershell
+# Add project-local provider profiles
+.\axis-dev.exe provider add claude --type anthropic --api-key sk-ant-... --model claude-3-5-sonnet-20241022
+.\axis-dev.exe provider add gpt --type openai --api-key sk-... --model gpt-4o-mini
+.\axis-dev.exe provider add ds --type deepseek --api-key sk-... --model deepseek-chat
+.\axis-dev.exe provider add mm --type minimax --api-key ... --model MiniMax-Text-01
+
+# Switch / inspect / list
+.\axis-dev.exe provider use claude
+.\axis-dev.exe provider status
+.\axis-dev.exe provider list
 ```
 
-Windows:
-```cmd
-set ANTHROPIC_API_KEY=sk-...
-set OPENAI_API_KEY=sk-...
+Profiles are stored in `.axis/providers.json` and do not modify shell environment variables or system configuration.
+
+### Context Preview and Readiness Check
+
+```powershell
+# Preview context assembly result for a task
+.\axis-dev.exe context preview "check provider config"
+
+# Check context readiness
+.\axis-dev.exe context inspect <bundle-id>
+.\axis-dev.exe context preflight <task-id>
+.\axis-dev.exe context preflight <task-id> --strict
 ```
 
-Windows 本地开发建议输出到 `axis-dev.exe`，避免覆盖或锁定根目录下既有 `axis.exe`。
+### Sandboxed Evolution
 
-## 重要文档
+```powershell
+# Inspect evolution run details
+.\axis-dev.exe evolve inspect <run-id>
 
-- [Agent 原生设计思想](docs/architecture/agent-native-design-philosophy.md)
+# Promote or discard evolution results
+.\axis-dev.exe evolve promote <run-id>
+.\axis-dev.exe evolve discard <run-id>
+```
+
+### Self-Judgement
+
+```powershell
+# Run self-judgement diagnostic
+.\axis-dev.exe judge
+```
+
+## CLI Commands
+
+| Command | Purpose |
+|---------|---------|
+| `axis start` | Start local runtime (loopback control server) |
+| `axis run <task-id>` | Submit and run a task |
+| `axis status <task-id>` | Query task status (via local runtime) |
+| `axis ask <prompt>` | Natural language to AgentTask (dry-run by default) |
+| `axis ask <prompt> --submit` | Submit natural-language task to local runtime |
+| `axis shell` | Start interactive in-process shell |
+| `axis provider add/use/status/list/remove/archive` | Manage project-local LLM provider profiles |
+| `axis context preview/inspect/preflight` | Context assembly preview and readiness check |
+| `axis judge` | Run self-judgement diagnostic |
+| `axis evolve inspect/promote/discard` | Sandboxed evolution inspection and decisions |
+
+## External Tools
+
+- **[axis-gui](tools/axis-gui/)**: Local Web GUI connecting to the Local Control Plane, providing Dashboard / Tasks / Providers / Events views (WebSocket real-time updates)
+- **[axis-up](tools/axis-up/)**: Guided onboarding tool for environment detection / build / configuration / demo
+
+Both tools do not import Axis internal packages; they communicate via CLI and HTTP API.
+
+## Key Documentation
+
+- [Agent-Native First Principles](docs/architecture/agent-native-first-principles.md) **<-- read before coding**
 - [Bash is All You Need](docs/architecture/bash-is-all-you-need.md)
-- [Autogenesis 设计报告](reports/axis-autogenesis-design-2026-05-08.md)
-- [自因化自举差距分析](reports/bootstrap-gap-analysis-2026-05-08.md)
-- [当前进度](docs/current-progress.md)
-- [Milestone 2 Specs](docs/specs/milestone2/)
-- [工作流入口](workflow/entry.md)
+- [System Conventions](docs/architecture/axis-system-conventions.md)
+- [Current Progress](docs/status/current-progress.md)
+- [Documentation Index](docs/README.md)
+- [Agent-Native Scenarios Whitepaper](docs/product/axis-native-scenarios-whitepaper.md)
+- [Autogenesis Design Report](reports/strategy/axis-autogenesis-design-2026-05-08.md)
 
-## 技术栈
+## Tech Stack
 
-- Go 1.26+
-- 核心模块优先使用 Go 标准库
-- 单二进制 CLI
-- Shell-native workflow
+- **Go 1.21+**, core modules prefer the standard library
+- **Single binary CLI**, shell-native workflow
+- **Cobra** CLI framework
+- **Project-local state**: `.axis/` directory (providers.json / runtime.json / events/ / evolution/)
 
-## 当前最重要的下一步
-
-M5 Phase 5.5：
+## Project Structure
 
 ```text
-- File-backed StateStore（持久化状态存储）
-- 错误码扩展（自迭代相关错误）
-- SLA for self-iteration（自迭代任务的 SLA 配置）
+cmd/axis/          CLI entry and command definitions
+internal/
+  types/           Core data types (AgentTask, AgentContract, ErrorCode...)
+  kernel/          Scheduler, orchestrator, dispatcher
+  contract/        Contract executor
+  model/           LLM provider + tool system
+  agent/           Agent executor + self-judgement engine
+  intent/          Natural language intent parsing
+  contextpack/     Adaptive context assembly
+  control/         Local control plane (server/client/locator/events)
+  evolution/       Sandboxed evolution protocol
+  human/           Human executor
+docs/              Documentation index, architecture reference, specs, status
+tools/
+  axis-gui/        Local Web GUI
+  axis-up/         Guided onboarding tool
 ```
 
-M5 Phase 5.6（自举完成）：
+## Next Steps
 
-```text
-- 完整 bootstrap loop 执行
-- 自主权升级/降级生效
-- 自生成后续任务验证
-```
+- **Cross-process state persistence**: ReadinessRegistry integration with Local Control Plane
+- **Agent identity and competence profiles**: Agent registry + behavioral scoring
+- **Structured event log queries**: `axis audit` or equivalent capability
+- **Dynamic model routing**: Cost/latency-aware provider selection + degradation chain
+- **Execution feedback loop**: Result quality scoring fed back to intent/context assembly
+
