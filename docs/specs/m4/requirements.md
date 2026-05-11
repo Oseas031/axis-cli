@@ -1,31 +1,31 @@
 # M4 Requirements: Real LLM Integration + Extended Tools
 
-**Status**: Draft
+**Status**: Completed
 **Last Updated**: 2026-05-09
 
 ## 1. Overview
 
-M4打通真实LLM作为推理后端，同时扩展工具集（文件读写、HTTP client），为Agent提供更完整的工作能力。
+M4 connects a real LLM as the inference backend, while extending the tool set (file read/write, HTTP client) to provide Agents with more complete working capabilities.
 
 ## 2. Goals
 
 ### 2.1 Real LLM Integration
-- [ ] Anthropic provider (Claude family)
-- [ ] OpenAI provider (GPT family)
-- [ ] Provider configuration via functional options or config file
-- [ ] Token accounting (input/output count per request)
-- [ ] Streaming support (for long outputs)
+- [x] Anthropic provider (Claude family)
+- [x] OpenAI provider (GPT family)
+- [x] Provider configuration via functional options or config file
+- [x] Token accounting (input/output count per request)
+- [x] Streaming support (for long outputs)
 
 ### 2.2 Extended Tools
-- [ ] FileReadTool — read files with path validation
-- [ ] FileWriteTool — write files with path validation
-- [ ] HTTPClientTool — make HTTP requests
-- [ ] Tool permission scopes (read-only, write-only, network, etc.)
+- [x] FileReadTool — read files with path validation
+- [x] FileWriteTool — write files with path validation
+- [x] HTTPClientTool — make HTTP requests
+- [x] Tool permission scopes (read-only, write-only, network, etc.)
 
 ### 2.3 Security
-- [ ] Tool execution sandboxing (allowlists, deny lists)
-- [ ] Circuit breaker for runaway tool loops
-- [ ] Safe JSON serialization in tool results
+- [x] Tool execution sandboxing (allowlists, deny lists)
+- [x] Circuit breaker for runaway tool loops
+- [x] Safe JSON serialization in tool results
 
 ## 3. Non-Goals
 

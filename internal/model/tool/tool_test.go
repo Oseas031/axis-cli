@@ -2,6 +2,10 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -385,10 +389,11 @@ func TestPathValidationError_Error(t *testing.T) {
 }
 
 func TestHTTPClientTool_Execute_GetSuccess(t *testing.T) {
-	tool := NewHTTPClientTool([]string{"example.com", "httpbin.org"})
+	serverURL, allowedHost := newHTTPToolTestServer(t)
+	tool := NewHTTPClientTool([]string{allowedHost})
 	result, err := tool.Execute(context.Background(), map[string]any{
 		"method": "GET",
-		"url":    "https://example.com",
+		"url":    serverURL + "/get",
 	})
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
@@ -402,10 +407,11 @@ func TestHTTPClientTool_Execute_GetSuccess(t *testing.T) {
 }
 
 func TestHTTPClientTool_Execute_PostSuccess(t *testing.T) {
-	tool := NewHTTPClientTool([]string{"httpbin.org"})
+	serverURL, allowedHost := newHTTPToolTestServer(t)
+	tool := NewHTTPClientTool([]string{allowedHost})
 	result, err := tool.Execute(context.Background(), map[string]any{
 		"method": "POST",
-		"url":    "https://httpbin.org/post",
+		"url":    serverURL + "/post",
 		"body":   `{"test":"data"}`,
 	})
 	if err != nil {
@@ -460,10 +466,11 @@ func TestHTTPClientTool_Execute_MissingURL(t *testing.T) {
 }
 
 func TestHTTPClientTool_Execute_WithHeaders(t *testing.T) {
-	tool := NewHTTPClientTool([]string{"httpbin.org"})
+	serverURL, allowedHost := newHTTPToolTestServer(t)
+	tool := NewHTTPClientTool([]string{allowedHost})
 	result, err := tool.Execute(context.Background(), map[string]any{
 		"method": "GET",
-		"url":    "https://httpbin.org/get",
+		"url":    serverURL + "/get",
 		"headers": map[string]any{
 			"X-Test-Header": "test-value",
 		},
@@ -477,12 +484,13 @@ func TestHTTPClientTool_Execute_WithHeaders(t *testing.T) {
 }
 
 func TestHTTPClientTool_Execute_PutDelete(t *testing.T) {
-	tool := NewHTTPClientTool([]string{"httpbin.org"})
+	serverURL, allowedHost := newHTTPToolTestServer(t)
+	tool := NewHTTPClientTool([]string{allowedHost})
 
 	// Test PUT
 	result, err := tool.Execute(context.Background(), map[string]any{
 		"method": "PUT",
-		"url":    "https://httpbin.org/put",
+		"url":    serverURL + "/put",
 		"body":   `{"update":true}`,
 	})
 	if err != nil {
@@ -495,7 +503,7 @@ func TestHTTPClientTool_Execute_PutDelete(t *testing.T) {
 	// Test DELETE
 	result, err = tool.Execute(context.Background(), map[string]any{
 		"method": "DELETE",
-		"url":    "https://httpbin.org/delete",
+		"url":    serverURL + "/delete",
 	})
 	if err != nil {
 		t.Fatalf("Execute DELETE failed: %v", err)
@@ -511,4 +519,26 @@ func TestHostValidationError_Error(t *testing.T) {
 	if err.Error() != expected {
 		t.Errorf("Expected '%s', got '%s'", expected, err.Error())
 	}
+}
+
+func newHTTPToolTestServer(t *testing.T) (string, string) {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]any{
+			"method": r.Method,
+			"path":   r.URL.Path,
+			"header": r.Header.Get("X-Test-Header"),
+		}); err != nil {
+			t.Fatalf("failed to encode response: %v", err)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	parsed, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("failed to parse test server URL: %v", err)
+	}
+	return server.URL, parsed.Hostname()
 }

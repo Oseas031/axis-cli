@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/axis-cli/axis/internal/types"
 )
@@ -23,9 +25,10 @@ func newOpenAIProvider(cfg *providerConfig) *OpenAIProvider {
 
 // openaiRequest is the request format for the OpenAI Chat Completions API.
 type openaiRequest struct {
-	Model    string          `json:"model"`
-	Messages []openaiMessage `json:"messages"`
-	Tools    []openaiTool    `json:"tools,omitempty"`
+	Model       string          `json:"model"`
+	Messages    []openaiMessage `json:"messages"`
+	Tools       []openaiTool    `json:"tools,omitempty"`
+	Temperature float64         `json:"temperature,omitempty"`
 }
 
 // openaiMessage represents a message in the OpenAI API format.
@@ -100,20 +103,23 @@ type openaiToolFunction struct {
 
 // Execute calls the OpenAI Chat Completions API.
 func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*ModelResponse, error) {
+	start := time.Now()
 	baseURL := p.config.baseURL
 	if baseURL == "" {
 		baseURL = "https://api.openai.com"
 	}
 
 	or := openaiRequest{
-		Model: p.config.model,
+		Model:       p.config.model,
+		Temperature: p.config.temperature,
 	}
 
 	// Convert history to OpenAI message format
 	for _, msg := range req.History {
 		om := openaiMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
+			Role:       msg.Role,
+			Content:    msg.Content,
+			ToolCallID: msg.ToolCallID,
 		}
 		// Convert tool calls if present
 		for _, tc := range msg.ToolCalls {
@@ -179,7 +185,7 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/v1/chat/completions", bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, openAIChatCompletionsURL(baseURL), bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -187,19 +193,45 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+p.config.apiKey)
 
-	resp, err := p.config.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
+	// Retry loop with exponential backoff: retry on 5xx and network errors only.
+	var lastErr error
+	var respBody []byte
+	for attempt := 0; attempt <= p.config.maxRetries; attempt++ {
+		if attempt > 0 {
+			backoff := time.Duration(attempt) * time.Second
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
+		resp, err := p.config.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("request failed (attempt %d/%d): %w", attempt, p.config.maxRetries, err)
+			continue
+		}
 
-	if resp.StatusCode != http.StatusOK {
+		respBody, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response: %w", err)
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			break
+		}
+
+		if resp.StatusCode >= 500 {
+			lastErr = fmt.Errorf("API error (status %d, attempt %d/%d): %s", resp.StatusCode, attempt, p.config.maxRetries, string(respBody))
+			continue
+		}
+
+		// 4xx errors are not retried.
 		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+	}
+	if lastErr != nil && len(respBody) == 0 {
+		return nil, fmt.Errorf("max retries (%d) exceeded: %w", p.config.maxRetries, lastErr)
 	}
 
 	var orResp openaiResponse
@@ -219,24 +251,48 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 
 	// Convert tool calls back to our format
 	var toolCalls []types.ToolCall
-	for _, tc := range choice.Message.ToolCalls {
+	for i, tc := range choice.Message.ToolCalls {
+		id := tc.ID
+		if id == "" {
+			id = fmt.Sprintf("call-%d", i+1)
+		}
 		var args map[string]any
 		if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
 			args = map[string]any{"error": "failed to parse arguments"}
 		}
 		toolCalls = append(toolCalls, types.ToolCall{
-			ID:    tc.ID,
+			ID:    id,
 			Name:  tc.Function.Name,
 			Input: args,
 		})
 	}
 
-	return &ModelResponse{
-		Output:       output,
-		ToolCalls:    toolCalls,
+	cost := estimateCost(p.config.model, orResp.Usage.PromptTokens, orResp.Usage.CompletionTokens)
+	logProviderCall(providerLogEntry{
+		Provider:     p.config.model,
+		Method:       "POST",
+		URL:          openAIChatCompletionsURL(baseURL),
+		Status:       200,
+		DurationMs:   time.Since(start).Milliseconds(),
 		InputTokens:  orResp.Usage.PromptTokens,
 		OutputTokens: orResp.Usage.CompletionTokens,
+		CostUSD:      cost,
+	})
+	return &ModelResponse{
+		Output:          output,
+		ToolCalls:       toolCalls,
+		InputTokens:     orResp.Usage.PromptTokens,
+		OutputTokens:    orResp.Usage.CompletionTokens,
+		CostEstimateUSD: cost,
 	}, nil
+}
+
+func openAIChatCompletionsURL(baseURL string) string {
+	baseURL = strings.TrimRight(baseURL, "/")
+	if strings.HasSuffix(baseURL, "/v1") {
+		return baseURL + "/chat/completions"
+	}
+	return baseURL + "/v1/chat/completions"
 }
 
 // formatJSON converts a map to a JSON string.

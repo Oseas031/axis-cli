@@ -2,11 +2,14 @@ package tool
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"time"
 
 	"github.com/axis-cli/axis/internal/types"
 )
+
+const bashOutputLimit = 64 * 1024
 
 // BashTool executes bash shell commands.
 type BashTool struct{}
@@ -34,21 +37,40 @@ func (t *BashTool) Execute(ctx context.Context, input map[string]any) (map[strin
 	if !ok || cmdStr == "" {
 		return map[string]any{"error": "command is required and must be a string"}, nil
 	}
+	start := time.Now()
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = ""
+	}
 	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	// #nosec G204
 	cmd := exec.CommandContext(timeoutCtx, "bash", "-c", cmdStr)
 	output, execErr := cmd.CombinedOutput()
 	exitCode := 0
+	timedOut := false
 	if execErr != nil {
-		if exitErr, ok := execErr.(*exec.ExitError); ok {
+		if timeoutCtx.Err() == context.DeadlineExceeded {
+			timedOut = true
+			exitCode = -1
+		} else if exitErr, ok := execErr.(*exec.ExitError); ok {
 			exitCode = exitErr.ExitCode()
 		} else {
 			return nil, execErr
 		}
 	}
+	outputTruncated := false
+	if len(output) > bashOutputLimit {
+		output = output[:bashOutputLimit]
+		outputTruncated = true
+	}
 	return map[string]any{
-		"stdout":    string(output),
-		"exit_code": exitCode,
+		"command":          cmdStr,
+		"cwd":              cwd,
+		"stdout":           string(output),
+		"exit_code":        exitCode,
+		"duration_ms":      time.Since(start).Milliseconds(),
+		"timed_out":        timedOut,
+		"output_truncated": outputTruncated,
 	}, nil
 }

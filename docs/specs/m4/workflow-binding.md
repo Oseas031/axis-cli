@@ -1,4 +1,4 @@
-# M4 Workflow Binding
+﻿# M4 Workflow Binding
 
 M4 follows the standard workflow routing per `workflow/entry.md`.
 
@@ -33,10 +33,11 @@ For each implementation task (T1-T18), run:
 3. Read relevant workflow docs
 4. Implement minimum change
 5. Run validation
-6. Update `docs/current-progress.md`
+6. Update `docs/status/current-progress.md`
 
 ## Coverage Gate
 
 - M4 implementation must maintain ≥85% coverage
 - New code (providers, tools): 90%+
 - Executor changes: 85%+
+

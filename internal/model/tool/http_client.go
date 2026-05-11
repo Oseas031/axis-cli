@@ -14,6 +14,9 @@ import (
 	"github.com/axis-cli/axis/internal/types"
 )
 
+// httpResponseMaxBytes limits the size of HTTP response body returned to prevent large responses from overwhelming context.
+const httpResponseMaxBytes = 64 * 1024
+
 // HTTPClientTool makes HTTP requests to allowed hosts.
 type HTTPClientTool struct {
 	allowedHosts []string
@@ -119,17 +122,29 @@ func (t *HTTPClientTool) Execute(ctx context.Context, input map[string]any) (map
 		return map[string]any{"error": "failed to read response: " + err.Error()}, nil
 	}
 
+	truncated := false
+	totalBytes := len(respBody)
+	if len(respBody) > httpResponseMaxBytes {
+		respBody = respBody[:httpResponseMaxBytes]
+		truncated = true
+	}
+
 	// Try to parse as JSON for structured response
 	var respData any
 	if json.Unmarshal(respBody, &respData) != nil {
 		respData = string(respBody)
 	}
 
-	return map[string]any{
+	result := map[string]any{
 		"status":  resp.StatusCode,
 		"headers": resp.Header,
 		"body":    respData,
-	}, nil
+	}
+	if truncated {
+		result["truncated"] = true
+		result["total_bytes"] = totalBytes
+	}
+	return result, nil
 }
 
 // HostValidationError represents a host validation failure.

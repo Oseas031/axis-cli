@@ -26,16 +26,10 @@ func TestAnthropicProvider_Execute_Success(t *testing.T) {
 			Type:  "message",
 			Role:  "assistant",
 			Model: "claude-sonnet-4-5",
-			Content: []struct {
-				Type string "json:\"type\""
-				Text string "json:\"text,omitempty\""
-			}{
+			Content: []anthropicContentBlock{
 				{Type: "text", Text: "Hello from Claude"},
 			},
-			Usage: struct {
-				InputTokens  int `json:"input_tokens"`
-				OutputTokens int `json:"output_tokens"`
-			}{
+			Usage: anthropicUsage{
 				InputTokens:  100,
 				OutputTokens: 50,
 			},
@@ -81,16 +75,10 @@ func TestAnthropicProvider_Execute_WithTools(t *testing.T) {
 			Type:  "message",
 			Role:  "assistant",
 			Model: "claude-sonnet-4-5",
-			Content: []struct {
-				Type string "json:\"type\""
-				Text string "json:\"text,omitempty\""
-			}{
+			Content: []anthropicContentBlock{
 				{Type: "text", Text: "Response"},
 			},
-			Usage: struct {
-				InputTokens  int `json:"input_tokens"`
-				OutputTokens int `json:"output_tokens"`
-			}{
+			Usage: anthropicUsage{
 				InputTokens:  100,
 				OutputTokens: 50,
 			},
@@ -139,16 +127,10 @@ func TestAnthropicProvider_Execute_WithHistory(t *testing.T) {
 			Type:  "message",
 			Role:  "assistant",
 			Model: "claude-sonnet-4-5",
-			Content: []struct {
-				Type string "json:\"type\""
-				Text string "json:\"text,omitempty\""
-			}{
+			Content: []anthropicContentBlock{
 				{Type: "text", Text: "Response"},
 			},
-			Usage: struct {
-				InputTokens  int `json:"input_tokens"`
-				OutputTokens int `json:"output_tokens"`
-			}{
+			Usage: anthropicUsage{
 				InputTokens:  150,
 				OutputTokens: 75,
 			},
@@ -182,6 +164,127 @@ func TestAnthropicProvider_Execute_WithHistory(t *testing.T) {
 	}
 	if resp.InputTokens != 150 {
 		t.Errorf("Expected InputTokens=150, got %d", resp.InputTokens)
+	}
+}
+
+func TestAnthropicProvider_Execute_ToolSchemaIncludesProperties(t *testing.T) {
+	var capturedBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&capturedBody); err != nil {
+			t.Errorf("failed to decode request body: %v", err)
+		}
+		resp := anthropicResponse{
+			ID:    "msg_123",
+			Type:  "message",
+			Role:  "assistant",
+			Model: "claude-sonnet-4-5",
+			Content: []anthropicContentBlock{
+				{Type: "text", Text: "Hello from Claude"},
+			},
+			Usage: anthropicUsage{InputTokens: 10, OutputTokens: 5},
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	cfg := &providerConfig{
+		model:      "claude-sonnet-4-5",
+		apiKey:     "test-key",
+		baseURL:    server.URL,
+		timeout:    30,
+		maxRetries: 3,
+		httpClient: server.Client(),
+	}
+	p := newAnthropicProvider(cfg)
+
+	req := &ModelRequest{
+		ContractID: "test-contract",
+		Input:      map[string]any{"message": "hello"},
+		Tools: []types.ToolDefinition{
+			{
+				Name:        "bash",
+				Description: "Run a bash command",
+				Parameters: []types.FieldDef{
+					{Name: "command", Type: types.FieldTypeString, Required: true, Description: "The command"},
+					{Name: "timeout", Type: types.FieldTypeInt, Required: false, Description: "Timeout seconds"},
+				},
+			},
+		},
+	}
+
+	_, err := p.Execute(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	toolsRaw, ok := capturedBody["tools"].([]any)
+	if !ok || len(toolsRaw) == 0 {
+		t.Fatal("expected tools array in request body")
+	}
+	tool0 := toolsRaw[0].(map[string]any)
+	schema := tool0["input_schema"].(map[string]any)
+	if schema["type"] != "object" {
+		t.Fatalf("expected input_schema.type=object, got %v", schema["type"])
+	}
+	props, ok := schema["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("expected input_schema.properties to be present")
+	}
+	if _, hasCommand := props["command"]; !hasCommand {
+		t.Fatal("expected properties to contain 'command'")
+	}
+	reqArr, ok := schema["required"].([]any)
+	if !ok || len(reqArr) != 1 || reqArr[0] != "command" {
+		t.Fatalf("expected required=[command], got %v", schema["required"])
+	}
+}
+
+func TestAnthropicProvider_Execute_ToolUseResponseParsed(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := anthropicResponse{
+			ID:    "msg_123",
+			Type:  "message",
+			Role:  "assistant",
+			Model: "claude-sonnet-4-5",
+			Content: []anthropicContentBlock{
+				{Type: "text", Text: "I'll run the command"},
+				{Type: "tool_use", ID: "tu_01", Name: "bash", Input: json.RawMessage(`{"command":"echo hi"}`)},
+			},
+			Usage: anthropicUsage{InputTokens: 10, OutputTokens: 5},
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	cfg := &providerConfig{
+		model:      "claude-sonnet-4-5",
+		apiKey:     "test-key",
+		baseURL:    server.URL,
+		timeout:    30,
+		maxRetries: 3,
+		httpClient: server.Client(),
+	}
+	p := newAnthropicProvider(cfg)
+
+	resp, err := p.Execute(context.Background(), &ModelRequest{
+		ContractID: "test",
+		Input:      map[string]any{"msg": "hello"},
+	})
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+	if len(resp.ToolCalls) != 1 {
+		t.Fatalf("expected 1 tool call, got %d", len(resp.ToolCalls))
+	}
+	if resp.ToolCalls[0].Name != "bash" {
+		t.Errorf("expected tool name 'bash', got %s", resp.ToolCalls[0].Name)
+	}
+	if resp.ToolCalls[0].ID != "tu_01" {
+		t.Errorf("expected tool id 'tu_01', got %s", resp.ToolCalls[0].ID)
+	}
+	cmd, ok := resp.ToolCalls[0].Input["command"].(string)
+	if !ok || cmd != "echo hi" {
+		t.Errorf("expected input command 'echo hi', got %v", resp.ToolCalls[0].Input["command"])
 	}
 }
 

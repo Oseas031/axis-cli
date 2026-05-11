@@ -9,6 +9,9 @@ import (
 	"github.com/axis-cli/axis/internal/types"
 )
 
+// fileReadMaxBytes limits the size of file content returned to prevent large files from overwhelming context.
+const fileReadMaxBytes = 64 * 1024
+
 // FileReadTool reads files from allowed directories.
 type FileReadTool struct {
 	allowedDirs []string
@@ -37,16 +40,7 @@ func (t *FileReadTool) Schema() types.ToolDefinition {
 
 // validatePath checks if the path is within allowed directories.
 func (t *FileReadTool) validatePath(requestedPath string) error {
-	cleanPath := filepath.Clean(requestedPath)
-
-	for _, dir := range t.allowedDirs {
-		cleanDir := filepath.Clean(dir)
-		// Check if the clean path starts with the allowed directory
-		if strings.HasPrefix(cleanPath, cleanDir) {
-			return nil
-		}
-	}
-	return &PathValidationError{Path: requestedPath, Reason: "path is not in allowed directories"}
+	return validateAllowedPath(requestedPath, t.allowedDirs)
 }
 
 // Execute reads and returns the file contents.
@@ -65,7 +59,13 @@ func (t *FileReadTool) Execute(ctx context.Context, input map[string]any) (map[s
 		return map[string]any{"error": err.Error()}, nil
 	}
 
-	return map[string]any{"content": string(content)}, nil
+	result := map[string]any{"content": string(content)}
+	if len(content) > fileReadMaxBytes {
+		result["content"] = string(content[:fileReadMaxBytes])
+		result["truncated"] = true
+		result["total_bytes"] = len(content)
+	}
+	return result, nil
 }
 
 // PathValidationError represents a path validation failure.
@@ -76,4 +76,26 @@ type PathValidationError struct {
 
 func (e *PathValidationError) Error() string {
 	return "path validation failed: " + e.Reason + ": " + e.Path
+}
+
+func validateAllowedPath(requestedPath string, allowedDirs []string) error {
+	cleanPath, err := filepath.Abs(filepath.Clean(requestedPath))
+	if err != nil {
+		return &PathValidationError{Path: requestedPath, Reason: err.Error()}
+	}
+
+	for _, dir := range allowedDirs {
+		cleanDir, err := filepath.Abs(filepath.Clean(dir))
+		if err != nil {
+			continue
+		}
+		rel, err := filepath.Rel(cleanDir, cleanPath)
+		if err != nil {
+			continue
+		}
+		if rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))) {
+			return nil
+		}
+	}
+	return &PathValidationError{Path: requestedPath, Reason: "path is not in allowed directories"}
 }

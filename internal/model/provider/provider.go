@@ -17,10 +17,11 @@ type ModelRequest struct {
 
 // ModelResponse is the output from a model provider call.
 type ModelResponse struct {
-	Output       map[string]any   // Final output (nil when tool calls are requested)
-	ToolCalls    []types.ToolCall // Tool calls requested by the provider
-	InputTokens  int              // Number of input tokens consumed
-	OutputTokens int              // Number of output tokens generated
+	Output          map[string]any   // Final output (nil when tool calls are requested)
+	ToolCalls       []types.ToolCall // Tool calls requested by the provider
+	InputTokens     int              // Number of input tokens consumed
+	OutputTokens    int              // Number of output tokens generated
+	CostEstimateUSD float64          // Optional cost estimate based on model pricing
 }
 
 // ModelProvider defines the interface for model execution.

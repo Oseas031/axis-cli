@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/axis-cli/axis/internal/types"
 )
 
 // AnthropicProvider implements ModelProvider for Anthropic's API.
@@ -28,41 +31,59 @@ type anthropicRequest struct {
 	System    string             `json:"system,omitempty"`
 }
 
+// anthropicContentBlock represents a single block in Anthropic message content.
+type anthropicContentBlock struct {
+	Type      string          `json:"type"`
+	Text      string          `json:"text,omitempty"`
+	ID        string          `json:"id,omitempty"`
+	Name      string          `json:"name,omitempty"`
+	Input     json.RawMessage `json:"input,omitempty"`
+	ToolUseID string          `json:"tool_use_id,omitempty"`
+	Content   string          `json:"content,omitempty"`
+}
+
 // anthropicMessage represents a message in the Anthropic API format.
+// Content may be a string or []anthropicContentBlock.
 type anthropicMessage struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"`
+}
+
+// anthropicToolSchema matches the JSON Schema object Anthropic expects for tool input.
+type anthropicToolSchema struct {
+	Type       string         `json:"type"`
+	Properties map[string]any `json:"properties,omitempty"`
+	Required   []string       `json:"required,omitempty"`
 }
 
 // anthropicTool represents a tool in the Anthropic API format.
 type anthropicTool struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	InputSchema struct {
-		Type string `json:"type"`
-	} `json:"input_schema"`
+	Name        string              `json:"name"`
+	Description string              `json:"description,omitempty"`
+	InputSchema anthropicToolSchema `json:"input_schema"`
+}
+
+// anthropicUsage tracks token consumption.
+type anthropicUsage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
 }
 
 // anthropicResponse is the response format from the Anthropic Messages API.
 type anthropicResponse struct {
-	ID      string `json:"id"`
-	Type    string `json:"type"`
-	Role    string `json:"role"`
-	Content []struct {
-		Type string `json:"type"`
-		Text string `json:"text,omitempty"`
-	} `json:"content"`
-	Model        string `json:"model"`
-	StopReason   string `json:"stop_reason"`
-	StopSequence string `json:"stop_sequence"`
-	Usage        struct {
-		InputTokens  int `json:"input_tokens"`
-		OutputTokens int `json:"output_tokens"`
-	} `json:"usage"`
+	ID           string                  `json:"id"`
+	Type         string                  `json:"type"`
+	Role         string                  `json:"role"`
+	Content      []anthropicContentBlock `json:"content"`
+	Model        string                  `json:"model"`
+	StopReason   string                  `json:"stop_reason"`
+	StopSequence string                  `json:"stop_sequence"`
+	Usage        anthropicUsage          `json:"usage"`
 }
 
 // Execute calls the Anthropic Messages API.
 func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*ModelResponse, error) {
+	start := time.Now()
 	baseURL := p.config.baseURL
 	if baseURL == "" {
 		baseURL = "https://api.anthropic.com"
@@ -70,22 +91,36 @@ func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 
 	ar := anthropicRequest{
 		Model:     p.config.model,
-		MaxTokens: 4096,
+		MaxTokens: p.config.maxContext,
+	}
+	if ar.MaxTokens <= 0 {
+		ar.MaxTokens = 4096
 	}
 
 	// Convert history to Anthropic message format
 	for _, msg := range req.History {
-		// Build content string
-		content := msg.Content
 		if msg.Role == "assistant" && len(msg.ToolCalls) > 0 {
-			// Convert tool calls to text
-			for _, tc := range msg.ToolCalls {
-				content += fmt.Sprintf("\n[ToolCall: %s(%v)]", tc.Name, tc.Input)
+			blocks := []anthropicContentBlock{}
+			if msg.Content != "" {
+				blocks = append(blocks, anthropicContentBlock{Type: "text", Text: msg.Content})
 			}
+			for _, tc := range msg.ToolCalls {
+				raw, _ := json.Marshal(tc.Input)
+				blocks = append(blocks, anthropicContentBlock{Type: "tool_use", ID: tc.ID, Name: tc.Name, Input: raw})
+			}
+			ar.Messages = append(ar.Messages, anthropicMessage{Role: msg.Role, Content: blocks})
+			continue
+		}
+		if msg.Role == "tool" {
+			blocks := []anthropicContentBlock{
+				{Type: "tool_result", ToolUseID: msg.ToolCallID, Content: msg.Content},
+			}
+			ar.Messages = append(ar.Messages, anthropicMessage{Role: "user", Content: blocks})
+			continue
 		}
 		ar.Messages = append(ar.Messages, anthropicMessage{
 			Role:    msg.Role,
-			Content: content,
+			Content: msg.Content,
 		})
 	}
 
@@ -99,15 +134,34 @@ func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 		Content: inputContent,
 	})
 
-	// Add system prompt from contract if available (using first tool description)
+	// Add tools with proper JSON Schema
 	if len(req.Tools) > 0 {
 		ar.System = "You have access to the following tools. Use them when needed."
 		for _, t := range req.Tools {
+			schema := anthropicToolSchema{Type: "object"}
+			schema.Properties = make(map[string]any)
+			var required []string
+			for _, field := range t.Parameters {
+				prop := map[string]any{"type": string(field.Type)}
+				if field.Description != "" {
+					prop["description"] = field.Description
+				}
+				if len(field.Enum) > 0 {
+					prop["enum"] = field.Enum
+				}
+				schema.Properties[field.Name] = prop
+				if field.Required {
+					required = append(required, field.Name)
+				}
+			}
+			if len(required) > 0 {
+				schema.Required = required
+			}
 			ar.Tools = append(ar.Tools, anthropicTool{
 				Name:        t.Name,
 				Description: t.Description,
+				InputSchema: schema,
 			})
-			ar.Tools[len(ar.Tools)-1].InputSchema.Type = "object"
 		}
 	}
 
@@ -125,19 +179,45 @@ func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 	httpReq.Header.Set("x-api-key", p.config.apiKey)
 	httpReq.Header.Set("anthropic-version", "2023-06-01")
 
-	resp, err := p.config.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
+	// Retry loop with exponential backoff: retry on 5xx and network errors only.
+	var lastErr error
+	var respBody []byte
+	for attempt := 0; attempt <= p.config.maxRetries; attempt++ {
+		if attempt > 0 {
+			backoff := time.Duration(attempt) * time.Second
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
+		resp, err := p.config.httpClient.Do(httpReq)
+		if err != nil {
+			lastErr = fmt.Errorf("request failed (attempt %d/%d): %w", attempt, p.config.maxRetries, err)
+			continue
+		}
 
-	if resp.StatusCode != http.StatusOK {
+		respBody, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response: %w", err)
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			break
+		}
+
+		if resp.StatusCode >= 500 {
+			lastErr = fmt.Errorf("API error (status %d, attempt %d/%d): %s", resp.StatusCode, attempt, p.config.maxRetries, string(respBody))
+			continue
+		}
+
+		// 4xx errors are not retried.
 		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+	}
+	if lastErr != nil && len(respBody) == 0 {
+		return nil, fmt.Errorf("max retries (%d) exceeded: %w", p.config.maxRetries, lastErr)
 	}
 
 	var arResp anthropicResponse
@@ -145,15 +225,46 @@ func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	// Extract output text
+	// Extract output text and tool calls
 	output := make(map[string]any)
-	if len(arResp.Content) > 0 && arResp.Content[0].Type == "text" {
-		output["text"] = arResp.Content[0].Text
+	var toolCalls []types.ToolCall
+	var textParts []string
+	for _, block := range arResp.Content {
+		switch block.Type {
+		case "text":
+			textParts = append(textParts, block.Text)
+		case "tool_use":
+			var input map[string]any
+			if len(block.Input) > 0 {
+				_ = json.Unmarshal(block.Input, &input)
+			}
+			toolCalls = append(toolCalls, types.ToolCall{
+				ID:    block.ID,
+				Name:  block.Name,
+				Input: input,
+			})
+		}
+	}
+	if len(textParts) > 0 {
+		output["text"] = textParts[0]
 	}
 
-	return &ModelResponse{
-		Output:       output,
+	cost := estimateCost(p.config.model, arResp.Usage.InputTokens, arResp.Usage.OutputTokens)
+	logProviderCall(providerLogEntry{
+		Provider:     "anthropic",
+		Method:       "POST",
+		URL:          baseURL + "/v1/messages",
+		Status:       200,
+		DurationMs:   time.Since(start).Milliseconds(),
 		InputTokens:  arResp.Usage.InputTokens,
 		OutputTokens: arResp.Usage.OutputTokens,
+		CostUSD:      cost,
+	})
+	return &ModelResponse{
+		Output:          output,
+		ToolCalls:       toolCalls,
+		InputTokens:     arResp.Usage.InputTokens,
+		OutputTokens:    arResp.Usage.OutputTokens,
+		CostEstimateUSD: cost,
 	}, nil
 }

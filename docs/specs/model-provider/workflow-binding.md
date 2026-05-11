@@ -1,4 +1,4 @@
-# Model Provider Workflow Binding
+﻿# Model Provider Workflow Binding
 
 ## Purpose
 
@@ -23,9 +23,9 @@ This document binds the Model Provider feature to the existing Axis workflow sys
 - Implementation must update task status
 - HANDOVER must be updated after completion
 
-### wf-occams: Occam's Razor Architecture Simplification
+### Scope-Control Rule: Occam's Razor
 
-**File**: `workflow/occams-razor-architecture-simplification.md`
+**Source**: embedded in `workflow/entry.md` and `workflow/meta-workflow-management.md`
 
 **Role**:
 
@@ -87,7 +87,7 @@ This document binds the Model Provider feature to the existing Axis workflow sys
 
 ```text
 1. wf-doc-004  -> confirm spec exists and dependencies are explicit
-2. wf-occams   -> confirm scope is MockModelProvider only
+2. scope check  -> confirm scope is MockModelProvider only
 3. implement   -> follow tasks.md T1-T7
 4. wf-ci       -> run gofmt, go build, go test ./...
 5. wf-pr-check -> verify shell path and docs context
@@ -119,5 +119,7 @@ The feature is complete only when:
 - `tasks.md` is fully marked Completed
 - `go test ./...` passes
 - `axis shell` can run a task through the mock provider path
-- `docs/BEGINNER_GUIDE.md` explains the mock provider
+- `docs/guides/BEGINNER_GUIDE.md` explains the mock provider
 - `HANDOVER.md` records the feature
+
+

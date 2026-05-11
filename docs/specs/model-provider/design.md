@@ -143,3 +143,33 @@ cmd/axis/main.go                          # default executor uses mock provider 
 - FR4: `axis shell` continues using `run <task-id>`
 - FR5: no external SDK/config/API key
 - FR6: provider and executor tests
+
+## Provider Management Extension Design
+
+### File layout
+
+```text
+.axis/
+  providers.json
+  backups/
+    providers-<timestamp>.json
+```
+
+### Layers
+
+```text
+cmd/axis provider ...
+  -> internal/model/providerconfig
+  -> internal/model/provider
+```
+
+### Switching flow
+
+1. Load `.axis/providers.json`.
+2. Validate JSON and profiles.
+3. Check selected profile exists and is not archived.
+4. Backup the current config.
+5. Set `active_profile`.
+6. Save and reload through normal startup resolution.
+
+The first implementation uses ordinary local file IO only. It does not add environment variable mutation, a daemon, a registry integration, or a global user configuration.

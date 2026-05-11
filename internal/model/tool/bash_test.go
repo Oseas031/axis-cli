@@ -2,6 +2,7 @@ package tool
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -54,6 +55,21 @@ func TestBashTool_Execute_Echo(t *testing.T) {
 	if exitCode != 0 {
 		t.Errorf("Expected exit_code 0, got %d", exitCode)
 	}
+	if result["command"] != "echo hello" {
+		t.Errorf("Expected command to be recorded, got %v", result["command"])
+	}
+	if _, ok := result["cwd"].(string); !ok {
+		t.Fatal("Expected cwd to be a string")
+	}
+	if _, ok := result["duration_ms"].(int64); !ok {
+		t.Fatal("Expected duration_ms to be an int64")
+	}
+	if result["timed_out"] != false {
+		t.Errorf("Expected timed_out false, got %v", result["timed_out"])
+	}
+	if result["output_truncated"] != false {
+		t.Errorf("Expected output_truncated false, got %v", result["output_truncated"])
+	}
 }
 
 func TestBashTool_Execute_ExitCode(t *testing.T) {
@@ -102,6 +118,29 @@ func TestBashTool_Execute_EmptyCommand(t *testing.T) {
 
 	if result["error"] == nil {
 		t.Error("Expected error for empty command")
+	}
+}
+
+func TestBashTool_Execute_OutputTruncated(t *testing.T) {
+	b := NewBashTool()
+	result, err := b.Execute(context.Background(), map[string]any{
+		"command": "yes x | head -c 70000",
+	})
+	if err != nil {
+		t.Fatalf("Execute should not error: %v", err)
+	}
+	stdout, ok := result["stdout"].(string)
+	if !ok {
+		t.Fatal("Expected stdout to be a string")
+	}
+	if len(stdout) != bashOutputLimit {
+		t.Fatalf("Expected stdout length %d, got %d", bashOutputLimit, len(stdout))
+	}
+	if !strings.HasPrefix(stdout, "x") {
+		t.Fatalf("Expected truncated stdout to preserve output prefix")
+	}
+	if result["output_truncated"] != true {
+		t.Errorf("Expected output_truncated true, got %v", result["output_truncated"])
 	}
 }
 
