@@ -1,66 +1,66 @@
-﻿# 奥卡姆剃刀架构简化工作流
+﻿# Occam's Razor Architecture Simplification Workflow
 
-## 目的
+## Purpose
 
-防止 Axis 在宏大设计、复杂自动化或真实 Agent runtime 的诱惑下过早扩张。奥卡姆剃刀不是削弱愿景，而是保护愿景有正确的发生顺序。
+Prevent Axis from premature expansion under the temptation of grand designs, complex automation, or real Agent runtimes. Occam's Razor is not about weakening the vision, but about ensuring the vision unfolds in the correct order.
 
-## 三个判断
+## Three Judgments
 
-### 1. 当前是否必须做
+### 1. Is It Required Now?
 
-只实现当前 milestone 已确认的最小能力。  
-如果一个想法属于后续 bootstrap-loop / autogenesis-loop，就先写 spec 或报告，不混入当前实现。
+Implement only the minimal capabilities confirmed for the current milestone.  
+If an idea belongs to a subsequent bootstrap-loop / autogenesis-loop, write a spec or report first; do not mix it into the current implementation.
 
-### 2. 现有轻量方案是否足够
+### 2. Is the Existing Lightweight Solution Sufficient?
 
-新增以下复杂度前，必须说明为什么现有轻量方案不够：
+Before adding the following complexities, you must explain why the existing lightweight solution is insufficient:
 
-- UI：为什么 CLI / Shell 不够
-- 模型 Provider：为什么 MockProvider 不够
-- workflow：为什么 `workflow/entry.md` 现有路由不够
-- 自动化：为什么非阻塞提醒不够
-- 依赖：为什么标准库或现有依赖不够
-- 持久化 / daemon：为什么当前进程内语义或 file-backed state 不够
+- UI: Why CLI / Shell is not enough
+- Model Provider: Why MockProvider is not enough
+- workflow: Why the existing routing in `workflow/entry.md` is not enough
+- Automation: Why non-blocking reminders are not enough
+- Dependencies: Why the standard library or existing dependencies are not enough
+- Persistence / daemon: Why the current in-process semantics or file-backed state are not enough
 
-无法说明时，默认不新增。
+When unable to explain, do not add by default.
 
-### 3. 是否破坏 Scaffold-to-Self
+### 3. Does It Break Scaffold-to-Self?
 
-workflow、contract、permission rule、spec 是过渡性结构。  
-新增规则不能把临时脚手架伪装成永久控制。
+workflow, contract, permission rule, and spec are transitional structures.  
+New rules must not disguise temporary scaffolding as permanent control.
 
-## 设计哲学校正规则
+## Design Philosophy Correction Rules
 
-当发现实现与 **More Context, More Action, Zero Control**、**Bash is All You Need** 或 **Competence earns autonomy** 不一致时：
+When an implementation is found to be inconsistent with **More Context, More Action, Zero Control, Controllable Evolution**, **bash is all you need, simple but robust, composable and extensible**, or **Competence earns autonomy, autonomy matches responsibility, evolution is controllable**:
 
-1. 先判断是否可通过错误语义、文档或测试修正。
-2. 必要时插入最小校正任务并写入对应 `tasks.md`。
-3. 不借校正任务引入 Web UI、复杂 TUI、外部数据库、daemon 或真实 LLM SDK。
-4. 确需新增复杂度时，先创建独立 spec。
+1. First judge whether it can be corrected through error semantics, documentation, or tests.
+2. If necessary, insert the minimal correction task and write it into the corresponding `tasks.md`.
+3. Do not use correction tasks to introduce Web UI, complex TUI, external databases, daemons, or real LLM SDKs.
+4. When new complexity is truly needed, create an independent spec first.
 
-## 可测试性设计约束
+## Testability Design Constraints
 
-新增 CLI 命令或后台函数时：
+When adding CLI commands or background functions:
 
-1. 阻塞在信号/全局状态的函数应接受可注入的 `context.Context` 或 shutdown channel
-2. 避免直接在函数内调用 `os.Exit()`；将错误返回给调用者处理
-3. 避免依赖 `syscall.Kill` 等不可移植 API；Windows 不响应程序化信号
-4. 若某路径在当前平台不可测试，在测试文件中明确标记原因，不可静默跳过
+1. Functions blocked on signals/global state should accept an injectable `context.Context` or shutdown channel.
+2. Avoid calling `os.Exit()` directly inside functions; return errors to the caller for handling.
+3. Avoid relying on non-portable APIs like `syscall.Kill`; Windows does not respond to programmatic signals.
+4. If a path is not testable on the current platform, explicitly mark the reason in the test file; do not silently skip.
 
-## 测试设计规范
+## Test Design Standards
 
-覆盖率提升不以测试数量为目标，以未覆盖分支路径为目标：
+Coverage improvement targets uncovered branch paths, not the number of tests:
 
 ```bash
 go test -coverprofile=cov.out ./<package>/...
 go tool cover -func=cov.out | grep -v "100.0%"
-# 针对 <100% 的函数设计测试用例
-# 优先覆盖：错误处理 > 边界条件 > 并发路径 > 正常路径
+# Design test cases for functions with <100% coverage
+# Priority: error handling > boundary conditions > concurrent paths > normal paths
 ```
 
-## 注意事项
+## Notes
 
-- 不做破坏性编辑。
-- 保持里程碑边界。
-- 废弃内容移动到 `docs/deprecated/`，不要抹除历史。
-- 入口文档可以更新方向，实现任务必须遵守当前 scope。
+- No destructive edits.
+- Maintain milestone boundaries.
+- Move deprecated content to `docs/deprecated/`; do not erase history.
+- Entry documents may update direction; implementation tasks must obey the current scope.
