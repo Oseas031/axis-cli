@@ -1,6 +1,6 @@
 # Immunity Memory Requirements
 
-**Status**: Draft
+**Status**: Planned
 **Inspired by**: Jelly Crystal Commons Architecture — Immunity Pool (失败免疫库)
 **Related**: `docs/specs/layered-memory-model/`, `docs/architecture/agent-native-first-principles.md`
 

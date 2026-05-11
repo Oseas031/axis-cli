@@ -1,6 +1,6 @@
 # Closure Ledger Requirements
 
-**Status**: Draft
+**Status**: Planned
 **Inspired by**: Jelly Crystal Commons Architecture — C+D=1 Ledger (闭合证 / 闭合增益 + 成本风险)
 **Related**: `docs/architecture/agent-native-first-principles.md`, `docs/specs/layered-memory-model/`
 

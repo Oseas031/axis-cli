@@ -1,6 +1,6 @@
 # Immunity Memory Design
 
-**Status**: Draft
+**Status**: Planned
 **Implements**: `docs/specs/immunity-memory/requirements.md`
 **Depends on**: `internal/memory/longterm/` (existing event log), `internal/contextpack/` (existing preview)
 
@@ -232,8 +232,8 @@ Single in-memory `map[string]...` guarded by `sync.RWMutex`. No goroutines. Prom
 
 ## Secrets
 
-- `Cause` is human-written; we do not parse it for secrets, but the CLI MUST display `safego.RedactSensitive(cause)` is not necessary because the human authored the string. We DO NOT echo it into provider prompts.
-- Signature fields exclude raw args content (only normalized arg **shapes** are hashed, not values, when args may contain secrets). When in doubt, hash-then-discard via `signature.NormalizeArgs` which drops any arg whose key matches the safego sensitive-key list.
+- `Cause` is human-written; we do not parse it for secrets and we do NOT echo it into provider prompts. The human authored the string and accepts authorship.
+- Signature fields exclude raw args content (only normalized arg **shapes** are hashed, not values, when args may contain secrets). `signature.NormalizeArgs` drops any arg whose key matches a sensitive-key pattern list maintained locally in `internal/memory/immunity/sensitive_keys.go` (P0 hardcoded set: `api_key`, `token`, `bearer`, `password`, `secret`, `credential`, `auth` — case-insensitive substring match). A centralized redaction utility does not currently exist in the repo (`internal/safego/` is panic-recovery, not redaction); per `CLAUDE.md §12` metadata-promotion rule, we keep the list local until a second package needs it.
 
 ## Non-Goals (reinforced from requirements)
 

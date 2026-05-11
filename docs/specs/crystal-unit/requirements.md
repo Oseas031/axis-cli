@@ -129,7 +129,7 @@ This spec does NOT add "axis crystal apply <crystal-id> --to <new-task>" semanti
 ### FR10: Cross-platform safety and secrets
 
 - `path/filepath`, atomic rename for index rebuild on Windows
-- `answer_program.input_template` MUST NOT capture secrets from the source task. The promote command MUST scrub fields matching known secret patterns (delegating to existing `internal/safego/`); if scrubbing is uncertain, promotion fails closed.
+- `answer_program.input_template` MUST NOT capture secrets from the source task. The promote command MUST scrub fields matching known secret patterns (using the same sensitive-key list as `internal/memory/immunity/sensitive_keys.go`, or its successor once a shared redaction util emerges); if scrubbing is uncertain, promotion fails closed.
 
 ## Non-Goals
 

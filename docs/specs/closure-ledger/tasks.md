@@ -1,6 +1,6 @@
 # Closure Ledger Tasks
 
-**Status**: Draft
+**Status**: Planned
 **Last Updated**: 2026-05-12
 **Implements**: `requirements.md` + `design.md` in this directory.
 

@@ -1,6 +1,6 @@
 # Immunity Memory Tasks
 
-**Status**: Draft
+**Status**: Planned
 **Last Updated**: 2026-05-12
 **Implements**: `requirements.md` + `design.md` in this directory.
 
@@ -33,7 +33,7 @@ Create the package with no real logic — just types and stub functions — so d
 
 ### 2.2 Validation
 
-- `FailureClass` validator accepts: `failure.provider.*`, `failure.tool.*`, `failure.contract.*`, `failure.intent.*`, `failure.safego.*`, `failure.runtime.*`. Reject everything else with `ErrUnknownFailureClass`.
+- `FailureClass` validator accepts: `failure.provider.*`, `failure.tool.*`, `failure.contract.*`, `failure.intent.*`, `failure.runtime.*`. Reject everything else with `ErrUnknownFailureClass`. (Note: `failure.safego.*` was dropped from the initial proposal — `internal/safego/` is panic recovery, not auth/secret; panic failures fold into `failure.runtime.*`.)
 - `PromoteInput.Validate()` enforces non-empty trimmed `SourceTaskID`, `Cause`, `PromotedBy`.
 
 ### 2.3 Tests
@@ -52,7 +52,7 @@ Create the package with no real logic — just types and stub functions — so d
 
 - `func BuildSignature(intentKind string, args map[string]string, toolAllow []string, errClass FailureClass) Signature`
 - `func (s Signature) Hash() string` — canonical JSON (sorted map keys, sorted slices, dropped empty values) → SHA-256 → first 32 hex chars
-- `func NormalizeArgs(raw map[string]any) map[string]string` — drops keys matching `internal/safego/` secret-key list; stringifies remaining values deterministically
+- `func NormalizeArgs(raw map[string]any) map[string]string` — drops keys matching the local sensitive-key list in `sensitive_keys.go` (case-insensitive substring match against `api_key`, `token`, `bearer`, `password`, `secret`, `credential`, `auth`); stringifies remaining values deterministically. The local list exists because no central redaction util is present in the repo today; the list moves to `internal/types/` only when a second package needs it (CLAUDE.md §12).
 
 ### 3.2 Tests
 

@@ -1,6 +1,6 @@
 # Closure Ledger Design
 
-**Status**: Draft
+**Status**: Planned
 **Implements**: `docs/specs/closure-ledger/requirements.md`
 **Depends on**: `internal/memory/longterm/` (existing event log)
 
