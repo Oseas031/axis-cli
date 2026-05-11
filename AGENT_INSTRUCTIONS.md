@@ -6,13 +6,14 @@ All coding constraints live in `CLAUDE.md` (the constitution). This file tells y
 ## Reading Order
 
 1. **`CLAUDE.md`** — The constitution. All prohibitions, checklists, and engineering constraints.
-2. **`docs/status/session-state.md`** — Live state (last step + next action). Read FIRST after CLAUDE.md to find out where work paused.
-3. **`docs/status/current-progress.md`** — Ground truth for milestone status. (Do NOT rely on `HANDOVER.md` for status.)
+2. **`docs/status/current-progress.md`** — Ground truth for milestone status. Read FIRST after CLAUDE.md. (Do NOT rely on `HANDOVER.md` for status.)
+3. **`HANDOVER.md`** — Known issues, next steps, recent context for the last hand-off.
 4. **`docs/architecture/agent-native-first-principles.md`** — Six design principles.
 5. **`workflow/entry.md`** — Route your task to the minimal workflow combination.
-6. **`HANDOVER.md`** — Reference: project structure, completed work, known issues, next steps.
 
-If editing `internal/kernel/`, `cmd/axis/`, `internal/contextpack/`, or `internal/agent/`, also read the adjacent `BOUNDARY.md`.
+If editing `internal/kernel/`, `cmd/axis/`, `internal/contextpack/`, `internal/agent/`, or `internal/memory/`, also read the adjacent `BOUNDARY.md`.
+
+If editing `CLAUDE.md`, `.devin/skills/`, `.claude/commands/`, `scripts/harness-audit.sh`, or anything that defines how agents behave on this repo, read `docs/architecture/harness-composition.md` first — it is the canonical layout doc and the 2026-05-11 fix is the worked precedent.
 
 ## Dev Loop
 

@@ -258,7 +258,6 @@ axis-cli/
 ### Quick Navigation
 - Coding constraints (constitution): `CLAUDE.md`
 - Agent handover entry: `AGENT_INSTRUCTIONS.md`
-- Session state (live, per-step): `docs/status/session-state.md`
 - Current progress (milestone status): `docs/status/current-progress.md`
 - Design principles: `docs/architecture/agent-native-first-principles.md`
 - Workflow entry: `workflow/entry.md`
@@ -280,4 +279,4 @@ Do not read the following files (deprecated):
 **Handover Date**: 2026-05-11
 **Handover Status**: M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Sandboxed Evolution ✅ | Local Control Plane ✅
 **M1 Acceptance**: ✅ Passed (2026-05-08)
-**Next Steps**: See `docs/status/session-state.md` for the live state (last atomic step, next concrete action, blocking decisions). High-level direction: cross-process state persistence; Agent identity profiles; structured event log queries; dynamic model routing; execution feedback loop.
+**Next Steps**: See `docs/status/current-progress.md` for milestone status and the Known Issues section above for blockers. High-level direction: cross-process state persistence; Agent identity profiles; structured event log queries; dynamic model routing; execution feedback loop.
