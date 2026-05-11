@@ -2,6 +2,7 @@ package immunity
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -306,18 +307,15 @@ func recordFromPromotedEvent(e longterm.EventRecord) (ImmunityRecord, error) {
 	if v, ok := e.Payload["promoted_by"].(string); ok {
 		rec.PromotedBy = v
 	}
-	// signature field may be present as a generic map; we restore the
-	// minimum shape needed for List/Show callers. Hash is the source of
-	// truth for matching; this is mostly cosmetic for display.
-	if sig, ok := e.Payload["signature"].(map[string]any); ok {
-		if v, ok := sig["intent_kind"].(string); ok {
-			rec.Signature.IntentKind = v
+	// Re-marshal the signature subtree to JSON then unmarshal into a
+	// proper Signature. This avoids hand-extracting every nested field
+	// (map[string]any decoding is lossy for slices). On failure we keep
+	// whatever was set above and continue — the hash is the source of
+	// truth for matching, signature fields are display/RecallSimilar.
+	if raw, ok := e.Payload["signature"]; ok {
+		if b, err := json.Marshal(raw); err == nil {
+			_ = json.Unmarshal(b, &rec.Signature)
 		}
-		if v, ok := sig["error_class"].(string); ok {
-			rec.Signature.ErrorClass = FailureClass(v)
-		}
-	} else if sig, ok := e.Payload["signature"].(Signature); ok {
-		rec.Signature = sig
 	}
 	return rec, nil
 }
