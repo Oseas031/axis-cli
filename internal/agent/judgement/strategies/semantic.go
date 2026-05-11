@@ -84,6 +84,16 @@ func (s *SemanticValidationStrategy) Validate(input any, criteria JudgementCrite
 	}
 
 	// Parse response
+	if resp == nil {
+		return &JudgementItem{
+			CriteriaName: criteria.Name,
+			Passed:       false,
+			Score:        0,
+			Details:      "",
+			Error:        "model provider returned nil response",
+		}, nil
+	}
+
 	var content string
 	if resp.Output != nil {
 		if outputStr, ok := resp.Output["output"].(string); ok {

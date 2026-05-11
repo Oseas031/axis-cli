@@ -13,6 +13,7 @@ type StateStore interface {
 	Save(taskID string, state types.TaskState) error
 	Load(taskID string) (types.TaskState, error)
 	Delete(taskID string) error
+	ListAll() (map[string]types.TaskState, error)
 }
 
 // MemoryStateStore implements in-memory state storage
@@ -53,4 +54,15 @@ func (s *MemoryStateStore) Delete(taskID string) error {
 	defer s.mu.Unlock()
 	delete(s.states, taskID)
 	return nil
+}
+
+// ListAll returns a copy of all stored states.
+func (s *MemoryStateStore) ListAll() (map[string]types.TaskState, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	result := make(map[string]types.TaskState, len(s.states))
+	for k, v := range s.states {
+		result[k] = v
+	}
+	return result, nil
 }

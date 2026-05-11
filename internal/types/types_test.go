@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
@@ -92,6 +93,20 @@ func TestSLAKeyConstants(t *testing.T) {
 	}
 }
 
+func TestToolMetadataKeyConstants(t *testing.T) {
+	keys := map[string]string{
+		ToolMetadataAllowedTools: "tool.allowed_tools",
+		ToolMetadataAllowedPaths: "tool.allowed_paths",
+		ToolMetadataAllowedHosts: "tool.allowed_hosts",
+		ToolMetadataTimeoutMs:    "tool.timeout_ms",
+	}
+	for got, expected := range keys {
+		if got != expected {
+			t.Errorf("Tool metadata key = %s, want %s", got, expected)
+		}
+	}
+}
+
 func TestTaskStatusConstants(t *testing.T) {
 	if string(TaskStatusPending) != "pending" {
 		t.Error("TaskStatusPending wrong")
@@ -153,6 +168,57 @@ func TestTaskResult_Fields(t *testing.T) {
 	}
 	if result.Status != TaskStatusCompleted {
 		t.Error("Result status wrong")
+	}
+}
+
+func TestAgentError_JSON(t *testing.T) {
+	e := NewAgentErrorWithCause(ErrTaskTimeout, "timed out", errors.New("connection refused"))
+	data, err := json.Marshal(e)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if decoded["code"] != string(ErrTaskTimeout) {
+		t.Fatalf("expected code %s, got %v", ErrTaskTimeout, decoded["code"])
+	}
+	if decoded["message"] != "timed out" {
+		t.Fatalf("expected message 'timed out', got %v", decoded["message"])
+	}
+	if decoded["cause"] != "connection refused" {
+		t.Fatalf("expected cause 'connection refused', got %v", decoded["cause"])
+	}
+}
+
+func TestAgentError_JSONNoCause(t *testing.T) {
+	e := NewAgentError(ErrTaskNotFound, "not found")
+	data, err := json.Marshal(e)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if decoded["code"] != string(ErrTaskNotFound) {
+		t.Fatalf("expected code %s, got %v", ErrTaskNotFound, decoded["code"])
+	}
+	if _, ok := decoded["cause"]; ok {
+		t.Fatal("expected cause omitted when nil")
+	}
+}
+
+func TestExecutorTypeConstants(t *testing.T) {
+	if ExecutorTypeModel != "model" {
+		t.Errorf("ExecutorTypeModel = %s", ExecutorTypeModel)
+	}
+	if ExecutorTypeHuman != "human" {
+		t.Errorf("ExecutorTypeHuman = %s", ExecutorTypeHuman)
+	}
+	if ExecutorTypeAgent != "agent" {
+		t.Errorf("ExecutorTypeAgent = %s", ExecutorTypeAgent)
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/axis-cli/axis/internal/agent"
+	"github.com/axis-cli/axis/internal/contextpack"
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
 	"github.com/axis-cli/axis/internal/types"
@@ -58,7 +59,7 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 		case <-timeoutCtx.Done():
 			return
 		default:
-			result, err := d.executeTask(task)
+			result, err := d.executeTask(timeoutCtx, task)
 			if err != nil {
 				errChan <- err
 			} else {
@@ -95,18 +96,18 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 }
 
 // executeTask executes a task by routing to the appropriate executor.
-func (d *DispatcherImpl) executeTask(task *types.AgentTask) (*types.TaskResult, error) {
+func (d *DispatcherImpl) executeTask(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
 	executorType := task.Metadata[types.TaskMetadataKeyExecutor]
 
 	if executorType == types.ExecutorTypeHuman {
-		return d.executeHumanTask(task)
+		return d.executeHumanTask(ctx, task)
 	}
 
 	if executorType == types.ExecutorTypeAgent {
-		return d.executeAgentTask(task)
+		return d.executeAgentTask(ctx, task)
 	}
 
-	execResult, err := d.contractExecutor.Execute(task.ContractID, task.Input)
+	execResult, err := d.contractExecutor.Execute(ctx, task.ContractID, task.Input)
 	if err != nil {
 		return &types.TaskResult{
 			TaskID:    task.TaskID,
@@ -125,7 +126,7 @@ func (d *DispatcherImpl) executeTask(task *types.AgentTask) (*types.TaskResult, 
 }
 
 // executeAgentTask routes a task to the agent executor.
-func (d *DispatcherImpl) executeAgentTask(task *types.AgentTask) (*types.TaskResult, error) {
+func (d *DispatcherImpl) executeAgentTask(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
 	if d.agentExecutor == nil {
 		return &types.TaskResult{
 			TaskID:    task.TaskID,
@@ -136,14 +137,20 @@ func (d *DispatcherImpl) executeAgentTask(task *types.AgentTask) (*types.TaskRes
 	}
 
 	selfContext := agent.NewSelfContext(task.TaskID)
+	summary := executionContextSummary(task)
 
+	// RequestedSources is populated from the summary rather than parsed again
+	// to avoid duplicate work. The summary already parsed the metadata once;
+	// dispatcher only carries it forward to the executor.
 	agentReq := &agent.AgentExecutionRequest{
-		Task:        task,
-		SelfContext: selfContext,
-		Autonomy:    agent.AutonomyLevelLow,
+		Task:             task,
+		SelfContext:      selfContext,
+		Autonomy:         agent.AutonomyLevelLow,
+		ContextSummary:   summary,
+		RequestedSources: summary.RequestedSources,
 	}
 
-	agentResult, err := d.agentExecutor.Execute(context.Background(), agentReq)
+	agentResult, err := d.agentExecutor.Execute(ctx, agentReq)
 	if err != nil {
 		return &types.TaskResult{
 			TaskID:    task.TaskID,
@@ -171,8 +178,13 @@ func (d *DispatcherImpl) executeAgentTask(task *types.AgentTask) (*types.TaskRes
 	}, nil
 }
 
+func executionContextSummary(task *types.AgentTask) *contextpack.ExecutionContextSummary {
+	summary := contextpack.NewExecutionContextConsumer(contextpack.DefaultRegistry).Summarize(task)
+	return &summary
+}
+
 // executeHumanTask routes a task to the human executor and polls until resolved or timed out.
-func (d *DispatcherImpl) executeHumanTask(task *types.AgentTask) (*types.TaskResult, error) {
+func (d *DispatcherImpl) executeHumanTask(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
 	callReq := &types.HumanCallRequest{
 		CallID:   task.TaskID,
 		TaskID:   task.TaskID,
@@ -193,6 +205,16 @@ func (d *DispatcherImpl) executeHumanTask(task *types.AgentTask) (*types.TaskRes
 	deadline := time.Now().Add(d.timeout)
 
 	for {
+		select {
+		case <-ctx.Done():
+			return &types.TaskResult{
+				TaskID:    task.TaskID,
+				Status:    types.TaskStatusFailed,
+				Error:     ctx.Err().Error(),
+				Completed: time.Now(),
+			}, ctx.Err()
+		default:
+		}
 		status, err := d.humanExecutor.GetCallStatus(task.TaskID)
 		if err != nil {
 			return &types.TaskResult{

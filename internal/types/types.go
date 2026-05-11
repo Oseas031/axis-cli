@@ -2,6 +2,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -92,6 +93,15 @@ const (
 	SLAKeyBackoff      = "sla.backoff"
 )
 
+// Tool metadata keys stored in AgentTask.Metadata.
+// These keys declare task-local tool boundaries for context and audit; they do not imply a central permission system.
+const (
+	ToolMetadataAllowedTools = "tool.allowed_tools"
+	ToolMetadataAllowedPaths = "tool.allowed_paths"
+	ToolMetadataAllowedHosts = "tool.allowed_hosts"
+	ToolMetadataTimeoutMs    = "tool.timeout_ms"
+)
+
 // Failure class values for SLAKeyFailureClass
 const (
 	FailureClassRetryable  = "retryable"
@@ -107,7 +117,7 @@ const (
 )
 
 // TaskMetadataKeyExecutor selects the executor type for dispatch.
-// Values: "model" (default) or "human".
+// Values: "model" (default), "human", or "agent".
 const TaskMetadataKeyExecutor = "executor"
 
 const (
@@ -133,9 +143,9 @@ const (
 
 // AgentError is a structured error with a stable error code.
 type AgentError struct {
-	Code    ErrorCode
-	Message string
-	Cause   error
+	Code    ErrorCode `json:"code"`
+	Message string    `json:"message"`
+	Cause   error     `json:"cause,omitempty"`
 }
 
 func (e *AgentError) Error() string {
@@ -147,6 +157,20 @@ func (e *AgentError) Error() string {
 
 func (e *AgentError) Unwrap() error {
 	return e.Cause
+}
+
+func (e *AgentError) MarshalJSON() ([]byte, error) {
+	type alias AgentError
+	aux := &struct {
+		*alias
+		Cause string `json:"cause,omitempty"`
+	}{
+		alias: (*alias)(e),
+	}
+	if e.Cause != nil {
+		aux.Cause = e.Cause.Error()
+	}
+	return json.Marshal(aux)
 }
 
 func NewAgentError(code ErrorCode, message string) *AgentError {

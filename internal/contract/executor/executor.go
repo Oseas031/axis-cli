@@ -14,7 +14,7 @@ import (
 
 // ContractExecutor interface defines contract execution with validation
 type ContractExecutor interface {
-	Execute(contractID string, input map[string]any) (*types.ExecutionResult, error)
+	Execute(ctx context.Context, contractID string, input map[string]any) (*types.ExecutionResult, error)
 	ValidateInput(contractID string, input map[string]any) error
 	ValidateOutput(contractID string, output map[string]any) error
 	RegisterContract(contract *types.AgentContract) error
@@ -82,7 +82,7 @@ func safeMarshal(v any) ([]byte, error) {
 
 // Execute executes a contract: validates input, runs the provider (with optional
 // multi-turn tool loop), and validates output.
-func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) (*types.ExecutionResult, error) {
+func (e *ContractExecutorImpl) Execute(ctx context.Context, contractID string, input map[string]any) (*types.ExecutionResult, error) {
 	if err := e.ValidateInput(contractID, input); err != nil {
 		return &types.ExecutionResult{
 			Error: fmt.Sprintf("input validation failed: %v", err),
@@ -109,11 +109,11 @@ func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) 
 
 		// Multi-turn loop for tool-based execution.
 		if hasTools {
-			return e.executeMultiTurn(p, tr, req, contractID)
+			return e.executeMultiTurn(ctx, p, tr, req, contractID)
 		}
 
 		// Single-pass execution (backward compatible path).
-		resp, err := p.Execute(context.Background(), req)
+		resp, err := p.Execute(ctx, req)
 		if err != nil {
 			return &types.ExecutionResult{
 				Error: fmt.Sprintf("provider execution failed: %v", err),
@@ -136,7 +136,7 @@ func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) 
 
 // executeMultiTurn runs a multi-turn tool-calling loop with a maximum of 10 turns.
 // It implements a circuit breaker that aborts after 5 consecutive tool errors.
-func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
+func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
 	var history []types.ModelMessage
 	maxTurns := 10
 	consecutiveErrors := 0
@@ -144,7 +144,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *to
 
 	for turn := 0; turn < maxTurns; turn++ {
 		req.History = history
-		resp, err := p.Execute(context.Background(), req)
+		resp, err := p.Execute(ctx, req)
 		if err != nil {
 			return &types.ExecutionResult{
 				Error: fmt.Sprintf("provider execution failed: %v", err),
@@ -174,7 +174,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *to
 					}
 					continue
 				}
-				result, execErr := toolImpl.Execute(context.Background(), tc.Input)
+				result, execErr := toolImpl.Execute(ctx, tc.Input)
 				if execErr != nil {
 					history = append(history, types.ModelMessage{
 						Role:       "tool",
@@ -191,12 +191,20 @@ func (e *ContractExecutorImpl) executeMultiTurn(p provider.ModelProvider, tr *to
 				}
 				// Successful execution resets the error counter
 				consecutiveErrors = 0
-				content, _ := safeMarshal(result)
-				history = append(history, types.ModelMessage{
-					Role:       "tool",
-					ToolCallID: tc.ID,
-					Content:    string(content),
-				})
+				content, marshalErr := safeMarshal(result)
+				if marshalErr != nil {
+					history = append(history, types.ModelMessage{
+						Role:       "tool",
+						ToolCallID: tc.ID,
+						Content:    fmt.Sprintf("error: failed to marshal tool result: %v", marshalErr),
+					})
+				} else {
+					history = append(history, types.ModelMessage{
+						Role:       "tool",
+						ToolCallID: tc.ID,
+						Content:    string(content),
+					})
+				}
 			}
 			continue
 		}

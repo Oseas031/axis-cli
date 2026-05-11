@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -54,10 +56,14 @@ type Orchestrator struct {
 	agentExecutor      agent.AgentExecutor
 	mu                 sync.Mutex
 	running            bool
+	started            bool          // true if Start was ever called
 	taskSubmitted      chan struct{} // Channel to notify when tasks are submitted
 	workerLimit        int           // Max concurrent workers
 	workerSem          chan struct{} // Counting semaphore for worker limit
 	wg                 sync.WaitGroup
+	stopCh             chan struct{} // Closed by Shutdown to signal runTaskLoop to exit
+	stopOnce           sync.Once     // Ensures stopCh is closed exactly once
+	loopDone           chan struct{} // Closed by Start goroutine after runTaskLoop + wg.Wait finish
 }
 
 // NewOrchestrator creates a new orchestrator with the given options.
@@ -66,9 +72,7 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleManager := lifecycle.NewLifecycleManager()
 	sched := scheduler.NewScheduler(stateStore, lifecycleManager)
-	toolRegistry := tool.NewRegistry()
-	// #nosec G104
-	toolRegistry.Register(tool.NewBashTool(), nil)
+	toolRegistry := defaultToolRegistry()
 	contractExec := contractexec.NewContractExecutor()
 	contractExec.SetProvider(provider.NewMockModelProvider())
 	contractExec.SetToolRegistry(toolRegistry)
@@ -88,6 +92,8 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 		taskSubmitted:      make(chan struct{}, 1),
 		workerLimit:        defaultWorkerLimit,
 		workerSem:          make(chan struct{}, defaultWorkerLimit),
+		stopCh:             make(chan struct{}),
+		loopDone:           make(chan struct{}),
 	}
 
 	for _, opt := range opts {
@@ -102,6 +108,27 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	return orch
 }
 
+func defaultToolRegistry() *tool.Registry {
+	registry := tool.NewRegistry()
+	allowedDirs := []string{}
+	allowedDir, err := os.Getwd()
+	if err != nil {
+		allowedDir = "."
+	}
+	allowedDirs = append(allowedDirs, allowedDir)
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		desktopDir := filepath.Join(homeDir, "Desktop")
+		if _, err := os.Stat(desktopDir); err == nil {
+			allowedDirs = append(allowedDirs, desktopDir)
+		}
+	}
+	_ = registry.Register(tool.NewBashTool(), []string{string(tool.ScopeSubprocess)})
+	_ = registry.Register(tool.NewFileReadTool(allowedDirs), []string{string(tool.ScopeFilesystemRead)})
+	_ = registry.Register(tool.NewFileWriteTool(allowedDirs), []string{string(tool.ScopeFilesystemWrite)})
+	_ = registry.Register(tool.NewHTTPClientTool([]string{"localhost", "127.0.0.1"}), []string{string(tool.ScopeNetwork)})
+	return registry
+}
+
 // Start starts the orchestrator
 func (o *Orchestrator) Start(ctx context.Context) error {
 	o.mu.Lock()
@@ -113,20 +140,26 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 
 	// Mark as running to prevent duplicate starts
 	o.running = true
+	o.started = true
 
-	// Start the task execution loop; waits for workers on exit
+	// Start the task execution loop; waits for workers on exit,
+	// then closes loopDone so Shutdown knows all work is finished.
 	go func() {
 		o.runTaskLoop(ctx)
 		o.wg.Wait()
+		close(o.loopDone)
 	}()
 
 	return nil
 }
 
 // runTaskLoop continuously fetches ready tasks and dispatches them in parallel.
+// The loop exits when stopCh is closed (graceful shutdown) or ctx is cancelled.
 func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 	for {
 		select {
+		case <-o.stopCh:
+			return
 		case <-ctx.Done():
 			return
 		case <-o.taskSubmitted:
@@ -143,9 +176,11 @@ func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 		available := o.workerLimit - len(o.workerSem)
 		if available <= 0 {
 			select {
+			case <-o.stopCh:
+				return
 			case <-ctx.Done():
 				return
-			case <-time.After(100 * time.Millisecond):
+			case <-o.taskSubmitted:
 			}
 			continue
 		}
@@ -153,6 +188,10 @@ func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 		tasks, err := o.scheduler.GetReadyTasks(available)
 		if err != nil {
 			log.Printf("Error getting ready tasks: %v", err)
+			// Intentional blocking sleep (not ctx-aware): per Zero Control philosophy,
+			// shutdown does not require sub-second graceful exit. The loop already
+			// checks ctx.Done()/stopCh at the top of each iteration; this sleep
+			// merely throttles error retries without adding select complexity.
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -160,9 +199,10 @@ func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 		if len(tasks) == 0 {
 			select {
 			case <-o.taskSubmitted:
+			case <-o.stopCh:
+				return
 			case <-ctx.Done():
 				return
-			case <-time.After(100 * time.Millisecond):
 			}
 			continue
 		}
@@ -172,7 +212,14 @@ func (o *Orchestrator) runTaskLoop(ctx context.Context) {
 			o.wg.Add(1)
 			go func(t *types.AgentTask) {
 				defer o.wg.Done()
-				defer func() { <-o.workerSem }()
+				defer func() {
+					<-o.workerSem
+					// Notify scheduler that a worker slot is free.
+					select {
+					case o.taskSubmitted <- struct{}{}:
+					default:
+					}
+				}()
 				o.executeTask(ctx, t)
 			}(task)
 		}
@@ -342,19 +389,30 @@ func (o *Orchestrator) RegisterContract(contract *types.AgentContract) error {
 	return o.contractExecutor.RegisterContract(contract)
 }
 
-// Shutdown gracefully shuts down the orchestrator
+// Shutdown gracefully shuts down the orchestrator.
+// It signals the task loop to exit, waits for the Start goroutine to finish
+// (which includes draining all in-flight workers), then shuts down the
+// lifecycle manager. The caller-provided ctx bounds total wait time.
 func (o *Orchestrator) Shutdown(ctx context.Context) error {
 	o.mu.Lock()
+	wasStarted := o.started
 	o.running = false
 	o.mu.Unlock()
 
-	// Notify task loop to stop
-	select {
-	case o.taskSubmitted <- struct{}{}:
-	default:
+	// Signal task loop to exit. stopCh is closed once and only once.
+	o.stopOnce.Do(func() { close(o.stopCh) })
+
+	// Wait for the Start goroutine to finish runTaskLoop + wg.Wait.
+	// This guarantees no concurrent wg.Add / wg.Wait, avoiding sync races.
+	if wasStarted {
+		select {
+		case <-o.loopDone:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 
-	// Wait for lifecycle manager to complete shutdown
+	// Wait for lifecycle manager to complete shutdown.
 	return o.lifecycleManager.Shutdown(ctx)
 }
 

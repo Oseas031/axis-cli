@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/axis-cli/axis/internal/model/provider"
@@ -145,7 +146,7 @@ func TestContractExecutor_Execute(t *testing.T) {
 
 	// Valid execution
 	input := map[string]any{"name": "test"}
-	result, err := exec.Execute("test-contract", input)
+	result, err := exec.Execute(context.Background(), "test-contract", input)
 	if err != nil {
 		t.Errorf("Execute should succeed: %v", err)
 	}
@@ -393,7 +394,7 @@ func TestContractExecutor_Execute_InvalidInput(t *testing.T) {
 	}
 	exec.RegisterContract(contract)
 
-	result, err := exec.Execute("test", map[string]any{})
+	result, err := exec.Execute(context.Background(), "test", map[string]any{})
 	if err == nil {
 		t.Error("Execute with invalid input should return error")
 	}
@@ -529,7 +530,7 @@ func TestContractExecutor_Execute_NonExistentContract(t *testing.T) {
 	exec := NewContractExecutor()
 
 	// Execute with a contract ID that does not exist
-	result, err := exec.Execute("non-existent", map[string]any{"name": "test"})
+	result, err := exec.Execute(context.Background(), "non-existent", map[string]any{"name": "test"})
 	if err == nil {
 		t.Error("Execute with non-existent contract should return error")
 	}
@@ -562,7 +563,7 @@ func TestContractExecutor_Execute_WithProvider(t *testing.T) {
 	}
 	exec.RegisterContract(contract)
 
-	result, err := exec.Execute("provider-test", map[string]any{"msg": "hello"})
+	result, err := exec.Execute(context.Background(), "provider-test", map[string]any{"msg": "hello"})
 	if err != nil {
 		t.Fatalf("Execute with provider should succeed: %v", err)
 	}
@@ -589,7 +590,7 @@ func TestContractExecutor_Execute_ProviderOutputValidationFails(t *testing.T) {
 	}
 	exec.RegisterContract(contract)
 
-	result, err := exec.Execute("provider-fail", map[string]any{"msg": "test"})
+	result, err := exec.Execute(context.Background(), "provider-fail", map[string]any{"msg": "test"})
 	if err == nil {
 		t.Error("Execute should fail when output validation fails")
 	}
@@ -636,6 +637,43 @@ func TestContractExecutor_ValidateEnum_IntFloat64InEnum(t *testing.T) {
 	if err != nil {
 		t.Errorf("Float64 42 should be valid int 42 in enum: %v", err)
 	}
+}
+
+func TestContractExecutor_Execute_PropagatesContext(t *testing.T) {
+	exec := NewContractExecutor()
+
+	p := &contextCheckingProvider{}
+	exec.SetProvider(p)
+
+	contract := &types.AgentContract{
+		ContractID: "ctx-test",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "msg", Type: types.FieldTypeString, Required: false}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	exec.Execute(ctx, "ctx-test", map[string]any{"msg": "hello"})
+
+	if p.receivedCtx == nil {
+		t.Fatal("provider should have received a context")
+	}
+	if p.receivedCtx.Err() == nil {
+		t.Fatal("provider should receive cancelled context")
+	}
+}
+
+// contextCheckingProvider records the context it receives.
+type contextCheckingProvider struct {
+	receivedCtx context.Context
+}
+
+func (p *contextCheckingProvider) Execute(ctx context.Context, req *provider.ModelRequest) (*provider.ModelResponse, error) {
+	p.receivedCtx = ctx
+	return &provider.ModelResponse{Output: map[string]any{"status": "ok"}}, nil
 }
 
 func TestSafeMarshal_NormalInput(t *testing.T) {

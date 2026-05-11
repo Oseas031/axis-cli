@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/axis-cli/axis/internal/agent/judgement"
+	"github.com/axis-cli/axis/internal/contextpack"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -17,10 +18,17 @@ type AgentExecutor interface {
 
 // AgentExecutionRequest contains all context needed for agent execution.
 type AgentExecutionRequest struct {
-	Task        *types.AgentTask
-	SelfContext *SelfContext
-	Contract    *types.AgentContract
-	Autonomy    AutonomyLevel
+	Task           *types.AgentTask
+	SelfContext    *SelfContext
+	Contract       *types.AgentContract
+	Autonomy       AutonomyLevel
+	ContextSummary *contextpack.ExecutionContextSummary
+
+	// RequestedSources is a flat copy of the Agent's declared context needs.
+	// It exists so the executor can read the request directly without
+	// depending on the internal structure of contextpack.ExecutionContextSummary.
+	// This preserves the boundary: dispatcher populates it; executor reads it.
+	RequestedSources []string
 }
 
 // AgentExecutionResult is the output of an agent execution.

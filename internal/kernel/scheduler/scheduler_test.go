@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
@@ -617,5 +618,84 @@ func TestScheduler_GetReadyTasks_PriorityLimit(t *testing.T) {
 	}
 	if ready[0].TaskID != "high" {
 		t.Errorf("Expected high-priority task first with limit, got %s", ready[0].TaskID)
+	}
+}
+
+// failingStateStore fails Save for a specific task ID only when the task status is Running.
+// This targets GetReadyTasks claim saves without interfering with Submit (Pending) saves.
+type failingStateStore struct {
+	sharedlayer.StateStore
+	failTaskID string
+}
+
+func (f *failingStateStore) Save(taskID string, state types.TaskState) error {
+	if taskID == f.failTaskID && state.Task.Status == types.TaskStatusRunning {
+		return fmt.Errorf("simulated save failure for %s", taskID)
+	}
+	return f.StateStore.Save(taskID, state)
+}
+
+// TestScheduler_StaleRunningTasksReset verifies that tasks left in Running
+// status (e.g. after a process crash) are reset so the scheduler can
+// re-dispatch or clean them up on next initialization.
+func TestScheduler_StaleRunningTasksReset(t *testing.T) {
+	stateStore := sharedlayer.NewMemoryStateStore()
+	lifecycle := &mockLifecycleChecker{running: true}
+	sched := NewScheduler(stateStore, lifecycle)
+
+	// Submit a task and claim it (moves to Running)
+	task := &types.AgentTask{TaskID: "stale-task", ContractID: "c", Status: types.TaskStatusPending}
+	if err := sched.Submit(task); err != nil {
+		t.Fatalf("Failed to submit: %v", err)
+	}
+	ready, err := sched.GetReadyTasks(1)
+	if err != nil {
+		t.Fatalf("GetReadyTasks failed: %v", err)
+	}
+	if len(ready) != 1 || ready[0].TaskID != "stale-task" {
+		t.Fatal("Expected task to be claimed")
+	}
+	status, _ := sched.GetStatus("stale-task")
+	if status != types.TaskStatusRunning {
+		t.Fatalf("Expected Running, got %s", status)
+	}
+
+	// Simulate crash recovery: create a new scheduler with the SAME state store.
+	// Stale running tasks should be reset to Failed so they don't block forever.
+	sched2 := NewScheduler(stateStore, lifecycle)
+	status2, _ := sched2.GetStatus("stale-task")
+	if status2 != types.TaskStatusFailed {
+		t.Fatalf("After crash recovery, stale running task should be Failed, got %s", status2)
+	}
+}
+
+func TestScheduler_GetReadyTasks_RollbackOnSaveFailure(t *testing.T) {
+	baseStore := sharedlayer.NewMemoryStateStore()
+	stateStore := &failingStateStore{StateStore: baseStore, failTaskID: "task-2"}
+	lifecycle := &mockLifecycleChecker{running: true}
+	sched := NewScheduler(stateStore, lifecycle)
+
+	for _, taskID := range []string{"task-1", "task-2"} {
+		task := &types.AgentTask{TaskID: taskID, ContractID: "c", Status: types.TaskStatusPending}
+		if err := sched.Submit(task); err != nil {
+			t.Fatalf("Failed to submit %s: %v", taskID, err)
+		}
+	}
+
+	_, err := sched.GetReadyTasks(0)
+	if err == nil {
+		t.Fatal("Expected GetReadyTasks to fail when state store fails")
+	}
+
+	// task-1 was claimed before the failure; it MUST be rolled back to Pending
+	status, _ := sched.GetStatus("task-1")
+	if status != types.TaskStatusPending {
+		t.Fatalf("task-1 should be rolled back to Pending after partial claim failure, got %s", status)
+	}
+
+	// task-2 should also remain Pending
+	status, _ = sched.GetStatus("task-2")
+	if status != types.TaskStatusPending {
+		t.Fatalf("task-2 should remain Pending, got %s", status)
 	}
 }

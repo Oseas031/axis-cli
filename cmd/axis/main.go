@@ -1,28 +1,66 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 
+	"github.com/axis-cli/axis/internal/contextpack"
+	"github.com/axis-cli/axis/internal/control"
 	"github.com/axis-cli/axis/internal/kernel/orchestrator"
 	"github.com/axis-cli/axis/internal/model/provider"
+	"github.com/axis-cli/axis/internal/model/providerconfig"
 	"github.com/axis-cli/axis/internal/types"
 	"github.com/spf13/cobra"
 )
 
+// envAPIKeyForProvider returns the environment variable name for a provider's API key.
+func envAPIKeyForProvider(providerName string) string {
+	switch providerName {
+	case "anthropic":
+		return "ANTHROPIC_API_KEY"
+	case "openai":
+		return "OPENAI_API_KEY"
+	case "deepseek":
+		return "DEEPSEEK_API_KEY"
+	case "minimax":
+		return "MINIMAX_API_KEY"
+	default:
+		return ""
+	}
+}
+
 var (
-	orch         *orchestrator.Orchestrator
-	orchMutex    sync.Once
-	providerFlag string
+	orch       *orchestrator.Orchestrator
+	defaultApp = &App{providerName: "mock"}
 )
 
+type App struct {
+	orch         *orchestrator.Orchestrator
+	orchOnce     sync.Once
+	providerName string
+	modelName    string
+	root         string // project root for file-backed stores; empty means in-memory
+}
+
 func main() {
+	rootCmd := NewRootCommand(defaultApp)
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func NewRootCommand(app *App) *cobra.Command {
+	if app.root != "" {
+		_ = contextpack.InitDefaultRegistry(app.root)
+	}
+
 	rootCmd := &cobra.Command{
 		Use:   "axis",
 		Short: "Agent-native scheduling system",
@@ -54,15 +92,14 @@ func main() {
 		Short: "Start an interactive Axis shell",
 		RunE:  runShell,
 	}
+	shellCmd.Flags().Bool("no-prompt", false, "Suppress interactive shell prompt for pipe/automation drivers")
 
-	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newMemoryCommand())
+	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand())
 
-	runCmd.Flags().StringVar(&providerFlag, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
+	rootCmd.PersistentFlags().StringVar(&app.providerName, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
+	rootCmd.PersistentFlags().StringVar(&app.modelName, "model", "", "Model name for real providers")
 
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+	return rootCmd
 }
 
 func runTask(cmd *cobra.Command, args []string) error {
@@ -77,21 +114,18 @@ func runTask(cmd *cobra.Command, args []string) error {
 }
 
 func getTaskStatus(cmd *cobra.Command, args []string) error {
-	initOrchestrator()
-
 	taskID := args[0]
-	status, err := orch.GetTaskStatus(taskID)
+	client := control.NewClient(control.NewRuntimeLocator("."), http.DefaultClient)
+	status, err := client.Status(context.Background(), taskID)
 	if err != nil {
-		return fmt.Errorf("task %s not found in this local Axis process: %w", taskID, err)
+		return fmt.Errorf("failed to get task %s status: %w", taskID, err)
 	}
 
-	fmt.Printf("Task %s status: %s\n", taskID, status)
+	fmt.Printf("Task %s status: %s\n", taskID, status.Status)
 	return nil
 }
 
 func startOrchestrator(cmd *cobra.Command, args []string) error {
-	initOrchestrator()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -108,126 +142,75 @@ func startOrchestrator(cmd *cobra.Command, args []string) error {
 		cancel()
 	}()
 
-	if err := orch.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start orchestrator: %w", err)
-	}
-
 	fmt.Println("Orchestrator started. Press Ctrl+C to stop.")
-
-	// Keep the main goroutine running
-	<-ctx.Done()
-	return nil
-}
-
-func runShell(cmd *cobra.Command, args []string) error {
-	initOrchestrator()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	shutdownOnce := sync.Once{}
-	shutdown := func() {
-		shutdownOnce.Do(func() {
-			cancel()
-			if err := orch.Shutdown(context.Background()); err != nil {
-				fmt.Fprintf(os.Stderr, "Error shutting down: %v\n", err)
-			}
-		})
-	}
-	defer shutdown()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(sigChan)
-
-	go func() {
-		<-sigChan
-		fmt.Println("\nShutting down Axis shell...")
-		shutdown()
-		os.Exit(0)
-	}()
-
-	if err := orch.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start orchestrator: %w", err)
-	}
-
-	fmt.Println("Axis shell started. Type 'help' for commands, 'exit' to quit.")
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		fmt.Print("axis> ")
-		if !scanner.Scan() {
-			fmt.Println()
-			return scanner.Err()
-		}
-
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-
-		fields := strings.Fields(line)
-		command := strings.ToLower(fields[0])
-		commandArgs := fields[1:]
-
-		switch command {
-		case "help":
-			printShellHelp()
-		case "run":
-			if len(commandArgs) != 1 {
-				fmt.Println("Usage: run <task-id>")
-				continue
-			}
-			if err := submitTask(commandArgs[0]); err != nil {
-				fmt.Printf("Could not submit task %s: %v\n", commandArgs[0], err)
-				continue
-			}
-			fmt.Printf("Task %s submitted. Try: status %s\n", commandArgs[0], commandArgs[0])
-		case "status":
-			if len(commandArgs) != 1 {
-				fmt.Println("Usage: status <task-id>")
-				continue
-			}
-			status, err := orch.GetTaskStatus(commandArgs[0])
-			if err != nil {
-				fmt.Printf("Could not get status for task %s: %v\n", commandArgs[0], err)
-				fmt.Printf("If this is a new task, try: run %s\n", commandArgs[0])
-				continue
-			}
-			fmt.Printf("Task %s status: %s\n", commandArgs[0], status)
-		case "dag":
-			printDAG()
-		case "resolve":
-			if len(commandArgs) != 1 {
-				fmt.Println("Usage: resolve <call-id>")
-				continue
-			}
-			if err := orch.ResolveCall(commandArgs[0], map[string]any{"status": "resolved"}); err != nil {
-				fmt.Printf("Could not resolve call %s: %v\n", commandArgs[0], err)
-				continue
-			}
-			fmt.Printf("Call %s resolved.\n", commandArgs[0])
-		case "tools":
-			printTools()
-		case "exit", "quit":
-			fmt.Println("Exiting Axis shell.")
-			return nil
-		default:
-			fmt.Printf("Unknown command: %s\n", command)
-			fmt.Println("Type 'help' to see available commands.")
-		}
-	}
+	return runLocalRuntime(ctx, ".", cmd.OutOrStdout())
 }
 
 func initOrchestrator() {
-	orchMutex.Do(func() {
-		p, err := provider.NewProvider(providerFlag)
+	defaultApp.initOrchestrator()
+	orch = defaultApp.orch
+}
+
+func (app *App) initOrchestrator() {
+	app.orchOnce.Do(func() {
+		providerName, opts := app.resolveProvider()
+		p, err := provider.NewProvider(providerName, opts...)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to create provider %q: %v, using mock\n", providerFlag, err)
+			fmt.Fprintf(os.Stderr, "Warning: failed to create provider %q: %v, using mock\n", providerName, err)
 			p = provider.NewMockModelProvider()
 		}
-		orch = orchestrator.NewOrchestrator(orchestrator.WithModelProvider(p))
-		if err := orch.RegisterContract(defaultContract()); err != nil {
+		app.orch = orchestrator.NewOrchestrator(orchestrator.WithModelProvider(p))
+		if err := app.orch.RegisterContract(defaultContract()); err != nil {
 			fmt.Fprintf(os.Stderr, "Error registering default contract: %v\n", err)
 		}
 	})
+}
+
+func (app *App) resolveProvider() (string, []provider.ProviderOption) {
+	if app.providerName != "mock" || app.modelName != "" {
+		return app.providerName, app.providerOptions()
+	}
+	cfg, err := providerconfig.NewStore(".").Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to load provider config: %v\n", err)
+		return app.providerName, app.providerOptions()
+	}
+	profile, ok := cfg.Active()
+	if !ok {
+		return app.providerName, app.providerOptions()
+	}
+	return profile.Provider, profile.ProviderOptions()
+}
+
+func (app *App) providerOptions() []provider.ProviderOption {
+	opts := make([]provider.ProviderOption, 0, 3)
+	modelName := app.modelName
+	if modelName == "" {
+		modelName = defaultModelForProvider(app.providerName)
+	}
+	if modelName != "" {
+		opts = append(opts, provider.WithModel(modelName))
+	}
+	// Fallback to environment variable for API key when no project-local profile is active.
+	if key := os.Getenv(envAPIKeyForProvider(app.providerName)); key != "" {
+		opts = append(opts, provider.WithAPIKey(key))
+	}
+	return opts
+}
+
+func defaultModelForProvider(providerName string) string {
+	switch providerName {
+	case "anthropic":
+		return "claude-3-5-sonnet-20241022"
+	case "openai":
+		return "gpt-4o-mini"
+	case "deepseek":
+		return "deepseek-v4-flash"
+	case "minimax":
+		return "MiniMax-M2.7"
+	default:
+		return ""
+	}
 }
 
 func submitTask(taskID string) error {
@@ -239,50 +222,6 @@ func submitTask(taskID string) error {
 	}
 
 	return orch.SubmitTask(task)
-}
-
-func printShellHelp() {
-	fmt.Println("Available commands:")
-	fmt.Println("  help              Show this help message")
-	fmt.Println("  run <task-id>     Submit a task")
-	fmt.Println("  status <task-id>  Show task status")
-	fmt.Println("  dag               Show dependency graph")
-	fmt.Println("  resolve <call-id> Resolve a pending human call")
-	fmt.Println("  tools              Show available tools")
-	fmt.Println("  exit, quit        Shut down the shell")
-}
-
-func printTools() {
-	fmt.Println("Available tools:")
-	fmt.Println("  bash           Execute shell commands")
-	fmt.Println("  file_read      Read file contents")
-	fmt.Println("  file_write     Write file contents")
-	fmt.Println("  http_request   Make HTTP requests")
-}
-
-func printDAG() {
-	tasks := orch.GetAllTasks()
-	deps := orch.GetDependencyGraph()
-	if len(tasks) == 0 {
-		fmt.Println("No tasks registered.")
-		return
-	}
-	fmt.Printf("%-20s %-12s %s\n", "TASK", "STATUS", "DEPENDS ON")
-	fmt.Printf("%-20s %-12s %s\n", "----", "------", "----------")
-	for _, task := range tasks {
-		depList := deps[task.TaskID]
-		depStr := "(none)"
-		if len(depList) > 0 {
-			depStr = ""
-			for i, d := range depList {
-				if i > 0 {
-					depStr += ", "
-				}
-				depStr += d
-			}
-		}
-		fmt.Printf("%-20s %-12s %s\n", task.TaskID, task.Status, depStr)
-	}
 }
 
 func defaultContract() *types.AgentContract {
@@ -303,14 +242,20 @@ func defaultContract() *types.AgentContract {
 				{
 					Name:        "status",
 					Type:        types.FieldTypeString,
-					Required:    true,
+					Required:    false,
 					Description: "Execution status",
 				},
 				{
 					Name:        "message",
 					Type:        types.FieldTypeString,
-					Required:    true,
+					Required:    false,
 					Description: "Execution message",
+				},
+				{
+					Name:        "text",
+					Type:        types.FieldTypeString,
+					Required:    false,
+					Description: "Free-form text output",
 				},
 			},
 		},

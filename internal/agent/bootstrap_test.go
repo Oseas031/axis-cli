@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/axis-cli/axis/internal/agent/contracts"
+	"github.com/axis-cli/axis/internal/agent/judgement"
+	"github.com/axis-cli/axis/internal/agent/judgement/strategies"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -599,6 +601,151 @@ func TestBootstrapOrchestrator_DAGEdges(t *testing.T) {
 	for _, exp := range expected {
 		if !contractIDs[exp] {
 			t.Errorf("expected contract %s not found", exp)
+		}
+	}
+}
+
+// TestBootstrapOrchestrator_JudgeExecutionResult_NoEngine verifies nil result when no engine is configured.
+func TestBootstrapOrchestrator_JudgeExecutionResult_NoEngine(t *testing.T) {
+	sched := newMockScheduler()
+	bo := NewBootstrapOrchestrator(sched, 3)
+
+	result := &AgentExecutionResult{
+		Output: map[string]any{"result": "completed"},
+		ValidationResult: &ValidationSummary{
+			TestsPassed:  10,
+			TestsFailed:  0,
+			Coverage:     0.90,
+			IsAcceptable: true,
+		},
+	}
+
+	jr, err := bo.(*bootstrapOrchestrator).JudgeExecutionResult(result)
+	if err != nil {
+		t.Fatalf("expected no error without engine, got %v", err)
+	}
+	if jr != nil {
+		t.Fatalf("expected nil judgement result without engine, got %v", jr)
+	}
+}
+
+// TestBootstrapOrchestrator_CalculateAutonomyDelta verifies autonomy delta computation.
+func TestBootstrapOrchestrator_CalculateAutonomyDelta(t *testing.T) {
+	sched := newMockScheduler()
+	bo := NewBootstrapOrchestrator(sched, 3)
+	inner := bo.(*bootstrapOrchestrator)
+
+	tests := []struct {
+		name     string
+		jr       *judgement.JudgementResult
+		expected int
+	}{
+		{
+			name:     "nil result",
+			jr:       nil,
+			expected: 0,
+		},
+		{
+			name:     "excellent judgement",
+			jr:       &judgement.JudgementResult{Passed: true, Score: 0.97, Confidence: 0.95},
+			expected: 2,
+		},
+		{
+			name:     "passed judgement",
+			jr:       &judgement.JudgementResult{Passed: true, Score: 0.80, Confidence: 0.75},
+			expected: 1,
+		},
+		{
+			name:     "marginal judgement",
+			jr:       &judgement.JudgementResult{Passed: false, Score: 0.60, Confidence: 0.50},
+			expected: 0,
+		},
+		{
+			name:     "failed judgement",
+			jr:       &judgement.JudgementResult{Passed: false, Score: 0.30, Confidence: 0.40},
+			expected: -1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			delta := inner.CalculateAutonomyDelta(tt.jr)
+			if delta.Delta != tt.expected {
+				t.Errorf("expected autonomy delta %d, got %d", tt.expected, delta.Delta)
+			}
+		})
+	}
+}
+
+// TestBootstrapOrchestrator_EvaluateAndDecide verifies end-to-end judgement and autonomy update.
+func TestBootstrapOrchestrator_EvaluateAndDecide(t *testing.T) {
+	sched := newMockScheduler()
+	engine := judgement.NewEngine()
+	bo := NewBootstrapOrchestrator(sched, 3, WithJudgementEngine(engine))
+	inner := bo.(*bootstrapOrchestrator)
+
+	result := &AgentExecutionResult{
+		Output: map[string]any{"result": "completed"},
+		ValidationResult: &ValidationSummary{
+			TestsPassed:  10,
+			TestsFailed:  0,
+			Coverage:     0.90,
+			IsAcceptable: true,
+		},
+	}
+
+	err := inner.EvaluateAndDecide(result)
+	if err != nil {
+		t.Fatalf("EvaluateAndDecide failed: %v", err)
+	}
+
+	if result.JudgementResult == nil {
+		t.Fatal("expected JudgementResult to be set")
+	}
+	if result.AutonomyDelta.Delta == 0 && result.JudgementResult.Passed {
+		t.Errorf("expected non-zero autonomy delta for passed judgement, got %d", result.AutonomyDelta.Delta)
+	}
+}
+
+// TestBootstrapOrchestrator_EvaluateAndDecide_NilResult verifies error on nil input.
+func TestBootstrapOrchestrator_EvaluateAndDecide_NilResult(t *testing.T) {
+	sched := newMockScheduler()
+	bo := NewBootstrapOrchestrator(sched, 3)
+	inner := bo.(*bootstrapOrchestrator)
+
+	err := inner.EvaluateAndDecide(nil)
+	if err == nil {
+		t.Fatal("expected error for nil result")
+	}
+}
+
+// TestBootstrapOrchestrator_DefaultJudgementCriteria verifies default criteria composition.
+func TestBootstrapOrchestrator_DefaultJudgementCriteria(t *testing.T) {
+	sched := newMockScheduler()
+	bo := NewBootstrapOrchestrator(sched, 3)
+	inner := bo.(*bootstrapOrchestrator)
+
+	criteria := inner.defaultJudgementCriteria()
+	if len(criteria) == 0 {
+		t.Fatal("expected non-empty default criteria")
+	}
+
+	expectedTypes := map[strategies.JudgementType]bool{
+		strategies.JudgementTypeSyntax:   false,
+		strategies.JudgementTypeTest:     false,
+		strategies.JudgementTypeCoverage: false,
+	}
+	for _, c := range criteria {
+		if _, ok := expectedTypes[c.Type]; ok {
+			expectedTypes[c.Type] = true
+		}
+		if !c.Enabled {
+			t.Errorf("expected criteria %s to be enabled", c.Name)
+		}
+	}
+	for typ, found := range expectedTypes {
+		if !found {
+			t.Errorf("expected criteria of type %s not found", typ)
 		}
 	}
 }

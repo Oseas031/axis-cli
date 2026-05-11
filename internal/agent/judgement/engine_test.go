@@ -2,6 +2,7 @@
 package judgement
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/axis-cli/axis/internal/agent/judgement/strategies"
@@ -140,6 +141,93 @@ func TestEngine_ListStrategies(t *testing.T) {
 	}
 }
 
+func TestEngine_Judge_CanHandleFalse(t *testing.T) {
+	e := NewEngine()
+	// Syntax strategy is registered but cannot handle contract criteria
+	criteria := []strategies.JudgementCriteria{
+		{
+			Name:    "contract",
+			Type:    strategies.JudgementTypeContract,
+			Weight:  1.0,
+			Enabled: true,
+		},
+	}
+
+	result, err := e.Judge(nil, criteria)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Judgements) != 1 {
+		t.Fatalf("expected 1 judgement, got %d", len(result.Judgements))
+	}
+	if result.Judgements[0].Passed {
+		t.Error("expected CanHandle=false to produce failed judgement")
+	}
+	if result.Judgements[0].Error == "" {
+		t.Error("expected error message for CanHandle=false")
+	}
+}
+
+func TestEngine_Judge_ValidateError(t *testing.T) {
+	e := NewEngine()
+	// Register a custom strategy that always returns an error
+	custom := &alwaysErrorStrategy{}
+	e.RegisterStrategy(strategies.JudgementTypeCustom, custom)
+
+	criteria := []strategies.JudgementCriteria{
+		{
+			Name:    "always_error",
+			Type:    strategies.JudgementTypeCustom,
+			Weight:  1.0,
+			Enabled: true,
+		},
+	}
+
+	result, err := e.Judge(nil, criteria)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Judgements) != 1 {
+		t.Fatalf("expected 1 judgement, got %d", len(result.Judgements))
+	}
+	if result.Judgements[0].Passed {
+		t.Error("expected Validate error to produce failed judgement")
+	}
+	if result.Judgements[0].Error == "" {
+		t.Error("expected error message for Validate error")
+	}
+}
+
+func TestEngine_Judge_AggregatedScore(t *testing.T) {
+	e := NewEngine()
+	// Register a custom strategy with a specific score
+	custom := &scoredStrategy{score: 0.85}
+	e.RegisterStrategy(strategies.JudgementTypeCustom, custom)
+
+	criteria := []strategies.JudgementCriteria{
+		{
+			Name:    "score_test",
+			Type:    strategies.JudgementTypeCustom,
+			Weight:  1.0,
+			Enabled: true,
+		},
+	}
+
+	result, err := e.Judge(nil, criteria)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Passed {
+		t.Error("expected score 0.85 to pass default threshold 0.75")
+	}
+	if result.Score != 0.85 {
+		t.Errorf("expected aggregated score 0.85, got %f", result.Score)
+	}
+	if result.Confidence != 1.0 {
+		t.Errorf("expected confidence 1.0 (1 passed / 1 total), got %f", result.Confidence)
+	}
+}
+
 // customTestStrategy is a test strategy that always returns a passing result.
 type customTestStrategy struct{}
 
@@ -153,5 +241,34 @@ func (s *customTestStrategy) Validate(input any, criteria strategies.JudgementCr
 }
 
 func (s *customTestStrategy) CanHandle(criteria strategies.JudgementCriteria) bool {
+	return criteria.Type == strategies.JudgementTypeCustom
+}
+
+// alwaysErrorStrategy is a test strategy that always returns an error.
+type alwaysErrorStrategy struct{}
+
+func (s *alwaysErrorStrategy) Validate(input any, criteria strategies.JudgementCriteria) (*strategies.JudgementItem, error) {
+	return nil, fmt.Errorf("intentional validation error")
+}
+
+func (s *alwaysErrorStrategy) CanHandle(criteria strategies.JudgementCriteria) bool {
+	return criteria.Type == strategies.JudgementTypeCustom
+}
+
+// scoredStrategy is a test strategy that returns a configurable score.
+type scoredStrategy struct {
+	score float64
+}
+
+func (s *scoredStrategy) Validate(input any, criteria strategies.JudgementCriteria) (*strategies.JudgementItem, error) {
+	return &strategies.JudgementItem{
+		CriteriaName: criteria.Name,
+		Passed:       s.score >= DefaultJudgementThresholds.PassingScore,
+		Score:        s.score,
+		Details:      fmt.Sprintf("scored strategy: %f", s.score),
+	}, nil
+}
+
+func (s *scoredStrategy) CanHandle(criteria strategies.JudgementCriteria) bool {
 	return criteria.Type == strategies.JudgementTypeCustom
 }

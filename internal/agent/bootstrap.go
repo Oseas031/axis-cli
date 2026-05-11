@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/axis-cli/axis/internal/agent/judgement"
+	"github.com/axis-cli/axis/internal/agent/judgement/strategies"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -38,19 +40,34 @@ type BootstrapLoop interface {
 
 // bootstrapOrchestrator is the internal implementation of BootstrapLoop.
 type bootstrapOrchestrator struct {
-	scheduler     SchedulerAccess
-	loopTracking  map[string]int
-	maxIterations int
-	mu            sync.RWMutex
+	scheduler       SchedulerAccess
+	loopTracking    map[string]int
+	maxIterations   int
+	judgementEngine *judgement.Engine
+	mu              sync.RWMutex
+}
+
+// BootstrapOption configures a bootstrapOrchestrator.
+type BootstrapOption func(*bootstrapOrchestrator)
+
+// WithJudgementEngine sets the judgement engine for the bootstrap orchestrator.
+func WithJudgementEngine(engine *judgement.Engine) BootstrapOption {
+	return func(bo *bootstrapOrchestrator) {
+		bo.judgementEngine = engine
+	}
 }
 
 // NewBootstrapOrchestrator creates a new BootstrapLoop implementation with the given scheduler and max iterations.
-func NewBootstrapOrchestrator(scheduler SchedulerAccess, maxIterations int) BootstrapLoop {
-	return &bootstrapOrchestrator{
+func NewBootstrapOrchestrator(scheduler SchedulerAccess, maxIterations int, opts ...BootstrapOption) BootstrapLoop {
+	bo := &bootstrapOrchestrator{
 		scheduler:     scheduler,
 		loopTracking:  make(map[string]int),
 		maxIterations: maxIterations,
 	}
+	for _, opt := range opts {
+		opt(bo)
+	}
+	return bo
 }
 
 // SubmitSelfIterationTask submits a task with self-context injection and loop tracking.
@@ -157,4 +174,89 @@ func (bo *bootstrapOrchestrator) GetAllTasks() []*types.AgentTask {
 // GetDependencyGraph returns the dependency graph from the scheduler.
 func (bo *bootstrapOrchestrator) GetDependencyGraph() map[string][]string {
 	return bo.scheduler.GetDependencyGraph()
+}
+
+// JudgeExecutionResult performs self-judgement on an execution result using the configured judgement engine.
+// Returns nil if no judgement engine is configured.
+func (bo *bootstrapOrchestrator) JudgeExecutionResult(result *AgentExecutionResult) (*judgement.JudgementResult, error) {
+	bo.mu.RLock()
+	engine := bo.judgementEngine
+	bo.mu.RUnlock()
+
+	if engine == nil {
+		return nil, nil
+	}
+
+	criteria := bo.defaultJudgementCriteria()
+	return engine.Judge(result, criteria)
+}
+
+// CalculateAutonomyDelta computes an autonomy adjustment based on the judgement result.
+// Positive delta means earned autonomy; negative means lost.
+func (bo *bootstrapOrchestrator) CalculateAutonomyDelta(jr *judgement.JudgementResult) AutonomyDelta {
+	if jr == nil {
+		return AutonomyDelta{Delta: 0, Reason: "no judgement performed"}
+	}
+
+	if jr.Passed {
+		if jr.Score >= 0.95 && jr.Confidence >= 0.90 {
+			return AutonomyDelta{Delta: 2, Reason: fmt.Sprintf("excellent judgement: score %.2f, confidence %.2f", jr.Score, jr.Confidence)}
+		}
+		return AutonomyDelta{Delta: 1, Reason: fmt.Sprintf("passed judgement: score %.2f, confidence %.2f", jr.Score, jr.Confidence)}
+	}
+
+	if jr.Score >= 0.50 {
+		return AutonomyDelta{Delta: 0, Reason: fmt.Sprintf("marginal judgement: score %.2f, needs improvement", jr.Score)}
+	}
+	return AutonomyDelta{Delta: -1, Reason: fmt.Sprintf("failed judgement: score %.2f, confidence %.2f", jr.Score, jr.Confidence)}
+}
+
+// EvaluateAndDecide runs judgement on the execution result and computes the corresponding autonomy delta.
+// It mutates result.JudgementResult and result.AutonomyDelta in place.
+func (bo *bootstrapOrchestrator) EvaluateAndDecide(result *AgentExecutionResult) error {
+	if result == nil {
+		return fmt.Errorf("execution result is nil")
+	}
+
+	jr, err := bo.JudgeExecutionResult(result)
+	if err != nil {
+		return fmt.Errorf("judgement failed: %w", err)
+	}
+
+	result.JudgementResult = jr
+	result.AutonomyDelta = bo.CalculateAutonomyDelta(jr)
+	return nil
+}
+
+// defaultJudgementCriteria returns the default criteria set for bootstrap self-judgement.
+func (bo *bootstrapOrchestrator) defaultJudgementCriteria() []strategies.JudgementCriteria {
+	return []strategies.JudgementCriteria{
+		{
+			Name:    "syntax_check",
+			Type:    strategies.JudgementTypeSyntax,
+			Weight:  0.20,
+			Enabled: true,
+			Thresholds: map[string]float64{
+				"min_pass_rate": 1.0,
+			},
+		},
+		{
+			Name:    "test_pass_rate",
+			Type:    strategies.JudgementTypeTest,
+			Weight:  0.40,
+			Enabled: true,
+			Thresholds: map[string]float64{
+				"min_pass_rate": judgement.DefaultJudgementThresholds.MinTestPassRate,
+			},
+		},
+		{
+			Name:    "coverage_threshold",
+			Type:    strategies.JudgementTypeCoverage,
+			Weight:  0.40,
+			Enabled: true,
+			Thresholds: map[string]float64{
+				"min_coverage": judgement.DefaultJudgementThresholds.MinCoverage,
+			},
+		},
+	}
 }

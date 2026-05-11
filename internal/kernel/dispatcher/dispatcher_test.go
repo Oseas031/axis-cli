@@ -2,10 +2,13 @@ package dispatcher
 
 import (
 	"context"
+	"runtime"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/axis-cli/axis/internal/agent"
+	"github.com/axis-cli/axis/internal/contextpack"
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
 	"github.com/axis-cli/axis/internal/model/provider"
@@ -429,4 +432,267 @@ func TestDispatcher_Dispatch_AgentExecutorDebugging(t *testing.T) {
 	if result.Status != types.TaskStatusCompleted {
 		t.Errorf("Expected status completed, got %s", result.Status)
 	}
+}
+
+// detectingAgentExecutor records whether its Execute context was cancelled.
+type detectingAgentExecutor struct {
+	mu        sync.Mutex
+	cancelled bool
+}
+
+func (e *detectingAgentExecutor) Execute(ctx context.Context, req *agent.AgentExecutionRequest) (*agent.AgentExecutionResult, error) {
+	select {
+	case <-ctx.Done():
+		e.mu.Lock()
+		e.cancelled = true
+		e.mu.Unlock()
+		return nil, ctx.Err()
+	case <-time.After(300 * time.Millisecond):
+		return &agent.AgentExecutionResult{Output: map[string]any{"status": "ok"}}, nil
+	}
+}
+func (e *detectingAgentExecutor) WasCancelled() bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.cancelled
+}
+func (e *detectingAgentExecutor) GetAutonomyLevel() agent.AutonomyLevel {
+	return agent.AutonomyLevelLow
+}
+
+func TestDispatcher_Dispatch_AgentExecutorPropagatesCancellation(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+	agentExec := &detectingAgentExecutor{}
+	dispatcher.SetAgentExecutor(agentExec)
+	dispatcher.timeout = 5 * time.Second
+
+	task := &types.AgentTask{
+		TaskID:     "agent-cancel",
+		ContractID: "test-contract",
+		Input:      map[string]any{"input": "test"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+		Status:     types.TaskStatusPending,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+
+	_, _ = dispatcher.Dispatch(ctx, task)
+	// dispatch returns when timeoutCtx cancels (~50ms), but the real question is
+	// whether the agent executor itself observed the cancellation.
+	time.Sleep(400 * time.Millisecond)
+	if !agentExec.WasCancelled() {
+		t.Fatal("Agent executor should receive cancellable context, not Background")
+	}
+}
+
+func TestDispatcher_Dispatch_HumanExecutorRespectsCancellation(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+	dispatcher.timeout = 5 * time.Second
+
+	task := &types.AgentTask{
+		TaskID:     "human-cancel",
+		ContractID: "any",
+		Input:      map[string]any{"prompt": "hello"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeHuman},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	before := runtime.NumGoroutine()
+	_, _ = dispatcher.Dispatch(ctx, task)
+	// Give the internal polling loop a chance to observe ctx cancellation and exit.
+	time.Sleep(300 * time.Millisecond)
+	after := runtime.NumGoroutine()
+	if after > before+2 {
+		t.Fatalf("Human executor polling goroutine leaked: before=%d after=%d", before, after)
+	}
+}
+
+func TestDispatcher_Dispatch_AgentExecutorReceivesContextSummary(t *testing.T) {
+	contextpack.DefaultRegistry.Reset()
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+	agentExec := &capturingAgentExecutor{}
+	dispatcher.SetAgentExecutor(agentExec)
+
+	task := &types.AgentTask{
+		TaskID:     "agent-context-summary",
+		ContractID: "default",
+		Input:      map[string]any{"goal": "fix provider config"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+		Status:     types.TaskStatusPending,
+	}
+	bundle, err := contextpack.NewAssembler().Assemble(task)
+	if err != nil {
+		t.Fatalf("assemble should succeed: %v", err)
+	}
+	artifact, err := contextpack.DefaultRegistry.Register(bundle)
+	if err != nil {
+		t.Fatalf("register should succeed: %v", err)
+	}
+	if err := contextpack.AttachReadinessMetadata(task, artifact); err != nil {
+		t.Fatalf("attach readiness metadata should succeed: %v", err)
+	}
+
+	result, err := dispatcher.Dispatch(context.Background(), task)
+	if err != nil {
+		t.Fatalf("dispatch should succeed: %v", err)
+	}
+	if result.Status != types.TaskStatusCompleted {
+		t.Fatalf("expected completed result, got %s", result.Status)
+	}
+	if agentExec.request == nil || agentExec.request.ContextSummary == nil {
+		t.Fatal("expected context summary on agent execution request")
+	}
+	if agentExec.request.ContextSummary.ConsumptionMode != contextpack.ConsumptionModeSummary {
+		t.Fatalf("expected summary consumption mode, got %+v", agentExec.request.ContextSummary)
+	}
+	if agentExec.request.ContextSummary.BundleID != artifact.BundleID {
+		t.Fatalf("expected bundle id %s, got %+v", artifact.BundleID, agentExec.request.ContextSummary)
+	}
+}
+
+func TestDispatcher_Dispatch_AgentExecutorMissingContextDoesNotBlock(t *testing.T) {
+	contextpack.DefaultRegistry.Reset()
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+	agentExec := &capturingAgentExecutor{}
+	dispatcher.SetAgentExecutor(agentExec)
+
+	task := &types.AgentTask{
+		TaskID:     "agent-missing-context-summary",
+		ContractID: "default",
+		Input:      map[string]any{"goal": "fix provider config"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+		Status:     types.TaskStatusPending,
+	}
+
+	result, err := dispatcher.Dispatch(context.Background(), task)
+	if err != nil {
+		t.Fatalf("dispatch should succeed without context readiness: %v", err)
+	}
+	if result.Status != types.TaskStatusCompleted {
+		t.Fatalf("expected completed result, got %s", result.Status)
+	}
+	if agentExec.request == nil || agentExec.request.ContextSummary == nil {
+		t.Fatal("expected context summary on agent execution request")
+	}
+	if agentExec.request.ContextSummary.Status != contextpack.PreflightStatusMissing {
+		t.Fatalf("expected missing context status, got %+v", agentExec.request.ContextSummary)
+	}
+	if agentExec.request.ContextSummary.ConsumptionMode != contextpack.ConsumptionModeNone {
+		t.Fatalf("expected none consumption mode, got %+v", agentExec.request.ContextSummary)
+	}
+}
+
+func TestDispatcher_Dispatch_ContractPathDoesNotInjectContextSummary(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	modelProvider := &capturingModelProvider{}
+	contractExec.SetProvider(modelProvider)
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+	contract := &types.AgentContract{ContractID: "contract-context-boundary"}
+	if err := contractExec.RegisterContract(contract); err != nil {
+		t.Fatalf("register contract should succeed: %v", err)
+	}
+
+	task := &types.AgentTask{
+		TaskID:     "contract-context-boundary-task",
+		ContractID: "contract-context-boundary",
+		Input:      map[string]any{"goal": "fix provider config"},
+		Metadata: map[string]string{
+			contextpack.MetadataBundleID: "ctx-example",
+		},
+		Status: types.TaskStatusPending,
+	}
+
+	result, err := dispatcher.Dispatch(context.Background(), task)
+	if err != nil {
+		t.Fatalf("dispatch should succeed: %v", err)
+	}
+	if result.Status != types.TaskStatusCompleted {
+		t.Fatalf("expected completed result, got %s", result.Status)
+	}
+	if modelProvider.request == nil {
+		t.Fatal("expected model provider request")
+	}
+	if _, ok := modelProvider.request.Input[contextpack.MetadataBundleID]; ok {
+		t.Fatalf("contract path should not inject context metadata into provider input: %+v", modelProvider.request.Input)
+	}
+	if _, ok := modelProvider.request.Input["context_summary"]; ok {
+		t.Fatalf("contract path should not inject context summary into provider input: %+v", modelProvider.request.Input)
+	}
+}
+
+func TestDispatcher_Dispatch_AgentExecutorReceivesRequestedSources(t *testing.T) {
+	contextpack.DefaultRegistry.Reset()
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+	agentExec := &capturingAgentExecutor{}
+	dispatcher.SetAgentExecutor(agentExec)
+
+	task := &types.AgentTask{
+		TaskID:     "agent-requested-sources",
+		ContractID: "default",
+		Input:      map[string]any{"goal": "fix provider config"},
+		Metadata: map[string]string{
+			types.TaskMetadataKeyExecutor:        types.ExecutorTypeAgent,
+			contextpack.MetadataRequestedSources: "docs/specs/model-provider/requirements.md, docs/specs/missing.md",
+		},
+		Status: types.TaskStatusPending,
+	}
+
+	result, err := dispatcher.Dispatch(context.Background(), task)
+	if err != nil {
+		t.Fatalf("dispatch should succeed: %v", err)
+	}
+	if result.Status != types.TaskStatusCompleted {
+		t.Fatalf("expected completed result, got %s", result.Status)
+	}
+	if agentExec.request == nil {
+		t.Fatal("expected agent execution request")
+	}
+	if len(agentExec.request.RequestedSources) != 2 {
+		t.Fatalf("expected 2 requested sources, got %+v", agentExec.request.RequestedSources)
+	}
+	if agentExec.request.RequestedSources[0] != "docs/specs/model-provider/requirements.md" {
+		t.Fatalf("unexpected first requested source: %s", agentExec.request.RequestedSources[0])
+	}
+	if agentExec.request.RequestedSources[1] != "docs/specs/missing.md" {
+		t.Fatalf("unexpected second requested source: %s", agentExec.request.RequestedSources[1])
+	}
+}
+
+type capturingAgentExecutor struct {
+	request *agent.AgentExecutionRequest
+}
+
+func (e *capturingAgentExecutor) Execute(ctx context.Context, req *agent.AgentExecutionRequest) (*agent.AgentExecutionResult, error) {
+	e.request = req
+	return &agent.AgentExecutionResult{Output: map[string]any{"status": "ok"}}, nil
+}
+
+func (e *capturingAgentExecutor) GetAutonomyLevel() agent.AutonomyLevel {
+	return agent.AutonomyLevelLow
+}
+
+type capturingModelProvider struct {
+	request *provider.ModelRequest
+}
+
+func (p *capturingModelProvider) Execute(ctx context.Context, req *provider.ModelRequest) (*provider.ModelResponse, error) {
+	p.request = req
+	return &provider.ModelResponse{Output: map[string]any{"status": "ok"}}, nil
 }

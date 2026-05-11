@@ -3,6 +3,9 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
@@ -32,6 +35,73 @@ func TestOrchestrator_WithModelProvider(t *testing.T) {
 	}
 	if err := orch.Shutdown(ctx); err != nil {
 		t.Fatalf("Shutdown should succeed: %v", err)
+	}
+}
+
+func TestOrchestrator_DefaultToolRegistryExposesCoreTools(t *testing.T) {
+	p := &capturingToolsProvider{called: make(chan struct{}, 1)}
+	orch := NewOrchestrator(WithModelProvider(p))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("RegisterContract should succeed: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Start should succeed: %v", err)
+	}
+	if err := orch.SubmitTask(&types.AgentTask{TaskID: "tools-task", ContractID: "default", Input: map[string]any{"message": "use tools"}}); err != nil {
+		t.Fatalf("SubmitTask should succeed: %v", err)
+	}
+	select {
+	case <-p.called:
+	case <-time.After(2 * time.Second):
+		t.Fatal("provider was not called")
+	}
+	got := append([]string(nil), p.toolNames...)
+	sort.Strings(got)
+	want := []string{"bash", "file_read", "file_write", "http_request"}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("expected default tools %v, got %v", want, got)
+	}
+}
+
+func TestOrchestrator_DefaultToolRegistryExecutesFileWriteToolCall(t *testing.T) {
+	tmp := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get cwd: %v", err)
+	}
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatalf("chdir temp dir: %v", err)
+	}
+	defer os.Chdir(cwd)
+
+	outputPath := filepath.Join(tmp, "axis-intro.md")
+	p := &fileWriteToolCallProvider{path: outputPath, content: "Axis intro"}
+	orch := NewOrchestrator(WithModelProvider(p))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer orch.Shutdown(context.Background())
+	if err := orch.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("RegisterContract should succeed: %v", err)
+	}
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Start should succeed: %v", err)
+	}
+	if err := orch.SubmitTask(&types.AgentTask{TaskID: "file-write-task", ContractID: "default", Input: map[string]any{"message": "write file"}}); err != nil {
+		t.Fatalf("SubmitTask should succeed: %v", err)
+	}
+	status := waitForTaskStatus(t, orch, "file-write-task", types.TaskStatusCompleted)
+	if status != types.TaskStatusCompleted {
+		t.Fatalf("expected file-write task to complete, got %s", status)
+	}
+	data, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("expected file_write tool to create file: %v", err)
+	}
+	if string(data) != "Axis intro" {
+		t.Fatalf("unexpected file content: %q", string(data))
 	}
 }
 
@@ -855,4 +925,38 @@ func testDefaultContract() *types.AgentContract {
 			},
 		},
 	}
+}
+
+type capturingToolsProvider struct {
+	toolNames []string
+	called    chan struct{}
+}
+
+func (p *capturingToolsProvider) Execute(_ context.Context, req *provider.ModelRequest) (*provider.ModelResponse, error) {
+	for _, def := range req.Tools {
+		p.toolNames = append(p.toolNames, def.Name)
+	}
+	select {
+	case p.called <- struct{}{}:
+	default:
+	}
+	return &provider.ModelResponse{Output: map[string]any{"status": "completed"}}, nil
+}
+
+type fileWriteToolCallProvider struct {
+	path    string
+	content string
+	called  bool
+}
+
+func (p *fileWriteToolCallProvider) Execute(_ context.Context, req *provider.ModelRequest) (*provider.ModelResponse, error) {
+	if !p.called {
+		p.called = true
+		return &provider.ModelResponse{
+			ToolCalls: []types.ToolCall{
+				{ID: "call-file-write", Name: "file_write", Input: map[string]any{"path": p.path, "content": p.content}},
+			},
+		}, nil
+	}
+	return &provider.ModelResponse{Output: map[string]any{"status": "completed"}}, nil
 }

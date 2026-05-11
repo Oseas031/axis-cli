@@ -87,7 +87,7 @@ func (e *MockAgentExecutor) Execute(ctx context.Context, req *AgentExecutionRequ
 
 	// Use contract executor if available
 	if e.contractExec != nil {
-		execResult, execErr := e.contractExec.Execute(contract.ContractID, input)
+		execResult, execErr := e.contractExec.Execute(ctx, contract.ContractID, input)
 		if execErr != nil {
 			err = fmt.Errorf("contract execution failed: %w", execErr)
 		} else if execResult != nil {

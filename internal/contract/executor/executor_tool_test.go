@@ -55,7 +55,7 @@ func TestContractExecutor_Execute_ToolCallAndResult(t *testing.T) {
 		"input": map[string]any{"command": "echo hello"},
 	}
 
-	result, err := exec.Execute("tool-contract", input)
+	result, err := exec.Execute(context.Background(), "tool-contract", input)
 	if err != nil {
 		t.Fatalf("Execute should succeed: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestContractExecutor_Execute_WithoutTools(t *testing.T) {
 	}
 	exec.RegisterContract(contract)
 
-	result, err := exec.Execute("no-tool-contract", map[string]any{"msg": "hello"})
+	result, err := exec.Execute(context.Background(), "no-tool-contract", map[string]any{"msg": "hello"})
 	if err != nil {
 		t.Fatalf("Execute should succeed: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestContractExecutor_Execute_EmptyToolRegistry(t *testing.T) {
 	}
 	exec.RegisterContract(contract)
 
-	result, err := exec.Execute("empty-reg-contract", map[string]any{"msg": "hello"})
+	result, err := exec.Execute(context.Background(), "empty-reg-contract", map[string]any{"msg": "hello"})
 	if err != nil {
 		t.Fatalf("Execute should succeed: %v", err)
 	}
@@ -141,7 +141,7 @@ func TestContractExecutor_Execute_UnknownToolInRegistry(t *testing.T) {
 	}
 	exec.RegisterContract(contract)
 
-	result, err := exec.Execute("unknown-tool", map[string]any{"x": "y"})
+	result, err := exec.Execute(context.Background(), "unknown-tool", map[string]any{"x": "y"})
 	if err != nil {
 		t.Fatalf("Execute should succeed: %v", err)
 	}
@@ -178,7 +178,7 @@ func TestContractExecutor_Execute_ToolProviderError(t *testing.T) {
 	}
 	exec.RegisterContract(contract)
 
-	_, err := exec.Execute("error-tool", map[string]any{"x": "y"})
+	_, err := exec.Execute(context.Background(), "error-tool", map[string]any{"x": "y"})
 	if err == nil {
 		t.Error("Expected error from provider failure")
 	}
@@ -285,7 +285,7 @@ func TestContractExecutor_Execute_CircuitBreaker_TripsAfter5Errors(t *testing.T)
 
 	// With 5 consecutive errors (each turn has 1 tool call), circuit should trip
 	// Turn 1: error #1, Turn 2: error #2, Turn 3: error #3, Turn 4: error #4, Turn 5: error #5 -> abort
-	result, err := exec.Execute("circuit-test", map[string]any{"x": "y"})
+	result, err := exec.Execute(context.Background(), "circuit-test", map[string]any{"x": "y"})
 	if err == nil {
 		t.Fatal("Expected circuit breaker error")
 	}
@@ -321,7 +321,7 @@ func TestContractExecutor_Execute_CircuitBreaker_ResetsOnSuccess(t *testing.T) {
 	exec.RegisterContract(contract)
 
 	// Should succeed because errors reset after 3 errors when success happens
-	result, err := exec.Execute("circuit-reset-test", map[string]any{"x": "y"})
+	result, err := exec.Execute(context.Background(), "circuit-reset-test", map[string]any{"x": "y"})
 	if err != nil {
 		t.Fatalf("Should not error when success follows errors: %v", err)
 	}
@@ -330,6 +330,86 @@ func TestContractExecutor_Execute_CircuitBreaker_ResetsOnSuccess(t *testing.T) {
 	}
 	if result.Output["status"] != "completed" {
 		t.Errorf("Expected status=completed, got %v", result.Output["status"])
+	}
+}
+
+func TestSafeMarshal_ReturnsErrorForUnmarshalableValue(t *testing.T) {
+	ch := make(chan int)
+	_, err := safeMarshal(ch)
+	if err == nil {
+		t.Fatal("safeMarshal should return error for unmarshalable values such as channels")
+	}
+}
+
+// unmarshalableResultTool returns a map containing a channel, which json.Marshal cannot serialize.
+type unmarshalableResultTool struct{}
+
+func (t *unmarshalableResultTool) Name() string { return "unmarshalable-tool" }
+func (t *unmarshalableResultTool) Schema() types.ToolDefinition {
+	return types.ToolDefinition{Name: "unmarshalable-tool", Description: "returns data that cannot be JSON marshaled"}
+}
+func (t *unmarshalableResultTool) Execute(_ context.Context, _ map[string]any) (map[string]any, error) {
+	return map[string]any{"data": make(chan int)}, nil
+}
+
+// marshalCheckingProvider returns a tool call on the first turn, then on the second turn
+// checks whether the tool-result history message is non-empty.
+type marshalCheckingProvider struct {
+	callCount          int
+	sawToolContent     bool
+	lastHistoryChecked []types.ModelMessage
+}
+
+func (p *marshalCheckingProvider) Execute(_ context.Context, req *provider.ModelRequest) (*provider.ModelResponse, error) {
+	p.callCount++
+	if p.callCount == 1 {
+		return &provider.ModelResponse{
+			ToolCalls: []types.ToolCall{
+				{ID: "call-1", Name: "unmarshalable-tool", Input: map[string]any{}},
+			},
+		}, nil
+	}
+	p.lastHistoryChecked = req.History
+	for _, msg := range req.History {
+		if msg.Role == "tool" && msg.Content != "" {
+			p.sawToolContent = true
+		}
+	}
+	return &provider.ModelResponse{
+		Output: map[string]any{"status": "completed"},
+	}, nil
+}
+
+func TestContractExecutor_Execute_ToolResultMarshalErrorNotSwallowed(t *testing.T) {
+	// Quick sanity: does safeMarshal actually fail for the tool result?
+	quickResult := map[string]any{"data": make(chan int)}
+	_, quickErr := safeMarshal(quickResult)
+	if quickErr == nil {
+		t.Fatal("sanity: safeMarshal should fail for map containing channel")
+	}
+
+	exec := NewContractExecutor()
+	p := &marshalCheckingProvider{}
+	exec.SetProvider(p)
+
+	reg := tool.NewRegistry()
+	if err := reg.Register(&unmarshalableResultTool{}, nil); err != nil {
+		t.Fatalf("register tool: %v", err)
+	}
+	exec.SetToolRegistry(reg)
+
+	contract := &types.AgentContract{
+		ContractID: "marshal-error-contract",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "x", Type: types.FieldTypeString, Required: false}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	exec.Execute(context.Background(), "marshal-error-contract", map[string]any{"x": "y"})
+
+	if !p.sawToolContent {
+		t.Fatalf("tool result history message should contain marshal error info; history checked=%+v", p.lastHistoryChecked)
 	}
 }
 
@@ -355,7 +435,7 @@ func TestContractExecutor_Execute_CircuitBreaker_UnregisteredToolCounts(t *testi
 
 	// This will use unknownToolCallProvider which calls "nonexistent-tool" (not registered)
 	// So it will count as a "tool not found" error
-	result, err := exec.Execute("circuit-unregistered", map[string]any{"x": "y"})
+	result, err := exec.Execute(context.Background(), "circuit-unregistered", map[string]any{"x": "y"})
 	if err == nil {
 		// With only 1 tool call and unknown tool, should get error about max turns or tool not found
 		// Not critical - just verify it handled gracefully

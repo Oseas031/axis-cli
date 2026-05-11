@@ -36,14 +36,43 @@ type LifecycleChecker interface {
 	IsRunning() bool
 }
 
-// NewScheduler creates a new scheduler
+// NewScheduler creates a new scheduler and recovers state from the store.
+// Any tasks stuck in Running status (e.g. after a process crash) are reset
+// to Failed so they don't block the queue indefinitely.
 func NewScheduler(stateStore sharedlayer.StateStore, lifecycle LifecycleChecker) *SchedulerImpl {
-	return &SchedulerImpl{
+	s := &SchedulerImpl{
 		queue:      make([]*types.AgentTask, 0),
 		taskMap:    make(map[string]*types.AgentTask),
 		stateStore: stateStore,
 		lifecycle:  lifecycle,
 	}
+
+	states, err := stateStore.ListAll()
+	if err != nil {
+		return s
+	}
+
+	for id, st := range states {
+		task := st.Task
+		if task == nil {
+			continue
+		}
+		// Intentional shallow copy: MemoryStateStore.ListAll returns Task pointers
+		// that are owned by the scheduler (not shared externally). Mutation here is
+		// immediately followed by Save, which overwrites the stored state. Defensive
+		// copying would add overhead without changing observable behavior.
+		if task.Status == types.TaskStatusRunning {
+			// Stale running task: reset to Failed and persist
+			task.Status = types.TaskStatusFailed
+			task.CompletedAt = &st.UpdatedAt
+			_ = stateStore.Save(id, types.TaskState{Task: task, UpdatedAt: time.Now()})
+		}
+		s.taskMap[id] = task
+		if task.Status == types.TaskStatusPending {
+			s.queue = append(s.queue, task)
+		}
+	}
+	return s
 }
 
 // Submit submits a task to the scheduler
@@ -164,6 +193,7 @@ func (s *SchedulerImpl) GetNextTask() (*types.AgentTask, error) {
 	return tasks[0], nil
 }
 
+// GetReadyTasks claims ready pending tasks by marking them running before returning them.
 func (s *SchedulerImpl) GetReadyTasks(limit int) ([]*types.AgentTask, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -190,7 +220,7 @@ func (s *SchedulerImpl) GetReadyTasks(limit int) ([]*types.AgentTask, error) {
 	}
 
 	// Second pass: mark selected tasks as Running and persist
-	for _, task := range candidates {
+	for i, task := range candidates {
 		task.Status = types.TaskStatusRunning
 		now := time.Now()
 		task.StartedAt = &now
@@ -200,8 +230,11 @@ func (s *SchedulerImpl) GetReadyTasks(limit int) ([]*types.AgentTask, error) {
 			UpdatedAt: time.Now(),
 		}
 		if err := s.stateStore.Save(task.TaskID, state); err != nil {
-			task.Status = types.TaskStatusPending
-			task.StartedAt = nil
+			// Rollback all previously claimed candidates to preserve atomic claim semantics
+			for j := 0; j <= i; j++ {
+				candidates[j].Status = types.TaskStatusPending
+				candidates[j].StartedAt = nil
+			}
 			return nil, fmt.Errorf("failed to update task state: %w", err)
 		}
 	}
