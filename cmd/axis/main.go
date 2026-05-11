@@ -55,7 +55,7 @@ func main() {
 		RunE:  runShell,
 	}
 
-	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd)
+	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newMemoryCommand())
 
 	runCmd.Flags().StringVar(&providerFlag, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
 
