@@ -1,46 +1,56 @@
 # Bash is All You Need
 
+**[Chinese version / 中文版](../zh/architecture/bash-is-all-you-need.md)**
+
 ## Summary
 
-Axis 的交互设计遵循 **"bash is all you need"**：优先提供 shell-native、可组合、可脚本化的能力，而不是优先构建重型 Web UI 或复杂 TUI。
+Axis's interaction design follows **"bash is all you need, simple but robust, composable and extensible"**: prioritizing shell-native, composable, scriptable, reliable, and extensible capabilities rather than building heavy Web UIs or complex TUIs.
 
-这个思想不是否定 UI，而是强调 Axis 的默认交互面应该是命令行与标准输入输出，因为它们最适合 Agent 原生调度系统。
+This philosophy does not reject UI, but emphasizes that Axis's default interaction surface should be the command line and standard I/O, because they are best suited for Agent-native scheduling systems.
 
-## 与核心设计哲学的关系
+## Relationship to Core Design Philosophy
 
-`bash is all you need` 是 **More Context, More Action, Zero Control** 在交互层的具体化。
+`bash is all you need, simple but robust, composable and extensible` is the concrete realization of **More Context, More Action, Zero Control, Controllable Evolution** at the interaction layer.
 
 ### More Context
 
-命令行输出应该提供足够上下文：
+CLI output should provide sufficient context:
 
-- 当前操作对象
-- 执行结果
-- 错误原因
-- 可执行的下一步建议
+- Current operation target
+- Execution result
+- Error reason
+- Actionable next-step suggestions
 
 ### More Action
 
-Shell 接口应该让 Agent 和用户可以直接行动：
+Shell interfaces should let Agents and users take direct action:
 
-- 提交任务
-- 查询状态
-- 组合命令
-- 通过管道与脚本扩展能力
+- Submit tasks
+- Query status
+- Compose commands
+- Extend capabilities through pipes and scripts
 
 ### Zero Control
 
-Shell 接口不应强制用户进入某种固定流程：
+Shell interfaces should not force users into a fixed workflow:
 
-- 命令应该可独立执行
-- 错误应该给出上下文，而不是直接终止整个会话
-- 交互式 shell 应提供引导，但不替用户决策
+- Commands should be independently executable
+- Errors should provide context rather than terminating the entire session
+- Interactive shell should provide guidance without making decisions for the user
 
-## 设计原则
+### Controllable Evolution
+
+Shell interfaces should make high-risk actions, permission changes, and self-modification processes observable, confirmable, and rollback-safe:
+
+- High-risk actions should trigger confirmation
+- Command results should be kept in auditable records
+- Extension interfaces should maintain backward compatibility
+
+## Design Principles
 
 ### 1. CLI First
 
-Axis 的主要交互面优先是 CLI：
+Axis's primary interaction surface is CLI:
 
 ```bash
 axis run task-1
@@ -50,26 +60,30 @@ axis shell
 
 ### 2. Shell Native
 
-命令应适合在 bash、PowerShell、CI、脚本和 Agent 工具调用中使用。
+Commands should be suitable for use in bash, PowerShell, CI, scripts, and Agent tool invocations.
 
-### 3. Composable
+### 3. Composable and Extensible
 
-输出和命令设计应尽量便于组合：
+Output and command design should facilitate composition:
 
 ```bash
 axis status task-1
 axis run task-2
 ```
 
-后续可以扩展为 JSON 输出，但 Milestone 1 不强制实现。
+JSON output can be added later, but is not mandatory for Milestone 1.
 
-### 4. Minimal UI
+### 4. Simple but Robust
 
-默认不引入 Web UI 或复杂 TUI。只有当 CLI 无法表达必要上下文时，才考虑更重的界面。
+Keep interactions minimal, but add necessary fault tolerance, confirmation, rollback, and observability capabilities to reduce operational errors.
 
-### 5. Interactive When Useful
+### 5. Minimal UI
 
-交互式 shell 是 CLI 的增强层，而不是替代层：
+No default Web UI or complex TUI. Only consider heavier interfaces when CLI cannot express necessary context.
+
+### 6. Interactive When Useful
+
+Interactive shell is an enhancement layer on top of CLI, not a replacement:
 
 ```text
 axis> help
@@ -78,30 +92,30 @@ axis> status task-1
 axis> exit
 ```
 
-## 非目标
+## Non-Goals
 
-- 不把 Axis 做成 Web-first 产品
-- 不把交互层变成核心架构
-- 不为了界面效果牺牲可脚本化能力
-- 不在 Milestone 1 引入复杂 UI 框架
+- Do not make Axis a Web-first product
+- Do not turn the interaction layer into core architecture
+- Do not sacrifice scriptability for UI effects
+- Do not introduce complex UI frameworks in Milestone 1
 
-## 实施要求
+## Implementation Priority
 
-新增交互能力时，优先顺序是：
+When adding new interaction capabilities, the priority order is:
 
-1. 普通 CLI 命令
-2. 交互式 Shell
+1. Standard CLI commands
+2. Interactive Shell
 3. TUI
 4. Web UI
 
-只有当前一层无法满足需求时，才进入下一层。
+Only move to the next layer when the current one cannot meet requirements.
 
-## 结论
+## Conclusion
 
-Axis 的默认交互形态应该是：
+Axis's default interaction form should be:
 
 > CLI as the primitive, shell as the interface, workflows as composition.
 
-也就是：
+That is:
 
-> **bash is all you need**.
+> **bash is all you need, simple but robust, composable and extensible**.

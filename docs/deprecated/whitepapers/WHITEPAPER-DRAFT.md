@@ -1,107 +1,107 @@
-# Agent 原生调度系统白皮书
+# Agent-Native Scheduling System Whitepaper
 
-当所有人都在问 "这个项目到底是做什么的？"，我们不回避质疑，不堆砌概念 —— 我们用最严谨的逻辑、最简洁的表达，给出明确答案：本项目旨在打造一款 Agent 原生调度系统，为 AI Agent 提供数字世界与物理世界的统一调度能力，实现 Agent 主导的全流程自治。
+When everyone asks, "What exactly does this project do?", we do not evade the question or pile up concepts. We give a clear answer with the most rigorous logic and the most concise expression: this project aims to build an Agent-native scheduling system that provides AI Agents with unified scheduling capabilities across the digital and physical worlds, achieving Agent-led full-process autonomy.
 
-## 一、时代痛点：为什么需要 Agent 原生调度系统？
+## I. Pain Points of the Era: Why Do We Need an Agent-Native Scheduling System?
 
-当前 AI Agent 应用（开发、运维、创作、企业流程等）的规模化落地，早已不是模型能力的瓶颈，而是 **调度能力**。现有 Agent 工具缺乏统一的调度系统，存在三大不可逾越的短板：
+The large-scale adoption of AI Agent applications (development, operations, creative work, enterprise processes, etc.) is no longer bottlenecked by model capabilities, but by **scheduling capabilities**. Existing Agent tools lack a unified scheduling system and suffer from three insurmountable shortcomings:
 
-### 1. 调度能力缺失
-Agent 只能被动执行，无法自主调度其他 Agent、无法自主调度工具、无法自主调度人类，沦为 "孤立的单点智能"。
+### 1. Lack of Scheduling Capability
+Agents can only execute passively, unable to autonomously schedule other Agents, tools, or humans, becoming "isolated single-point intelligences."
 
-### 2. 能力边界限制
-Agent 擅长数字世界的高效运算，但无法触达物理世界的执行与决策，形成 "数字与物理的鸿沟"。
+### 2. Capability Boundary Limitations
+Agents excel at efficient computation in the digital world but cannot reach execution and decision-making in the physical world, creating a "digital-physical gap."
 
-### 3. 协同效率低下
-多 Agent 协作缺乏统一调度，无法实现并行编排、依赖管理、异常兜底，导致 Agent 规模化落地困难。
+### 3. Low Collaboration Efficiency
+Multi-Agent collaboration lacks unified scheduling, making it impossible to achieve parallel orchestration, dependency management, and exception fallback, leading to difficulties in large-scale Agent adoption.
 
-现有 AI Agent 工具，要么是 "单点执行器"，要么是 "人类辅助工具"，均未解决 "统一调度 + 能力融合" 的核心痛点 —— 这正是我们打造 Agent 原生调度系统的底层动因。
+Existing AI Agent tools are either "single-point executors" or "human-assistance tools," and none solve the core pain point of "unified scheduling + capability fusion" — this is the fundamental motivation for building an Agent-native scheduling system.
 
-## 二、项目定义：Agent 原生调度系统到底是什么？
+## II. Project Definition: What Exactly Is an Agent-Native Scheduling System?
 
-Agent 原生调度系统，核心是 **面向 AI Agent 设计的统一调度平台**，类比操作系统的调度器，它具备任务编排、资源调度、上下文管理的核心能力，本质是：
+The core of an Agent-native scheduling system is a **unified scheduling platform designed for AI Agents**, analogous to an operating system scheduler. It has the core capabilities of task orchestration, resource scheduling, and context management, and its essence is:
 
-**为 AI Agent 提供统一的调度入口，支持 Agent 调度其他 Agent、调度工具、调度人类任务，实现 Agent 主导的 "数字 + 物理" 全流程自治。**
+**To provide AI Agents with a unified scheduling entry point, supporting Agents in scheduling other Agents, tools, and human tasks, achieving Agent-led "digital + physical" full-process autonomy.**
 
-它不是 CLI 工具的升级，而是全新的系统架构：
+It is not an upgrade of CLI tools, but a brand-new system architecture:
 
-- **传统 Agent 工具**：单点执行，无法调度其他 Agent
-- **Agent 原生调度系统**：统一调度，支持 Agent 互调、工具调度、人类任务调度
+- **Traditional Agent tools**: Single-point execution, unable to schedule other Agents
+- **Agent-native scheduling system**: Unified scheduling, supporting Agent inter-calling, tool scheduling, and human task scheduling
 
-简单来说：它是 Agent 的 "操作系统内核"，是连接数字世界与物理世界的 "统一调度平台" —— 这就是本项目的全部核心。
+In short: it is the "operating system kernel" for Agents, the "unified scheduling platform" connecting the digital and physical worlds — this is the entire core of this project.
 
-**CLI 定位**：CLI 只是调度系统的**一个客户端**，不是核心。核心是调度系统本身，CLI 只是便于人类交互的入口之一。
+**CLI Positioning**: The CLI is just **one client** of the scheduling system, not the core. The core is the scheduling system itself; the CLI is merely one of the entry points for human interaction.
 
-## 三、核心架构：如何实现 Agent 原生调度？
+## III. Core Architecture: How to Achieve Agent-Native Scheduling?
 
-Agent 原生调度系统以 **Agent 为核心**，采用三层解耦架构：
+The Agent-native scheduling system is **Agent-centric** and adopts a three-layer decoupled architecture:
 
-### 3.1 核心内核（调度层）：Agent 调度引擎
+### 3.1 Core Kernel (Scheduling Layer): Agent Scheduling Engine
 
-承担 Agent 的任务编排、资源调度、异常处理核心功能：
+Bears the core functions of task orchestration, resource scheduling, and exception handling for Agents:
 
-- **任务编排**：支持 DAG 编排、依赖管理、并行调度
-- **资源调度**：统一调度 Agent、工具、人类任务
-- **上下文管理**：跨任务、跨会话的上下文透传
-- **异常处理**：任务失败重试、异常兜底、人工介入
+- **Task orchestration**: Supports DAG orchestration, dependency management, and parallel scheduling
+- **Resource scheduling**: Unified scheduling of Agents, tools, and human tasks
+- **Context management**: Cross-task, cross-session context passing
+- **Exception handling**: Task failure retry, exception fallback, and human intervention
 
-### 3.2 核心能力（执行层）：Human Task Queue
+### 3.2 Core Capability (Execution Layer): Human Task Queue
 
-将人类任务纳入调度系统，打通物理世界的执行链路：
+Incorporates human tasks into the scheduling system, opening up the execution chain in the physical world:
 
-- **人类任务队列**：Agent 提交人类任务，人类按需执行
-- **任务协议**：标准化的任务定义、状态跟踪、结果返回
-- **轻量化终端**：人类无需懂技术，接收任务、执行、回填结果
+- **Human task queue**: Agents submit human tasks, and humans execute them on demand
+- **Task protocol**: Standardized task definition, status tracking, and result return
+- **Lightweight terminal**: Humans do not need technical knowledge; they receive tasks, execute them, and fill in results
 
-### 3.3 客户端层（交互层）：多种客户端
+### 3.3 Client Layer (Interaction Layer): Multiple Clients
 
-为不同使用场景提供多种客户端：
+Provides multiple clients for different usage scenarios:
 
-- **CLI 客户端**：便于人类交互的命令行工具
-- **API 客户端**：便于 Agent 调用的 HTTP API
-- **SDK 客户端**：便于集成的编程语言 SDK
+- **CLI client**: Command-line tool for human interaction
+- **API client**: HTTP API for Agent invocation
+- **SDK client**: Programming language SDK for easy integration
 
-**注意**：CLI 只是客户端之一，不是核心。核心是调度系统本身。
+**Note**: The CLI is just one of the clients, not the core. The core is the scheduling system itself.
 
-## 四、核心价值：解决什么核心问题？
+## IV. Core Value: What Core Problems Does It Solve?
 
-### 4.1 底层价值（终态不可替代）
+### 4.1 Underlying Value (Irreplaceable in Final State)
 
-为 Agent 提供统一的调度能力，打破 Agent 的能力边界，实现真正的多 Agent 协同 —— 这是 Agent 从 "单点智能" 走向 "系统智能" 的关键基础设施。
+Provides Agents with unified scheduling capabilities, breaking through Agent capability boundaries and achieving true multi-Agent collaboration — this is the key infrastructure for Agents to evolve from "single-point intelligence" to "system intelligence."
 
-### 4.2 商业价值（落地可验证）
+### 4.2 Business Value (Verifiable in Practice)
 
-解决 Agent 规模化落地的调度瓶颈，让单用户可并行管控数十个甚至上百个 Agent 任务，大幅降低企业 AI 落地成本。
+Solves the scheduling bottleneck for large-scale Agent adoption, allowing a single user to manage dozens or even hundreds of Agent tasks in parallel, significantly reducing enterprise AI adoption costs.
 
-### 4.3 生态价值（自举可持续）
+### 4.3 Ecosystem Value (Self-Bootstrapping and Sustainable)
 
-提供 API 和 SDK，便于第三方集成，构建 Agent 调度生态。
+Provides APIs and SDKs to facilitate third-party integration and build an Agent scheduling ecosystem.
 
-## 五、演化路径：如何从起点到终态？
+## V. Evolution Path: From Starting Point to Final State
 
-### 演化起点：基础 Agent 调度
-- 实现基础的任务调度（FIFO）
-- 实现简单的任务编排
-- 实现 CLI 客户端
+### Starting Point: Basic Agent Scheduling
+- Implement basic task scheduling (FIFO)
+- Implement simple task orchestration
+- Implement CLI client
 
-### 演化路径：逐步增强
-- 添加 DAG 并行调度
-- 添加人类任务队列
-- 添加 API 客户端
-- 添加 SDK 客户端
+### Evolution Path: Gradual Enhancement
+- Add DAG parallel scheduling
+- Add human task queue
+- Add API client
+- Add SDK client
 
-### 终态：Agent 原生调度系统
-- 完整的任务编排能力
-- 完整的资源调度能力
-- 完整的异常处理能力
-- 多客户端支持（CLI、API、SDK）
+### Final State: Agent-Native Scheduling System
+- Complete task orchestration capabilities
+- Complete resource scheduling capabilities
+- Complete exception handling capabilities
+- Multi-client support (CLI, API, SDK)
 
-## 六、总结
+## VI. Summary
 
-面对 "这个项目到底是做什么的？" 的质疑，我们的答案简洁而坚定：
+In response to the question, "What exactly does this project do?", our answer is concise and firm:
 
-**Agent 原生调度系统，是面向 AI Agent 设计的统一调度平台，核心是为 Agent 提供任务编排、资源调度、上下文管理能力，支持 Agent 调度其他 Agent、调度工具、调度人类任务，实现 Agent 主导的全流程自治。**
+**An Agent-native scheduling system is a unified scheduling platform designed for AI Agents. Its core is to provide Agents with task orchestration, resource scheduling, and context management capabilities, supporting Agents in scheduling other Agents, tools, and human tasks, achieving Agent-led full-process autonomy.**
 
-CLI 只是调度系统的一个客户端，不是核心。核心是调度系统本身。
+The CLI is just one client of the scheduling system, not the core. The core is the scheduling system itself.
 
-时代浪潮已至，Agent 原生调度系统，已然启程。
+The wave of the era has arrived, and the Agent-native scheduling system has already set sail.

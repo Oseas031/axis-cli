@@ -1,37 +1,42 @@
-# 废稿文档
+﻿# Deprecated Documents
 
-此文件夹包含已废弃的设计文档。
+This folder contains deprecated design documents.
 
-## 废弃原因
+## Reasons for Deprecation
 
-这些文档基于旧的设计思想，已被奥卡姆剃刀原理简化后的新文档替代。
+These documents are based on old design ideas, have been replaced by new documents simplified according to Occam's Razor, or belong to early milestone drafts that have been superseded by actual code and subsequent specifications.
 
-## 文件列表
+## File List
 
 ### whitepapers/
-- WHITEPAPER-DRAFT.md - 旧版白皮书，已被 WHITEPAPER.md v1.1 替代
+- **WHITEPAPER-DRAFT.md** — Old whitepaper draft, replaced by WHITEPAPER.md v1.1
+- **WHITEPAPER-v1.md** — Whitepaper v1, content covered by `docs/product/ROADMAP.md` and root `README.md`
 
 ### architecture/
-- orchestrator-architecture-DRAFT.md - 管控者架构详细设计，已在简化版中移除
-- llm-provider-DRAFT.md - LLM提供商架构，里程碑1不需要
-- optional-modules-DRAFT.md - 可选模块架构，里程碑1不需要
+- **orchestrator-architecture-DRAFT.md** — Detailed orchestrator architecture design, removed in simplified version
+- **llm-provider-DRAFT.md** — LLM provider architecture, real LLM integration completed in M4
+- **optional-modules-DRAFT.md** — Optional module architecture, execution ecosystem completed in M3
+- **core-modules-M1-DRAFT.md** — M1 core module design draft, replaced by actual code
+- **agent-contract-design-M1-DRAFT.md** — M1 contract design draft, replaced by actual code
+- **dag-scheduling-M1-DRAFT.md** — M1 DAG scheduling design draft, replaced by actual code
+- **DIAGRAMS-M1.md** — M1 architecture diagrams, reflecting M1 stage only
+- **agent-native-design-philosophy-v1.md** — Design philosophy v1, content merged into `agent-native-first-principles.md`
 
 ### protocols/
-- call-human-spec-DRAFT.md - Call Human协议规范，里程碑1不需要
+- **call-human-spec-DRAFT.md** — Call Human protocol specification, not needed for M1
 
 ### workflows/
-- ci-cd-quality-improvement-workflow.md - 早期 CI/CD 设置过程，当前 CI/CD 已完成
-- comprehensive-automation-workflows.md - 7 个核心工作流架构设计，已被简化
-- entry-workflow.md - 工作流调度器设计，过度设计不符合奥卡姆剃刀
-- software-engineering-paradigm-workflow-improvement.md - 理论化的 CI/CD 改进，与实际需求脱节
-- workflow-improvement-plan.md - 工作流改进计划，高优先级问题已修复
+- **ci-cd-quality-improvement-workflow.md** — Early CI/CD setup process, current CI/CD completed
+- **comprehensive-automation-workflows.md** — 7 core workflow architecture designs, simplified
+- **entry-workflow.md** — Workflow dispatcher design, over-engineered, inconsistent with Occam's Razor
+- **software-engineering-paradigm-workflow-improvement.md** — Theoretical CI/CD improvement, disconnected from actual needs
+- **workflow-improvement-plan.md** — Workflow improvement plan, high-priority issues fixed
 
-## 当前文档
+## Current Documents
 
-请阅读以下当前文档：
-- docs/WHITEPAPER.md - 项目定义
-- docs/architecture/core-modules.md - 核心模块设计（简化版）
-- docs/architecture/agent-contract-design.md - 契约设计（简化版）
-- docs/architecture/dag-scheduling.md - DAG调度（简化版）
-- docs/milestones/milestone1-checklist.md - 里程碑1目标
-- workflows/README.md - 工作流索引
+Please read the following current documents:
+- `README.md` — Project overview
+- `docs/product/ROADMAP.md` — Milestone roadmap (M1-M6 ✅)
+- `docs/architecture/agent-native-first-principles.md` — **Read before coding**
+- `docs/guides/QUICKSTART.md` — Quick start
+- `docs/status/current-progress.md` — Current progress

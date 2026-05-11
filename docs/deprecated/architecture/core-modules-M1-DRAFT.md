@@ -1,12 +1,13 @@
 # Axis CLI 核心模块架构设计（里程碑1简化版）
 
-## 核心设计哲学：More Context, More Action, Zero Control
+## 核心设计哲学：More Context, More Action, Zero Control, Controllable Evolution
 
-Axis 作为 Agent 原生调度系统，遵循 **"More Context, More Action, Zero Control"** 的设计哲学：
+Axis 作为 Agent 原生调度系统，遵循 **"More Context, More Action, Zero Control, Controllable Evolution"** 的设计哲学：
 
-- **More Context**: 给 Agent 提供丰富的上下文信息，让其能够做出智能决策
-- **More Action**: 给 Agent 更多的行动能力，让其能够自主执行复杂操作
-- **Zero Control**: 不对 Agent 进行控制，让 Agent 完全自主决策和执行
+- **More Context**: 提供高效查询基础设施，让 Agent 按任务需要主动构建上下文
+- **More Action**: 给 Agent 执行、组合、验证、修正和生成后续任务的行动能力
+- **Zero Control**: 系统不规定唯一行动路径，但通过契约、权限阶梯、隔离和审计提供边界
+- **Controllable Evolution**: Agent 的自举、自我修改和权限提升必须可观测、可验证、可回滚
 
 详见 [Agent 原生设计思想](agent-native-design-philosophy.md)
 
