@@ -8,16 +8,17 @@
 ```
                     ┌─────────────────────────────────────┐
                     │  BootstrapOrchestrator              │
-                    │  (自循环任务调度)                    │
+                    │  (self-loop task scheduling)         │
                     └──────────────┬──────────────────────┘
                                    │
               ┌────────────────────┼────────────────────┐
               │                    │                    │
      ┌────────▼────────┐  ┌───────▼────────┐  ┌───────▼────────┐
      │ AgentExecutor  │  │ Dispatcher     │  │ Scheduler       │
-     │ (自因执行器)    │  │               │  │ (ready-set DAG) │
-     └────────┬────────┘  └───────┬────────┘  └─────────────────┘
-              │                   │
+     │ (autogenesis   │  │               │  │ (ready-set DAG) │
+     │  executor)     │  └───────┬────────┘  └─────────────────┘
+     └────────┬────────┘         │
+              │                  │
     ┌─────────▼─────────┐  ┌──────▼──────┐
     │ ModelProvider     │  │ Contract    │
     │ (Anthropic/OpenAI)│  │ Executor   │
@@ -50,7 +51,7 @@ type AgentExecutionResult struct {
 
 ## 3. MockAgentExecutor
 
-MockAgentExecutor 使用现有 ModelProvider 执行任务：
+MockAgentExecutor uses existing ModelProvider to execute tasks:
 
 ```go
 type MockAgentExecutor struct {
@@ -58,10 +59,10 @@ type MockAgentExecutor struct {
 }
 
 func (e *MockAgentExecutor) Execute(ctx context.Context, req *AgentExecutionRequest) (*AgentExecutionResult, error) {
-    // 构建 prompt: "Analyze the following change request: {req.Task.Input}"
-    // 调用 ModelProvider
-    // 解析 response 生成 FollowUpTasks
-    // 返回 AgentExecutionResult
+    // Build prompt: "Analyze the following change request: {req.Task.Input}"
+    // Call ModelProvider
+    // Parse response to generate FollowUpTasks
+    // Return AgentExecutionResult
 }
 ```
 
@@ -96,11 +97,11 @@ type ContextBuilder struct {
 }
 
 func (b *ContextBuilder) BuildSelfContext(taskID string) (*SelfContext, error) {
-    // 1. 获取任务状态
-    // 2. 获取代码结构 (git diff --stat)
-    // 3. 获取文档上下文
-    // 4. 构建 TaskLineage
-    // 5. 打包返回
+    // 1. Get task state
+    // 2. Get code structure (git diff --stat)
+    // 3. Get documentation context
+    // 4. Build TaskLineage
+    // 5. Package and return
 }
 ```
 
@@ -192,9 +193,9 @@ type BootstrapOrchestrator struct {
 }
 
 func (bo *BootstrapOrchestrator) SubmitSelfIterationTask(task *types.AgentTask) error {
-    // 检查 loop count
-    // 注入 SelfContext
-    // 提交到 Scheduler
+    // Check loop count
+    // Inject SelfContext
+    // Submit to Scheduler
 }
 ```
 

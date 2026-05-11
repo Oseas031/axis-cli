@@ -1,4 +1,4 @@
-# Milestone 2 Workflow Binding
+﻿# Milestone 2 Workflow Binding
 
 ## Purpose
 
@@ -26,9 +26,9 @@ Milestone 2 is treated as a new feature track by `workflow/entry.md`, so it must
 - Build/test/security issues may block; advisory documentation checks should not become excessive control gates
 - HANDOVER must be updated after material progress
 
-### wf-occams: Occam's Razor Architecture Simplification
+### Scope-Control Rule: Occam's Razor
 
-**File**: `workflow/occams-razor-architecture-simplification.md`
+**Source**: embedded in `workflow/entry.md` and `workflow/meta-workflow-management.md`
 
 **Role**:
 
@@ -84,7 +84,7 @@ Milestone 2 is treated as a new feature track by `workflow/entry.md`, so it must
 **Applied rules**:
 
 - `requirements.md`, `design.md`, `tasks.md`, and `workflow-binding.md` must cross-link
-- `docs/current-progress.md`, `HANDOVER.md`, and `AGENT_INSTRUCTIONS.md` must reflect the same milestone state
+- `docs/status/current-progress.md`, `HANDOVER.md`, and `AGENT_INSTRUCTIONS.md` must reflect the same milestone state
 - Deprecated workflow paths must not be used as authoritative sources
 
 ## Feature Workflow Execution Order
@@ -92,7 +92,7 @@ Milestone 2 is treated as a new feature track by `workflow/entry.md`, so it must
 ```text
 1. workflow/entry.md -> route as New Feature
 2. wf-doc-004       -> confirm spec contract and explicit dependencies
-3. wf-occams        -> confirm minimal Milestone 2 scope
+3. scope check      -> confirm minimal Milestone 2 scope
 4. requirements.md  -> confirm WHAT with user
 5. design.md        -> confirm HOW with user
 6. tasks.md         -> confirm execution plan with user
@@ -108,16 +108,16 @@ Milestone 2 is treated as a new feature track by `workflow/entry.md`, so it must
 |---|---|
 | `workflow/entry.md` | Authoritative route for selecting workflow combination |
 | `workflow/meta-workflow-management.md` | Requires spec-first, explicit binding, handoff sync |
-| `workflow/occams-razor-architecture-simplification.md` | Keeps Milestone 2 minimal and prevents scope creep |
 | `workflows/README.md` | Provides active workflow IDs and avoids deprecated workflow use |
 | `.github/config/registry.yml` | Registry source for workflow status and IDs |
 | `docs/specs/interactive-shell/` | Shell remains a CLI-native validation path |
 | `docs/specs/model-provider/` | Existing execution-path spec must not be contradicted by Milestone 2 |
-| `docs/milestone1-acceptance-report.md` | Baseline proof that Milestone 1 behavior must remain compatible |
+| `docs/status/acceptance/milestone1-acceptance-report.md` | Baseline proof that Milestone 1 behavior must remain compatible |
 
 ## Non-Goals Enforced by Workflow
 
 - No new workflow for Milestone 2 unless current routing is proven insufficient
+- No separate Occam workflow; scope control is enforced by `workflow/entry.md` and `workflow/meta-workflow-management.md`
 - No Web UI or heavy TUI
 - No external database-backed scheduler
 - No distributed worker system
@@ -135,5 +135,8 @@ Milestone 2 is complete only when:
 - targeted scheduler, admission, SLA, and orchestrator tests pass
 - `go test ./...` passes
 - build validation passes without unintended artifact overwrites
-- `docs/current-progress.md`, `HANDOVER.md`, and `AGENT_INSTRUCTIONS.md` are updated
+- `docs/status/current-progress.md`, `HANDOVER.md`, and `AGENT_INSTRUCTIONS.md` are updated
 - no Milestone 3 scope has been introduced
+
+
+

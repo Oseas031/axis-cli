@@ -14,6 +14,7 @@
 | T3: Add graceful shutdown handling | Completed |
 | T4: Verify build and basic shell commands | Completed |
 | T5: Update HANDOVER.md | Completed |
+| T6: Track natural language scheduling extension | Planned |
 
 ---
 
@@ -135,3 +136,23 @@ axis> exit
 - HANDOVER states this is a lightweight CLI client layer, not core scheduler architecture
 
 **Depends on**: T4
+
+---
+
+## T6: Track natural language scheduling extension
+
+**Goal**: Record natural language task scheduling as a non-destructive extension of the shell, not part of the original shell milestone.
+
+**Files**:
+
+- `docs/specs/interactive-shell/requirements.md`
+- `docs/specs/interactive-shell/design.md`
+- `docs/specs/natural-language-scheduling/`
+
+**Acceptance Criteria**:
+
+- Shell scope remains command-based for the completed milestone
+- Future `ask` integration points to the dedicated natural language scheduling spec
+- No runtime code changes are required
+
+**Depends on**: T5

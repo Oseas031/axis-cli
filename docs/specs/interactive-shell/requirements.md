@@ -4,7 +4,7 @@
 
 Add a lightweight interactive CLI shell to Axis, similar in interaction style to Claude Code but scoped to Milestone 1 capabilities. The shell is a client layer over the existing orchestrator and must not change the core scheduler architecture.
 
-The shell also implements Axis's interaction philosophy: **bash is all you need**. It should be shell-native, composable, script-friendly, and minimal.
+The shell also implements Axis's interaction philosophy: **bash is all you need, simple but robust, composable and extensible**. It should be shell-native, composable, script-friendly, minimal, fault-tolerant, and extensible.
 
 ## Users
 
@@ -64,14 +64,14 @@ On `exit`, `quit`, Ctrl+C, or EOF, the shell must call orchestrator shutdown and
 
 ## Acceptance Criteria
 
-- [ ] `go build -o axis.exe cmd/axis/main.go` succeeds
-- [ ] `axis shell` starts an interactive prompt
-- [ ] `help` prints supported commands
-- [ ] `run demo-task` submits a task or returns a clear contextual error
-- [ ] `status demo-task` returns status or a clear not-found error
-- [ ] invalid commands produce a non-fatal error message
-- [ ] `exit` and `quit` shut down gracefully
-- [ ] Ctrl+C exits cleanly
+- [x] `go build -o axis.exe cmd/axis/main.go` succeeds
+- [x] `axis shell` starts an interactive prompt
+- [x] `help` prints supported commands
+- [x] `run demo-task` submits a task or returns a clear contextual error
+- [x] `status demo-task` returns status or a clear not-found error
+- [x] invalid commands produce a non-fatal error message
+- [x] `exit` and `quit` shut down gracefully
+- [x] Ctrl+C exits cleanly
 
 ## Constraints
 
@@ -79,8 +79,8 @@ On `exit`, `quit`, Ctrl+C, or EOF, the shell must call orchestrator shutdown and
 - Do not add a full TUI layout
 - Do not change scheduler/orchestrator core architecture except for bug fixes required for shell operation
 - Prefer Go standard library
-- Keep the feature minimal and aligned with More Context, More Action, Zero Control
-- Keep the feature aligned with bash is all you need: CLI first, shell native, composable, no heavy UI by default
+- Keep the feature minimal and aligned with More Context, More Action, Zero Control, Controllable Evolution
+- Keep the feature aligned with bash is all you need, simple but robust, composable and extensible: CLI first, shell native, composable, no heavy UI by default, with clear errors and extension points
 
 ## Non-Goals
 
@@ -95,3 +95,14 @@ On `exit`, `quit`, Ctrl+C, or EOF, the shell must call orchestrator shutdown and
 
 - Should `run <task-id>` also accept JSON input later?
 - Should shell expose task list once scheduler supports listing?
+
+## Planned Extension: Natural Language Scheduling
+
+Natural language understanding remains out of scope for the original interactive shell milestone. A future extension is tracked separately in `docs/specs/natural-language-scheduling/`.
+
+That extension should treat natural language as an intent-to-task compiler:
+
+- `axis ask "<prompt>"` creates or previews a structured `AgentTask`
+- future `axis shell` may support `ask <prompt>`
+- parsed tasks must preserve provenance metadata
+- scheduler, dispatcher, and contract execution semantics must remain unchanged for the first implementation

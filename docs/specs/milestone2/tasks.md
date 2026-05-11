@@ -1,4 +1,4 @@
-# Milestone 2 Tasks
+﻿# Milestone 2 Tasks
 
 ## Related Documents
 
@@ -14,11 +14,11 @@
 | T1: Baseline verification | Completed |
 | T2: Add scheduler ready-set API | Completed |
 | T2.5: Align ordinary CLI with Bash-first semantics | Completed |
-| T3: Add contract admission layer | Pending |
-| T4: Add SLA parsing and execution timeout | Pending |
-| T5: Add orchestrator parallel execution loop | Pending |
-| T6: Add error code foundation | Pending |
-| T7: Update CLI/docs and run acceptance checks | Pending |
+| T3: Add contract admission layer | Completed |
+| T4: Add SLA parsing and execution timeout | Completed |
+| T5: Add orchestrator parallel execution loop | Completed |
+| T6: Add error code foundation | Completed |
+| T7: Update CLI/docs and run acceptance checks | Completed |
 
 ---
 
@@ -37,13 +37,13 @@
 
 **Design References**:
 
-- `workflow-binding.md` — Feature Workflow Execution Order
-- `requirements.md` — Acceptance Criteria
+- `workflow-binding.md` →Feature Workflow Execution Order
+- `requirements.md` →Acceptance Criteria
 
 **Acceptance Criteria**:
 
 - Milestone 2 is classified as a new feature using `workflow/entry.md`
-- upstream workflows are explicitly declared as `wf-doc-004 + wf-occams + wf-pr-check + wf-ci + wf-doc-006`
+- upstream workflows are explicitly declared as `wf-doc-004 + wf-pr-check + wf-ci + wf-doc-006`
 - no new workflow is introduced for Milestone 2
 - user confirms specs and workflow binding before implementation
 
@@ -96,8 +96,8 @@ go build -o axis.exe cmd/axis/main.go
 
 **Design References**:
 
-- `design.md` — DAG scheduling
-- `requirements.md` — FR1, FR2, FR3
+- `design.md` →DAG scheduling
+- `requirements.md` →FR1, FR2, FR3
 
 **Acceptance Criteria**:
 
@@ -123,7 +123,7 @@ go build -o axis.exe cmd/axis/main.go
 
 ## T2.5: Align ordinary CLI with Bash-first semantics
 
-**Goal**: Ensure ordinary CLI commands do not mislead users about cross-process orchestrator state and remain aligned with `bash is all you need`.
+**Goal**: Ensure ordinary CLI commands do not mislead users about cross-process orchestrator state and remain aligned with `bash is all you need, simple but robust, composable and extensible`.
 
 **Files**:
 
@@ -132,9 +132,9 @@ go build -o axis.exe cmd/axis/main.go
 
 **Design References**:
 
-- `workflow-binding.md` — Keep CLI/shell-native validation as the default interface
-- `requirements.md` — FR3 backward compatibility
-- `docs/architecture/bash-is-all-you-need.md` — CLI First, Shell Native, Composable
+- `workflow-binding.md` →Keep CLI/shell-native validation as the default interface
+- `requirements.md` →FR3 backward compatibility
+- `docs/architecture/bash-is-all-you-need.md` →CLI First, Shell Native, Composable
 
 **Acceptance Criteria**:
 
@@ -169,8 +169,8 @@ go build -o axis.exe cmd/axis/main.go
 
 **Design References**:
 
-- `design.md` — Contract admission
-- `requirements.md` — FR4
+- `design.md` →Contract admission
+- `requirements.md` →FR4
 
 **Acceptance Criteria**:
 
@@ -195,8 +195,8 @@ go build -o axis.exe cmd/axis/main.go
 
 **Design References**:
 
-- `design.md` — SLA metadata
-- `requirements.md` — FR5, FR7
+- `design.md` →SLA metadata
+- `requirements.md` →FR5, FR7
 
 **Acceptance Criteria**:
 
@@ -221,8 +221,8 @@ go build -o axis.exe cmd/axis/main.go
 
 **Design References**:
 
-- `design.md` — Orchestrator parallel execution
-- `requirements.md` — FR2, FR7
+- `design.md` →Orchestrator parallel execution
+- `requirements.md` →FR2, FR7
 
 **Acceptance Criteria**:
 
@@ -248,8 +248,8 @@ go build -o axis.exe cmd/axis/main.go
 
 **Design References**:
 
-- `design.md` — Error code foundation
-- `requirements.md` — FR6
+- `design.md` →Error code foundation
+- `requirements.md` →FR6
 
 **Acceptance Criteria**:
 
@@ -267,10 +267,10 @@ go build -o axis.exe cmd/axis/main.go
 
 **Files**:
 
-- `docs/current-progress.md`
+- `docs/status/current-progress.md`
 - `HANDOVER.md`
 - `AGENT_INSTRUCTIONS.md`
-- `docs/ROADMAP.md` if status wording needs synchronization
+- `docs/product/ROADMAP.md` if status wording needs synchronization
 
 **Commands**:
 
@@ -288,3 +288,5 @@ go build -o axis.exe cmd/axis/main.go
 - no Milestone 3 scope is introduced
 
 **Depends on**: T6
+
+

@@ -1,75 +1,76 @@
-# M3 Phase 3 Requirements — SLA策略引擎 & 工具调用层
+# M3 Phase 3 Requirements — SLA Strategy Engine & Tool Invocation Layer
 
 ## Summary
 
-M3 Phase 3 包含两个相互独立的子特性：
+M3 Phase 3 contains two independent sub-features:
 
-1. **SLA 策略引擎**：让 `failure_class` 实际影响调度和重试行为，增加优先级排序和退避策略
-2. **工具调用层**：让任务执行链具备多轮工具调用能力，首个工具为 Bash 执行
+1. **SLA Strategy Engine**: Make `failure_class` actually affect scheduling and retry behavior, add priority ordering and backoff strategies
+2. **Tool Invocation Layer**: Give the task execution chain multi-turn tool invocation capability, with Bash as the first tool
 
-两者都可以独立开发、测试、合并。
+Both can be developed, tested, and merged independently.
 
 ## Design Philosophy
 
-- **More Context**: 策略引擎根据失败类型做差异化处理，工具调用把执行结果带回模型上下文
-- **More Action**: 工具层让任务真正可以执行 Bash 命令，而不是只生成文本
-- **Zero Control**: 策略可配置，工具可注册，不硬编码单一路径
-- **Bash is All You Need**: 首个工具即 Bash，CLI 原生
+- **More Context**: Strategy engine handles failures differently based on failure type; tool invocation brings execution results back into model context
+- **More Action**: Tool layer lets tasks actually execute Bash commands, not just generate text
+- **Zero Control**: Strategies are configurable, tools are registrable, no single hardcoded path
+- **Controllable Evolution**: Strategy and tool changes must be observable, testable, and rollbackable
+- **Bash is All You Need, simple but robust, composable and extensible**: First tool is Bash, CLI-native, keeping errors clear and extensible
 
 ## Users
 
-- 需要差异化失败处理的调度场景
-- 需要通过任务执行 Bash 命令的 Agent
-- 后续需要多轮 tool-use 的 Provider 实现
+- Scheduling scenarios requiring differentiated failure handling
+- Agents needing to execute Bash commands through tasks
+- Future Provider implementations needing multi-turn tool-use
 
 ## Functional Requirements
 
-### SLA 策略引擎
+### SLA Strategy Engine
 
-- **FR1**: `failure_class` 值决定失败行为：
-  - `"retryable"` — 退避重试至最大次数
-  - `"fatal"` — 失败立即终止，不重试
-  - `"degradable"` — 依赖未就绪时降级运行（跳过缺失依赖）
-  - 未设置时保持当前默认行为（全部重试）
-- **FR2**: 退避策略可配置：固定间隔、线性增长、指数退避，默认固定 100ms
-- **FR3**: 优先级字段 `sla.priority`（0-255），高优先级任务在 `GetReadyTasks` 中优先返回
-- **FR4**: 调度器按优先级排序 ready tasks，同优先级保持 FIFO
+- **FR1**: `failure_class` value determines failure behavior:
+  - `"retryable"` — Backoff retry up to max attempts
+  - `"fatal"` — Fail immediately, no retry
+  - `"degradable"` — Run in degraded mode when dependencies not ready (skip missing dependencies)
+  - Unset keeps current default behavior (retry all)
+- **FR2**: Backoff strategy configurable: fixed interval, linear growth, exponential backoff, default fixed 100ms
+- **FR3**: Priority field `sla.priority` (0-255), higher priority tasks returned first by `GetReadyTasks`
+- **FR4**: Scheduler sorts ready tasks by priority, same priority maintains FIFO
 
-### 工具调用层
+### Tool Invocation Layer
 
-- **FR5**: `Tool` 接口定义：`Name()`, `Schema()`, `Execute(ctx, input) → output`
-- **FR6**: `ToolRegistry`：注册、查找、列出工具
-- **FR7**: `BashTool`：执行 shell 命令，返回 stdout/stderr/exit_code，30 秒超时
-- **FR8**: `ModelRequest` 扩展，支持 `Tools []ToolDefinition` 字段
-- **FR9**: `ModelResponse` 扩展，支持 `ToolCalls []ToolCall` 字段（tool_use 时非空）
-- **FR10**: `ContractExecutor` 支持多轮执行循环：provider → tool_use? → execute tool → feed result → provider → ... → final output
+- **FR5**: `Tool` interface: `Name()`, `Schema()`, `Execute(ctx, input) → output`
+- **FR6**: `ToolRegistry`: register, find, list tools
+- **FR7**: `BashTool`: execute shell commands, return stdout/stderr/exit_code, 30-second timeout
+- **FR8**: `ModelRequest` extension, supports `Tools []ToolDefinition` field
+- **FR9**: `ModelResponse` extension, supports `ToolCalls []ToolCall` field (non-nil during tool_use)
+- **FR10**: `ContractExecutor` supports multi-turn execution loop: provider → tool_use? → execute tool → feed result → provider → ... → final output
 
-### 双方共享
+### Shared
 
-- **FR11**: 所有新行为由 `go test -race ./...` 覆盖
-- **FR12**: 覆盖率不低于 85%
+- **FR11**: All new behavior covered by `go test -race ./...`
+- **FR12**: Coverage no less than 85%
 
 ## Non-Goals
 
-- 真实 LLM 集成（仍只 Mock/Echo）
-- 网络调用工具（http client 等）
-- 文件读写工具（Phase 4，先用 Bash 覆盖）
+- Real LLM integration (still Mock/Echo only)
+- Network tools (http client, etc.)
+- File read/write tools (Phase 4, Bash covers this for now)
 - SLA compliance tracking / metrics
-- 动态优先级调整
-- 工具调用的流式返回
+- Dynamic priority adjustment
+- Streaming returns from tool invocations
 
 ## Acceptance Criteria
 
-- [ ] `failure_class` 三种行为正确执行
-- [ ] 优先级排序在 `GetReadyTasks` 中生效
-- [ ] `BashTool` 可执行命令并返回结果
-- [ ] 多轮 tool-use 循环在 `ContractExecutor` 中工作
-- [ ] `go test -race ./...` 通过
-- [ ] 覆盖率 ≥ 85%
+- [x] `failure_class` three behaviors execute correctly
+- [x] Priority ordering effective in `GetReadyTasks`
+- [x] `BashTool` can execute commands and return results
+- [x] Multi-turn tool-use loop works in `ContractExecutor`
+- [x] `go test -race ./...` passes
+- [x] Coverage ≥ 85%
 
 ## Constraints
 
-- Go stdlib only（Bash 使用 `os/exec`）
-- 不改 scheduler 核心语义（FIFO 仍是默认）
-- 不改现有 API 签名（只能扩展）
-- 不引入外部 DSL 或规则引擎
+- Go stdlib only (Bash uses `os/exec`)
+- Do not change scheduler core semantics (FIFO remains default)
+- Do not change existing API signatures (extension only)
+- Do not introduce external DSL or rule engines

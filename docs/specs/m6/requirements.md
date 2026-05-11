@@ -1,53 +1,53 @@
 # M6 Requirements: Self-Judgement (Self-Validation)
 
-**Status**: In Progress
+**Status**: Completed
 **Last Updated**: 2026-05-10
 
 ## 1. Overview
 
-M6 实现 Self-Judgement 机制，让 Agent 能够对自身执行结果进行自我评估和验证，从而实现更高级别的自主性。这是 Bootstrap Loop 的关键补充，为自因化的"自我反思"能力奠定基础。
+M6 implements the Self-Judgement mechanism, enabling Agents to self-assess and validate their own execution results, thereby achieving a higher level of autonomy. This is a key complement to the Bootstrap Loop, laying the foundation for autogenesis "self-reflection" capability.
 
 ## 2. Goals
 
 ### 2.1 Self-Judgement Framework
-- [ ] JudgementCriteria 数据结构（验证标准定义）
-- [ ] SelfJudgementEngine（自我评判引擎）
-- [ ] JudgementResult 数据结构（评判结果）
-- [ ] 与 ValidationSummary 集成
+- [x] JudgementCriteria data structure (validation criteria definition)
+- [x] SelfJudgementEngine (self-judgement engine)
+- [x] JudgementResult data structure (judgement results)
+- [x] Integration with ValidationSummary
 
 ### 2.2 Built-in Judgement Strategies
-- [ ] SyntaxValidationStrategy（语法检查）
-- [ ] SemanticValidationStrategy（语义检查，基于 LLM）
-- [ ] ContractValidationStrategy（契约输出验证）
-- [ ] TestValidationStrategy（测试结果验证）
-- [ ] CoverageValidationStrategy（覆盖率验证）
+- [x] SyntaxValidationStrategy (syntax checking)
+- [x] SemanticValidationStrategy (semantic checking, LLM-based)
+- [x] ContractValidationStrategy (contract output validation)
+- [x] TestValidationStrategy (test result validation)
+- [x] CoverageValidationStrategy (coverage validation)
 
 ### 2.3 Self-Judgement Contract
-- [ ] `self/judge-execution` contract
-- [ ] Input: execution_result, criteria, context
-- [ ] Output: judgement, confidence, suggested_corrections
+- [x] `self/judge-execution` contract
+- [x] Input: execution_result, criteria, context
+- [x] Output: judgement, confidence, suggested_corrections
 
 ### 2.4 Integration
-- [ ] AgentExecutionResult 集成 JudgementResult
-- [ ] BootstrapOrchestrator 支持自评判
-- [ ] CLI 命令行支持 judgement 结果展示
+- [x] AgentExecutionResult integrates JudgementResult
+- [x] BootstrapOrchestrator supports self-judgement
+- [x] CLI command support for judgement result display
 
 ## 3. Non-Goals
 
-- Real LLM SDK 集成（M4 已完成）
-- 工具自生机制（M5 Bootstrap Loop 基础）
-- 分布式评判（单一 Agent 自评判）
-- 自动修复能力（仅评判，不自动修复）
+- Real LLM SDK integration (M4 already completed)
+- Tool self-generation mechanism (M5 Bootstrap Loop foundation)
+- Distributed judgement (single Agent self-judgement only)
+- Auto-repair capability (judgement only, no automatic fixes)
 
 ## 4. Judgement Criteria Schema
 
 ```go
 type JudgementCriteria struct {
-    Name        string                 // 评判标准名称
-    Type        JudgementType          // 评判类型
-    Weight      float64                // 权重 (0.0-1.0)
-    Thresholds  map[string]float64     // 阈值配置
-    Enabled     bool                   // 是否启用
+    Name        string                 // Criteria name
+    Type        JudgementType          // Judgement type
+    Weight      float64                // Weight (0.0-1.0)
+    Thresholds  map[string]float64     // Threshold configuration
+    Enabled     bool                   // Whether enabled
 }
 
 type JudgementType string
@@ -66,12 +66,12 @@ const (
 
 ```go
 type JudgementResult struct {
-    Passed          bool                // 是否通过
-    Score           float64             // 总分 (0.0-1.0)
-    Judgements      []JudgementItem     // 各维度评判结果
-    Confidence      float64             // 评判置信度
-    SuggestedFixes  []string            // 建议修复项
-    Metadata        map[string]any      // 额外元数据
+    Passed          bool                // Whether passed
+    Score           float64             // Total score (0.0-1.0)
+    Judgements      []JudgementItem     // Per-dimension judgement results
+    Confidence      float64             // Judgement confidence
+    SuggestedFixes  []string            // Suggested fixes
+    Metadata        map[string]any      // Additional metadata
 }
 
 type JudgementItem struct {
@@ -93,9 +93,9 @@ Output: judgement, confidence, suggested_corrections
 
 ## 7. Dependencies
 
-- M5 Bootstrap Loop（T1-T18 完成）
-- M4 Real LLM Integration（用于 SemanticValidationStrategy）
-- M3 ModelProvider（已集成）
+- M5 Bootstrap Loop (T1-T18 completed)
+- M4 Real LLM Integration (for SemanticValidationStrategy)
+- M3 ModelProvider (already integrated)
 
 ## 8. File Structure
 

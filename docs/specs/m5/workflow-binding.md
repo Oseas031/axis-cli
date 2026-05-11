@@ -1,4 +1,4 @@
-# M5 Workflow Binding
+﻿# M5 Workflow Binding
 
 M5 follows the standard workflow routing per `workflow/entry.md`.
 
@@ -33,7 +33,7 @@ For each implementation task (T1-T22), run:
 3. Read relevant workflow docs
 4. Implement minimum change
 5. Run validation
-6. Update `docs/current-progress.md`
+6. Update `docs/status/current-progress.md`
 
 ## Coverage Gate
 
@@ -41,3 +41,4 @@ For each implementation task (T1-T22), run:
 - AgentExecutor: 90%+
 - BootstrapOrchestrator: 90%+
 - Self-iteration contracts: 90%+
+

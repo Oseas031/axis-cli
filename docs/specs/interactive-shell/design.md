@@ -2,7 +2,7 @@
 
 ## Overview
 
-The interactive shell is a thin CLI client layer over the existing Axis orchestrator. It provides a loop-based command interface without introducing Web UI, TUI frameworks, or new core scheduling abstractions.
+The interactive shell is a thin explicit in-process session over the existing Axis orchestrator. It provides a loop-based command interface without introducing Web UI, TUI frameworks, hidden daemon attachment, or new core scheduling abstractions.
 
 Design philosophy:
 
@@ -23,6 +23,18 @@ cmd/axis/main.go
         ├── calls existing Orchestrator methods
         └── gracefully shuts down
 ```
+
+The shell is intentionally not the same lifecycle mode as the Local Control Plane runtime:
+
+```text
+axis shell
+  -> owns its own in-process orchestrator session
+
+axis start
+  -> owns the project-local runtime used by separate CLI invocations
+```
+
+In P0, shell commands do not silently attach to or spawn `axis start`. Shell `run`, shell `ask --submit`, and shell `status` share state inside the same shell session.
 
 ## Components
 
@@ -66,7 +78,7 @@ Supported commands:
 |---|---|
 | `help` | print commands |
 | `run <task-id>` | submit default pending task |
-| `status <task-id>` | call `GetTaskStatus` |
+| `status <task-id>` | call `GetTaskStatus` on the shell session orchestrator |
 | `exit` / `quit` | gracefully stop session |
 
 ### Orchestrator lifecycle
@@ -114,6 +126,12 @@ No new packages are required for the first version.
 | External readline package | Rejected | Avoid new dependency |
 | Standard bufio.Scanner | Chosen | Simple and reliable |
 | Browser-first UI | Rejected | Violates bash is all you need for the current milestone |
+
+## Extension Point: Natural Language Scheduling
+
+The shell command parser may later route `ask <prompt>` to the natural language scheduling layer described in `docs/specs/natural-language-scheduling/`.
+
+This keeps the shell as a thin command loop while allowing natural language input to be compiled into ordinary Axis tasks. The shell must not become a separate chatbot runtime or bypass contracts, scheduler state, or task metadata.
 
 ## Risks
 

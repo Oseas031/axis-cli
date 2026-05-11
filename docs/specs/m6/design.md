@@ -1,6 +1,6 @@
 # M6 Design: Self-Judgement (Self-Validation)
 
-**Status**: In Progress
+**Status**: Completed
 **Last Updated**: 2026-05-10
 
 ## 1. Architecture Overview
@@ -8,14 +8,15 @@
 ```
                     ┌─────────────────────────────────────┐
                     │  SelfJudgementEngine                 │
-                    │  (自评判引擎)                        │
+                    │  (self-judgement engine)              │
                     └──────────────┬──────────────────────┘
                                    │
               ┌────────────────────┼────────────────────┐
               │                    │                    │
      ┌────────▼────────┐  ┌───────▼────────┐  ┌───────▼────────┐
      │ ValidationStrategy│  │ ModelProvider  │  │  ContractExec  │
-     │ (多种策略)        │  │ (用于语义评判)  │  │  (用于契约验证) │
+     │ (multiple         │  │ (for semantic  │  │  (for contract │
+     │  strategies)      │  │  judgement)    │  │   validation)  │
      └─────────────────┘  └────────────────┘  └─────────────────┘
 ```
 
@@ -95,38 +96,38 @@ JudgementResult (aggregated)
 
 ### 4.1 SyntaxValidationStrategy
 
-检查代码语法正确性：
-- Go fmt 检查
-- Go vet 检查
-- AST 解析验证
+Checks code syntax correctness:
+- Go fmt check
+- Go vet check
+- AST parse validation
 
 ### 4.2 SemanticValidationStrategy
 
-使用 LLM 进行语义验证：
-- 调用 ModelProvider 分析代码语义
-- 检查逻辑一致性
-- 评估代码质量
+Uses LLM for semantic validation:
+- Calls ModelProvider to analyze code semantics
+- Checks logical consistency
+- Evaluates code quality
 
 ### 4.3 ContractValidationStrategy
 
-验证契约输出：
-- 输入验证 (ValidateInput)
-- 输出验证 (ValidateOutput)
-- Schema 合规性检查
+Validates contract output:
+- Input validation (ValidateInput)
+- Output validation (ValidateOutput)
+- Schema compliance check
 
 ### 4.4 TestValidationStrategy
 
-验证测试结果：
-- 测试通过率
-- 失败测试分析
-- 测试覆盖完整性
+Validates test results:
+- Test pass rate
+- Failed test analysis
+- Test coverage completeness
 
 ### 4.5 CoverageValidationStrategy
 
-验证覆盖率：
-- 语句覆盖率
-- 分支覆盖率
-- 与阈值比较
+Validates coverage:
+- Statement coverage
+- Branch coverage
+- Comparison against thresholds
 
 ## 5. Integration with Bootstrap Loop
 
@@ -142,8 +143,46 @@ analyze-change-request
                     self/judge-execution
                             │
                             ▼
-                    (基于 judgement 结果决定是否升级自主权)
+                    (decide whether to upgrade autonomy based on judgement result)
 ```
+
+### 5.1 BootstrapOrchestrator Judgement API
+
+`BootstrapOrchestrator` injects `judgement.Engine` via `WithJudgementEngine` option:
+
+```go
+engine := judgement.NewEngine()
+bo := NewBootstrapOrchestrator(scheduler, maxIterations, WithJudgementEngine(engine))
+```
+
+Key methods:
+
+- `JudgeExecutionResult(result *AgentExecutionResult) (*JudgementResult, error)` — Performs self-judgement on execution results; returns nil when engine is not configured.
+- `CalculateAutonomyDelta(jr *JudgementResult) AutonomyDelta` — Calculates autonomy adjustment based on judgement results:
+  - score >= 0.95 && confidence >= 0.90 → Delta +2 (excellent)
+  - passed → Delta +1 (pass)
+  - !passed && score >= 0.50 → Delta 0 (borderline)
+  - !passed && score < 0.50 → Delta -1 (failure)
+- `EvaluateAndDecide(result *AgentExecutionResult) error` — End-to-end judgement that writes `result.JudgementResult` and `result.AutonomyDelta` in place.
+
+Default judgement strategy combination (`defaultJudgementCriteria`):
+
+| Strategy | Weight | Threshold |
+|----------|--------|-----------|
+| syntax | 0.20 | min_pass_rate = 1.0 |
+| test | 0.40 | min_pass_rate = 0.90 |
+| coverage | 0.40 | min_coverage = 0.85 |
+
+### 5.2 CLI Display
+
+Standalone diagnostic command:
+
+```bash
+axis judge                    # Run default judgement and display results
+axis shell> judge             # Same diagnostic within shell
+```
+
+Output includes Passed / Score / Confidence summary and per-strategy details.
 
 ## 6. Judgement Contract Schema
 
@@ -209,10 +248,10 @@ const (
 
 ## 8. Confidence Calculation
 
-Judgement confidence 基于：
-- 各策略结果的权重平均
-- 策略执行的一致性
-- 输入数据的完整性
+Judgement confidence is based on:
+- Weighted average of individual strategy results
+- Consistency of strategy execution
+- Completeness of input data
 
 ```go
 func calculateConfidence(judgements []JudgementItem) float64 {

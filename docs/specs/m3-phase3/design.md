@@ -1,4 +1,4 @@
-# M3 Phase 3 Design — SLA策略引擎 & 工具调用层
+# M3 Phase 3 Design — SLA Strategy Engine & Tool Invocation Layer
 
 ## Architecture Overview
 
@@ -24,9 +24,9 @@ Orchestrator.SubmitTask
       → TaskResult
 ```
 
-## 1. SLA 策略引擎
+## 1. SLA Strategy Engine
 
-### 1.1 新 Metadata Keys
+### 1.1 New Metadata Keys
 
 ```go
 const (
@@ -61,22 +61,22 @@ type BackoffStrategy interface {
 
 ### 1.4 Priority Sorting
 
-在 `SchedulerImpl.GetReadyTasks` 中：
-1. 解析每个 ready task 的 `sla.priority`（默认 128）
-2. 按优先级降序排序
-3. 同优先级保持 FIFO 顺序
-4. 只影响 ready tasks 的返回顺序，不影响 Submit/Status 语义
+In `SchedulerImpl.GetReadyTasks`:
+1. Parse each ready task's `sla.priority` (default 128)
+2. Sort by priority descending
+3. Same priority maintains FIFO order
+4. Only affects return order of ready tasks, does not affect Submit/Status semantics
 
-### 1.5 Admission 变更
+### 1.5 Admission Changes
 
-`validateSLA` 增加：
-- `sla.priority`: 必须是 0-255 的整数
-- `sla.backoff`: 必须是 "fixed" | "linear" | "exponential" 之一
-- `sla.failure_class`: 必须是 "retryable" | "fatal" | "degradable" 之一
+`validateSLA` additions:
+- `sla.priority`: Must be an integer 0-255
+- `sla.backoff`: Must be one of "fixed" | "linear" | "exponential"
+- `sla.failure_class`: Must be one of "retryable" | "fatal" | "degradable"
 
-## 2. 工具调用层
+## 2. Tool Invocation Layer
 
-### 2.1 新类型
+### 2.1 New Types
 
 ```go
 // ToolDefinition describes a tool for the model provider.
@@ -101,7 +101,7 @@ type ToolResult struct {
 }
 ```
 
-### 2.2 扩展 ModelRequest / ModelResponse
+### 2.2 Extended ModelRequest / ModelResponse
 
 ```go
 type ModelRequest struct {
@@ -124,7 +124,7 @@ type ModelMessage struct {
 }
 ```
 
-### 2.3 Tool 接口与注册
+### 2.3 Tool Interface and Registry
 
 ```go
 type Tool interface {
@@ -138,7 +138,7 @@ type ToolRegistry struct {
 }
 ```
 
-Package: `internal/model/tool/`（新增）
+Package: `internal/model/tool/` (new)
 
 ### 2.4 BashTool
 
@@ -155,9 +155,9 @@ func (t *BashTool) Execute(ctx context.Context, input map[string]any) (map[strin
 }
 ```
 
-### 2.5 多轮执行循环
+### 2.5 Multi-Turn Execution Loop
 
-`ContractExecutor.Execute` 变更：
+`ContractExecutor.Execute` changes:
 
 ```go
 func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) (*ExecutionResult, error) {
@@ -175,16 +175,16 @@ func (e *ContractExecutorImpl) Execute(contractID string, input map[string]any) 
 }
 ```
 
-Max turns: 10（防止无限循环）
+Max turns: 10 (prevents infinite loops)
 
-### 2.6 MockModelProvider 适配
+### 2.6 MockModelProvider Adaptation
 
-Mock provider 需要支持 tool-use 模拟：
-- 当 request 包含 tools 且 input 包含 `"tool": "<name>"` 时，返回 tool_call
-- 当 history 最后一条是 tool result 时，返回 final output
-- 不改变默认无 tool 的行为
+Mock provider needs to support tool-use simulation:
+- When request contains tools and input contains `"tool": "<name>"`, return tool_call
+- When the last history entry is a tool result, return final output
+- Default behavior without tools remains unchanged
 
-### 2.7 Orchestrator 构造变更
+### 2.7 Orchestrator Construction Changes
 
 ```go
 func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {

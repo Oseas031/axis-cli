@@ -34,16 +34,16 @@
 | ID | Task | Priority | Status | Notes |
 |----|------|----------|--------|-------|
 | T13 | AgentExecutionResult + JudgementResult | P0 | ✅ Done | JudgementResult field added to AgentExecutionResult |
-| T14 | BootstrapOrchestrator judgement support | P1 | ⏳ Pending | |
-| T15 | CLI judgement result display | P2 | ⏳ Pending | |
+| T14 | BootstrapOrchestrator judgement support | P1 | ✅ Done | JudgeExecutionResult, CalculateAutonomyDelta, EvaluateAndDecide, defaultJudgementCriteria; WithJudgementEngine option |
+| T15 | CLI judgement result display | P2 | ✅ Done | `axis judge` command + shell `judge` diagnostic |
 
 ## Phase 6.5: Testing & Documentation
 
 | ID | Task | Priority | Status | Notes |
 |----|------|----------|--------|-------|
-| T16 | Unit tests for each strategy | P1 | ⏳ Pending | |
-| T17 | Integration tests | P1 | ⏳ Pending | |
-| T18 | Documentation update | P2 | ⏳ Pending | |
+| T16 | Unit tests for each strategy | P1 | ✅ Done | Syntax, Test, Coverage, Semantic, Contract, Registry, BaseStrategy, Criteria, Result, Engine all covered |
+| T17 | Integration tests | P1 | ✅ Done | BootstrapOrchestrator judgement flow, CLI judge command, Engine boundary paths |
+| T18 | Documentation update | P2 | ✅ Done | tasks.md updated; design.md integration section reflects current API |
 
 ## Dependencies
 

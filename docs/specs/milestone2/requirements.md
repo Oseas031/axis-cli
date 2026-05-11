@@ -1,5 +1,7 @@
 # Milestone 2 Requirements
 
+**Status**: Completed
+
 ## Summary
 
 Milestone 2 extends Axis from Milestone 1's serial FIFO scheduling into a minimal parallel scheduling system for dependency graphs. The goal is to improve execution throughput while preserving Axis's Agent-native design philosophy and the existing Milestone 1 task/contract/state model.
@@ -21,7 +23,8 @@ Milestone 2 must follow:
 - **More Context**: expose enough dependency, readiness, and failure context for agents to decide next actions
 - **More Action**: allow multiple independent tasks to proceed without artificial serial bottlenecks
 - **Zero Control**: avoid central policy-heavy control planes; keep scheduling semantics explicit and replaceable
-- **Bash is All You Need**: keep validation and usage accessible from ordinary CLI commands and Go tests
+- **Controllable Evolution**: keep scheduler changes observable, testable, and safe to roll back
+- **Bash is All You Need, simple but robust, composable and extensible**: keep validation and usage accessible from ordinary CLI commands and Go tests
 
 ## Functional Requirements
 
@@ -96,17 +99,17 @@ At minimum, tests must be able to verify:
 
 ## Acceptance Criteria
 
-- [ ] `workflow-binding.md` declares upstream workflows and completion criteria
-- [ ] User confirms `requirements.md`, `design.md`, `tasks.md`, and `workflow-binding.md` before implementation
-- [ ] Existing `go test ./...` passes before implementation starts
-- [ ] Scheduler has tests for returning multiple ready tasks
-- [ ] Scheduler has tests for DAG dependency unblocking
-- [ ] Orchestrator has tests proving independent tasks can execute concurrently
-- [ ] Contract admission rejects unknown or invalid contracts before scheduling
-- [ ] SLA timeout behavior is covered by tests
-- [ ] Error codes are documented and used in at least scheduler/admission paths
-- [ ] Existing Milestone 1 CLI behavior still works
-- [ ] No Web UI, TUI, external database, or external model SDK is introduced
+- [x] `workflow-binding.md` declares upstream workflows and completion criteria
+- [x] User confirms `requirements.md`, `design.md`, `tasks.md`, and `workflow-binding.md` before implementation
+- [x] Existing `go test ./...` passes before implementation starts
+- [x] Scheduler has tests for returning multiple ready tasks
+- [x] Scheduler has tests for DAG dependency unblocking
+- [x] Orchestrator has tests proving independent tasks can execute concurrently
+- [x] Contract admission rejects unknown or invalid contracts before scheduling
+- [x] SLA timeout behavior is covered by tests
+- [x] Error codes are documented and used in at least scheduler/admission paths
+- [x] Existing Milestone 1 CLI behavior still works
+- [x] No Web UI, TUI, external database, or external model SDK is introduced
 
 ## Constraints
 
