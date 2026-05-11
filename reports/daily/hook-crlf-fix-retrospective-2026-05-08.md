@@ -4,6 +4,7 @@
 **范围**: 4 个 Claude Code hooks 的缺陷诊断、修复与验证
 **基准**: `.github/config/registry.yml` categories + `workflow/entry.md` 路由规则
 **原则**: More Context, More Action, Zero Control, Bash is All You Need, 奥卡姆剃刀
+**历史说明**: 本文保留 2026-05-08 当时表述。当前权威设计哲学以 `docs/architecture/agent-native-design-philosophy.md` 为准。
 
 ---
 

@@ -3,6 +3,7 @@
 **日期**: 2026-05-08
 **设计哲学**: More Context, More Action, Zero Control
 **评估范围**: 今日完成的所有工作项
+**历史说明**: 本文保留 2026-05-08 当时表述。当前权威设计哲学以 `docs/architecture/agent-native-design-philosophy.md` 为准。
 
 ---
 

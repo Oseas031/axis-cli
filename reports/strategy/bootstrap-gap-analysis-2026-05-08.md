@@ -5,6 +5,7 @@
 **对象**: Axis Agent 原生调度系统  
 **报告性质**: 自举 / 自因化差距分析与实施路线  
 **核心原则**: More Context, More Action, Zero Control; Bash is All You Need; Competence earns autonomy; Scaffold-to-Self
+**历史说明**: 本文保留 2026-05-08 当时表述。当前权威设计哲学以 `docs/architecture/agent-native-design-philosophy.md` 为准。
 
 ---
 
