@@ -1,6 +1,6 @@
 # Immunity Memory Tasks
 
-**Status**: Planned
+**Status**: In Progress (T2 complete)
 **Last Updated**: 2026-05-12
 **Implements**: `requirements.md` + `design.md` in this directory.
 
@@ -21,9 +21,15 @@
 
 ---
 
-## T2: Package Skeleton (`internal/memory/immunity/`)
+## T2: Package Skeleton (`internal/memory/immunity/`) ✓ COMPLETED
 
 Create the package with no real logic — just types and stub functions — so downstream tasks can be developed in isolation.
+
+**Completion record**:
+- Files: `types.go`, `classes.go`, `errors.go`, `sensitive_keys.go` (added per design D1 reconciliation)
+- Tests: `types_test.go`, `classes_test.go`, `errors_test.go`, `sensitive_keys_test.go` — all green
+- Verification: `go build ./...` OK, `go vet` clean, `go test -race` PASS, `staticcheck` 0 issues, `gosec` 0 issues
+- Boundary: `go list -deps ./internal/memory/immunity/` shows zero non-stdlib `github.com/axis-cli` imports
 
 ### 2.1 Files
 
