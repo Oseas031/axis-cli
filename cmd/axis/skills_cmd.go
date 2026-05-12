@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
+	"github.com/axis-cli/axis/internal/project"
 	"github.com/axis-cli/axis/internal/skills"
 	"github.com/spf13/cobra"
 )
@@ -19,8 +20,7 @@ func newSkillsCommand() *cobra.Command {
 }
 
 func skillsLoader() *skills.Loader {
-	dir, _ := os.Getwd()
-	return skills.NewLoader(filepath.Join(dir, ".axis", "skills"))
+	return skills.NewLoader(project.SkillsDir(project.MustResolveRoot()))
 }
 
 func newSkillsListCommand() *cobra.Command {
@@ -119,8 +119,8 @@ func newSkillsCreateCommand() *cobra.Command {
 			if err := skills.ValidateSkillName(name); err != nil {
 				return err
 			}
-			dir, _ := os.Getwd()
-			skillDir := filepath.Join(dir, ".axis", "skills", name)
+			dir := project.MustResolveRoot()
+			skillDir := filepath.Join(project.SkillsDir(dir), name)
 			if err := os.MkdirAll(skillDir, 0o755); err != nil {
 				return err
 			}

@@ -22,6 +22,7 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/model/tool"
+	"github.com/axis-cli/axis/internal/project"
 	"github.com/axis-cli/axis/internal/skills"
 	"github.com/axis-cli/axis/internal/types"
 )
@@ -79,8 +80,8 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	contractExec.SetToolRegistry(toolRegistry)
 
 	// Wire skills loader for Layer 1 prompt injection
-	cwd, _ := os.Getwd()
-	skillsPromptLoader := skills.NewLoader(filepath.Join(cwd, ".axis", "skills"))
+	root := project.MustResolveRoot()
+	skillsPromptLoader := skills.NewLoader(project.SkillsDir(root))
 	contractExec.SetSkillsLoader(skillsPromptLoader)
 
 	// Wire default compaction pipeline
@@ -143,7 +144,7 @@ func defaultToolRegistry() *tool.Registry {
 	_ = registry.Register(tool.NewHTTPClientTool([]string{"localhost", "127.0.0.1"}), []string{string(tool.ScopeNetwork)})
 
 	// Skills: load_skill tool
-	skillsDir := filepath.Join(allowedDir, ".axis", "skills")
+	skillsDir := project.SkillsDir(allowedDir)
 	skillsLoader := skills.NewLoader(skillsDir)
 	_ = registry.Register(tool.NewLoadSkillTool(skillsLoader), []string{string(tool.ScopeFilesystemRead)})
 	_ = registry.Register(tool.NewCompactTool(), nil)

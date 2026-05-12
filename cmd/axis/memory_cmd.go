@@ -9,13 +9,14 @@ import (
 	"text/tabwriter"
 
 	"github.com/axis-cli/axis/internal/memory/working"
+	"github.com/axis-cli/axis/internal/project"
 	"github.com/spf13/cobra"
 )
 
 // memoryRootDir returns the absolute path to .axis/memory/working for the
-// current project. P0 keeps it in the cwd; integration layer can override.
+// current project.
 func memoryWorkingDir() string {
-	return filepath.Join(".axis", "memory", "working")
+	return filepath.Join(project.MemoryDir(project.MustResolveRoot()), "working")
 }
 
 func newMemoryCommand() *cobra.Command {
@@ -30,6 +31,7 @@ func newMemoryCommand() *cobra.Command {
 		newMemoryInspectCommand(),
 		newMemoryCompactCommand(),
 		newMemoryRecallCommand(),
+		newMemoryImmunityCommand(),
 	)
 	return cmd
 }
