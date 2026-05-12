@@ -148,8 +148,9 @@ Maps to: `internal/contextpack/index*.go`, `internal/skills/discover.go`
 | Phase | Focus |
 |-------|-------|
 | Current | Syscall semantics stabilization, core abstractions implemented |
-| Next | `yield` + `checkpoint` primitives, spawn with full isolation |
-| Future | Multi-agent scheduling, capability marketplace, self-modifying kernel modules |
+| Next | Unified Actor model + Communication Layer (`docs/specs/actor-comm/`) |
+| Next+1 | `yield` + `checkpoint` primitives, spawn with full isolation |
+| Future | Multi-actor scheduling, capability marketplace, network communication |
 
 ## Relationship to Other Documents
 
