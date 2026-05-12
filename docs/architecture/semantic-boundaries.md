@@ -18,6 +18,7 @@ Good AI platform systems keep semantic boundaries explicit: a scheduler schedule
 | Provider | model request/response | task lifecycle, scheduler state, credentials persistence |
 | ProviderConfig | project-local provider profile state | task execution, scheduler policy |
 | Tool | bounded capability execution | global permission system, task scheduling |
+| Skills (Loader) | on-demand knowledge discovery and loading from `.axis/skills/` | automatic prompt injection, scheduler/contract modification, background work, network access |
 | Intent Parser | user intent to structured Axis object | direct execution, context assembly, permission escalation |
 | ContextBundle | task-specific readiness context | authority escalation, scheduler changes, task submission |
 | EvolutionRun | isolated system-change proposal, atomic steps, verification evidence, promotion/discard decision | implicit main-tree mutation, hidden execution policy, automatic authority escalation |

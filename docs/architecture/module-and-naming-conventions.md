@@ -37,6 +37,24 @@ Axis modules should be grouped by what they are responsible for, not by temporar
 | `reports/` | Historical analysis, audits, strategy, and review reports |
 | `scripts/` | Local helper scripts, if needed |
 
+## Project-Local Runtime Directory (`.axis/`)
+
+The `.axis/` directory stores project-local runtime state. It is gitignored.
+
+| Path | Responsibility |
+|---|---|
+| `.axis/runtime.json` | Local runtime metadata (loopback server address) |
+| `.axis/providers.json` | Project-local provider profiles |
+| `.axis/events/tasks.jsonl` | Task event log |
+| `.axis/skills/<name>/SKILL.md` | On-demand knowledge skills (see `docs/specs/skills-system/`) |
+
+### `.axis/skills/` Rules
+
+- Each skill is a directory named in kebab-case containing a `SKILL.md` file.
+- Optional subdirectories: `scripts/`, `references/`.
+- Skill names must match `^[a-z][a-z0-9-]*[a-z0-9]$`.
+- No nested skills. No remote fetching. Pure local files.
+
 ## Internal Package Layout
 
 ### `internal/types`
