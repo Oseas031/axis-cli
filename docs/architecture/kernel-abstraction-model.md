@@ -147,10 +147,10 @@ Maps to: `internal/contextpack/index*.go`, `internal/skills/discover.go`
 
 | Phase | Focus |
 |-------|-------|
-| Current | Syscall semantics stabilization, core abstractions implemented |
-| Next | Unified Actor model + Communication Layer (`docs/specs/actor-comm/`) |
-| Next+1 | `yield` + `checkpoint` primitives, spawn with full isolation |
-| Future | Multi-actor scheduling, capability marketplace, network communication |
+| ✅ Done | All 9 syscall primitives implemented, Actor P0, Leader-Worker subagent |
+| Next | `axis inbox` CLI, Dispatcher unification, orchestrator spawn integration |
+| Next+1 | Network mailbox, WebhookAdapter, cross-machine A2A |
+| Future | Multi-actor scheduling, capability marketplace, industry integration |
 
 ## Relationship to Other Documents
 
