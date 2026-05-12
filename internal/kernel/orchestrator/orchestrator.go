@@ -82,6 +82,15 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	cwd, _ := os.Getwd()
 	skillsPromptLoader := skills.NewLoader(filepath.Join(cwd, ".axis", "skills"))
 	contractExec.SetSkillsLoader(skillsPromptLoader)
+
+	// Wire default compaction pipeline
+	contractExec.SetCompactionPipeline(&contractexec.CompactionPipeline{
+		Strategies: []contractexec.CompactionStrategy{
+			&contractexec.ToolResultCompaction{KeepRecent: 3},
+			&contractexec.TruncationCompaction{KeepRecent: 4},
+		},
+		Budget: 32000,
+	})
 	humanExec := humanexec.NewHumanExecutor()
 	dispatch := dispatcher.NewDispatcher(contractExec, humanExec)
 	admissionValidator := admission.NewAdmissionValidator(contractExec)
@@ -137,6 +146,7 @@ func defaultToolRegistry() *tool.Registry {
 	skillsDir := filepath.Join(allowedDir, ".axis", "skills")
 	skillsLoader := skills.NewLoader(skillsDir)
 	_ = registry.Register(tool.NewLoadSkillTool(skillsLoader), []string{string(tool.ScopeFilesystemRead)})
+	_ = registry.Register(tool.NewCompactTool(), nil)
 
 	return registry
 }

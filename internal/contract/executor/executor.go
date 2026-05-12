@@ -22,11 +22,12 @@ type ContractExecutor interface {
 
 // ContractExecutorImpl implements contract execution
 type ContractExecutorImpl struct {
-	mu           sync.RWMutex
-	contracts    map[string]*types.AgentContract
-	provider     provider.ModelProvider
-	toolRegistry *tool.Registry
-	skillsLoader interface{ BuildSkillsPromptSection(context.Context) string }
+	mu                 sync.RWMutex
+	contracts          map[string]*types.AgentContract
+	provider           provider.ModelProvider
+	toolRegistry       *tool.Registry
+	skillsLoader       interface{ BuildSkillsPromptSection(context.Context) string }
+	compactionPipeline *CompactionPipeline
 }
 
 // NewContractExecutor creates a new contract executor
@@ -69,6 +70,13 @@ func (e *ContractExecutorImpl) SetSkillsLoader(sl interface{ BuildSkillsPromptSe
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.skillsLoader = sl
+}
+
+// SetCompactionPipeline sets the compaction pipeline for history management.
+func (e *ContractExecutorImpl) SetCompactionPipeline(p *CompactionPipeline) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.compactionPipeline = p
 }
 
 // safeMarshal JSON-marshals a value with panic recovery.
@@ -218,6 +226,10 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 						Content:    string(content),
 					})
 				}
+			}
+			// Compact history if pipeline is configured
+			if e.compactionPipeline != nil {
+				history = e.compactionPipeline.Compact(ctx, history)
 			}
 			continue
 		}
