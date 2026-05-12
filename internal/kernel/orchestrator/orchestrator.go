@@ -148,6 +148,9 @@ func defaultToolRegistry() *tool.Registry {
 	skillsLoader := skills.NewLoader(skillsDir)
 	_ = registry.Register(tool.NewLoadSkillTool(skillsLoader), []string{string(tool.ScopeFilesystemRead)})
 	_ = registry.Register(tool.NewCompactTool(), nil)
+	_ = registry.Register(tool.NewYieldTool(), nil)
+	_ = registry.Register(tool.NewCheckpointTool(), nil)
+	_ = registry.Register(tool.NewSpawnTool(), nil)
 
 	return registry
 }
