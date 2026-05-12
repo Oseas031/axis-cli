@@ -137,6 +137,9 @@ func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 	// Add tools with proper JSON Schema
 	if len(req.Tools) > 0 {
 		ar.System = "You have access to the following tools. Use them when needed."
+		if req.SystemPrompt != "" {
+			ar.System = req.SystemPrompt
+		}
 		for _, t := range req.Tools {
 			schema := anthropicToolSchema{Type: "object"}
 			schema.Properties = make(map[string]any)

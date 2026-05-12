@@ -85,6 +85,5 @@ func safeSkillPath(baseDir, name string) (string, error) {
 
 // Validate checks if a skill directory is valid.
 func (l *Loader) Validate(ctx context.Context, name string) error {
-	// TODO: implement in T5
-	return nil
+	return l.validateSkill(ctx, name)
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/model/tool"
+	"github.com/axis-cli/axis/internal/skills"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -76,6 +77,11 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	contractExec := contractexec.NewContractExecutor()
 	contractExec.SetProvider(provider.NewMockModelProvider())
 	contractExec.SetToolRegistry(toolRegistry)
+
+	// Wire skills loader for Layer 1 prompt injection
+	cwd, _ := os.Getwd()
+	skillsPromptLoader := skills.NewLoader(filepath.Join(cwd, ".axis", "skills"))
+	contractExec.SetSkillsLoader(skillsPromptLoader)
 	humanExec := humanexec.NewHumanExecutor()
 	dispatch := dispatcher.NewDispatcher(contractExec, humanExec)
 	admissionValidator := admission.NewAdmissionValidator(contractExec)
@@ -126,6 +132,12 @@ func defaultToolRegistry() *tool.Registry {
 	_ = registry.Register(tool.NewFileReadTool(allowedDirs), []string{string(tool.ScopeFilesystemRead)})
 	_ = registry.Register(tool.NewFileWriteTool(allowedDirs), []string{string(tool.ScopeFilesystemWrite)})
 	_ = registry.Register(tool.NewHTTPClientTool([]string{"localhost", "127.0.0.1"}), []string{string(tool.ScopeNetwork)})
+
+	// Skills: load_skill tool
+	skillsDir := filepath.Join(allowedDir, ".axis", "skills")
+	skillsLoader := skills.NewLoader(skillsDir)
+	_ = registry.Register(tool.NewLoadSkillTool(skillsLoader), []string{string(tool.ScopeFilesystemRead)})
+
 	return registry
 }
 

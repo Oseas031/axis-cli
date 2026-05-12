@@ -26,6 +26,7 @@ type ContractExecutorImpl struct {
 	contracts    map[string]*types.AgentContract
 	provider     provider.ModelProvider
 	toolRegistry *tool.Registry
+	skillsLoader interface{ BuildSkillsPromptSection(context.Context) string }
 }
 
 // NewContractExecutor creates a new contract executor
@@ -63,6 +64,13 @@ func (e *ContractExecutorImpl) SetToolRegistry(tr *tool.Registry) {
 	e.toolRegistry = tr
 }
 
+// SetSkillsLoader sets the skills loader for system prompt injection.
+func (e *ContractExecutorImpl) SetSkillsLoader(sl interface{ BuildSkillsPromptSection(context.Context) string }) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.skillsLoader = sl
+}
+
 // safeMarshal JSON-marshals a value with panic recovery.
 // Returns an error if marshaling fails or if a panic occurs.
 func safeMarshal(v any) ([]byte, error) {
@@ -96,6 +104,11 @@ func (e *ContractExecutorImpl) Execute(ctx context.Context, contractID string, i
 
 	if p != nil {
 		req := &provider.ModelRequest{ContractID: contractID, Input: input}
+
+		// Inject skills prompt if available
+		if e.skillsLoader != nil {
+			req.SystemPrompt = e.skillsLoader.BuildSkillsPromptSection(ctx)
+		}
 
 		// Add tools if a registry is available with registered tools.
 		hasTools := false

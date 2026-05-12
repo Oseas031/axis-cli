@@ -94,7 +94,7 @@ func NewRootCommand(app *App) *cobra.Command {
 	}
 	shellCmd.Flags().Bool("no-prompt", false, "Suppress interactive shell prompt for pipe/automation drivers")
 
-	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand())
+	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand())
 
 	rootCmd.PersistentFlags().StringVar(&app.providerName, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
 	rootCmd.PersistentFlags().StringVar(&app.modelName, "model", "", "Model name for real providers")

@@ -60,7 +60,7 @@ func TestOrchestrator_DefaultToolRegistryExposesCoreTools(t *testing.T) {
 	}
 	got := append([]string(nil), p.toolNames...)
 	sort.Strings(got)
-	want := []string{"bash", "file_read", "file_write", "http_request"}
+	want := []string{"bash", "file_read", "file_write", "http_request", "load_skill"}
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("expected default tools %v, got %v", want, got)
 	}

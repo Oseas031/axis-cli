@@ -115,6 +115,9 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 	}
 
 	// Convert history to OpenAI message format
+	if req.SystemPrompt != "" {
+		or.Messages = append(or.Messages, openaiMessage{Role: "system", Content: req.SystemPrompt})
+	}
 	for _, msg := range req.History {
 		om := openaiMessage{
 			Role:       msg.Role,

@@ -9,10 +9,11 @@ import (
 
 // ModelRequest is the input to a model provider call.
 type ModelRequest struct {
-	ContractID string
-	Input      map[string]any
-	Tools      []types.ToolDefinition // Available tools for this execution
-	History    []types.ModelMessage   // Prior turns in multi-turn execution
+	ContractID   string
+	Input        map[string]any
+	Tools        []types.ToolDefinition // Available tools for this execution
+	History      []types.ModelMessage   // Prior turns in multi-turn execution
+	SystemPrompt string                 // Optional system prompt (includes skills metadata)
 }
 
 // ModelResponse is the output from a model provider call.

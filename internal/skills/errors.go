@@ -9,4 +9,5 @@ var (
 	ErrInvalidPath         = errors.New("invalid skill path: path escape detected")
 	ErrDescriptionRequired = errors.New("skill description is required")
 	ErrMissingSKILLMD      = errors.New("SKILL.md not found in skill directory")
+	ErrNameMismatch        = errors.New("skill name in frontmatter does not match directory name")
 )
