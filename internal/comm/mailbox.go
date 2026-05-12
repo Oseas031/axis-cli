@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/axis-cli/axis/internal/actor"
 )
 
 // Mailbox provides persistent async message storage per Actor.
@@ -29,7 +27,7 @@ func (m *Mailbox) path(actorID string) string {
 }
 
 // Send appends a message to the recipient's mailbox file.
-func (m *Mailbox) Send(msg actor.Message) error {
+func (m *Mailbox) Send(msg Message) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -51,14 +49,14 @@ func (m *Mailbox) Send(msg actor.Message) error {
 }
 
 // Peek returns all messages for an actor without removing them.
-func (m *Mailbox) Peek(actorID string) ([]actor.Message, error) {
+func (m *Mailbox) Peek(actorID string) ([]Message, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.readAll(actorID)
 }
 
 // Receive returns all messages and clears the mailbox.
-func (m *Mailbox) Receive(actorID string) ([]actor.Message, error) {
+func (m *Mailbox) Receive(actorID string) ([]Message, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -85,7 +83,7 @@ func (m *Mailbox) Ack(actorID string, msgIDs []string) error {
 		idSet[id] = true
 	}
 	// Rewrite without acked messages
-	var remaining []actor.Message
+	var remaining []Message
 	for _, msg := range msgs {
 		if !idSet[msg.ID] {
 			remaining = append(remaining, msg)
@@ -94,7 +92,7 @@ func (m *Mailbox) Ack(actorID string, msgIDs []string) error {
 	return m.writeAll(actorID, remaining)
 }
 
-func (m *Mailbox) readAll(actorID string) ([]actor.Message, error) {
+func (m *Mailbox) readAll(actorID string) ([]Message, error) {
 	f, err := os.Open(m.path(actorID))
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -104,10 +102,10 @@ func (m *Mailbox) readAll(actorID string) ([]actor.Message, error) {
 	}
 	defer f.Close()
 
-	var msgs []actor.Message
+	var msgs []Message
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		var msg actor.Message
+		var msg Message
 		if err := json.Unmarshal(scanner.Bytes(), &msg); err != nil {
 			continue // skip malformed lines
 		}
@@ -116,7 +114,7 @@ func (m *Mailbox) readAll(actorID string) ([]actor.Message, error) {
 	return msgs, scanner.Err()
 }
 
-func (m *Mailbox) writeAll(actorID string, msgs []actor.Message) error {
+func (m *Mailbox) writeAll(actorID string, msgs []Message) error {
 	if len(msgs) == 0 {
 		os.Remove(m.path(actorID))
 		return nil

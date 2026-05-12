@@ -3,14 +3,12 @@ package comm
 import (
 	"testing"
 	"time"
-
-	"github.com/axis-cli/axis/internal/actor"
 )
 
-func testMsg(id, from, to string) actor.Message {
-	return actor.Message{
+func testMsg(id, from, to string) Message {
+	return Message{
 		ID: id, From: from, To: to,
-		Type: actor.MsgNotify, Payload: map[string]any{"text": "hello"},
+		Type: MsgNotify, Payload: map[string]any{"text": "hello"},
 		Timestamp: time.Now(),
 	}
 }
@@ -39,7 +37,6 @@ func TestMailbox_Receive_Clears(t *testing.T) {
 	if len(msgs) != 2 {
 		t.Fatalf("expected 2, got %d", len(msgs))
 	}
-	// After receive, mailbox should be empty
 	msgs, _ = mb.Peek("b")
 	if len(msgs) != 0 {
 		t.Errorf("expected empty after Receive, got %d", len(msgs))

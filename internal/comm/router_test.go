@@ -3,19 +3,17 @@ package comm
 import (
 	"context"
 	"testing"
-
-	"github.com/axis-cli/axis/internal/actor"
 )
 
 type testActor struct {
 	id       string
-	status   actor.ActorStatus
-	received []actor.Message
+	status   ActorStatus
+	received []Message
 }
 
-func (a *testActor) ID() string             { return a.id }
-func (a *testActor) Status() actor.ActorStatus { return a.status }
-func (a *testActor) Receive(ctx context.Context, msg actor.Message) error {
+func (a *testActor) ID() string                                      { return a.id }
+func (a *testActor) CommStatus() ActorStatus                         { return a.status }
+func (a *testActor) Receive(ctx context.Context, msg Message) error {
 	a.received = append(a.received, msg)
 	return nil
 }
@@ -24,7 +22,7 @@ func TestRouter_DirectDelivery(t *testing.T) {
 	mb := NewMailbox(t.TempDir())
 	r := NewRouter(mb)
 
-	a := &testActor{id: "agent-1", status: actor.ActorReady}
+	a := &testActor{id: "agent-1", status: StatusReady}
 	r.Register(a)
 
 	msg := testMsg("m1", "human", "agent-1")
@@ -40,18 +38,16 @@ func TestRouter_OfflineQueues(t *testing.T) {
 	mb := NewMailbox(t.TempDir())
 	r := NewRouter(mb)
 
-	a := &testActor{id: "human", status: actor.ActorOffline}
+	a := &testActor{id: "human", status: StatusOffline}
 	r.Register(a)
 
 	msg := testMsg("m1", "agent-1", "human")
 	if err := r.Send(context.Background(), msg); err != nil {
 		t.Fatal(err)
 	}
-	// Should not be delivered directly
 	if len(a.received) != 0 {
 		t.Error("offline actor should not receive directly")
 	}
-	// Should be in mailbox
 	msgs, _ := mb.Peek("human")
 	if len(msgs) != 1 {
 		t.Errorf("expected 1 in mailbox, got %d", len(msgs))
@@ -68,6 +64,6 @@ func TestRouter_UnregisteredQueues(t *testing.T) {
 	}
 	msgs, _ := mb.Peek("unknown-actor")
 	if len(msgs) != 1 {
-		t.Errorf("expected 1 in mailbox for unregistered actor, got %d", len(msgs))
+		t.Errorf("expected 1 in mailbox, got %d", len(msgs))
 	}
 }

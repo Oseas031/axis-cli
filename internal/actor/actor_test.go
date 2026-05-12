@@ -5,18 +5,21 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/axis-cli/axis/internal/comm"
 )
 
 // stubActor is a minimal Actor implementation for testing.
 type stubActor struct {
 	id       string
 	status   ActorStatus
-	received []Message
+	received []comm.Message
 }
 
-func (s *stubActor) ID() string                                  { return s.id }
-func (s *stubActor) Status() ActorStatus                         { return s.status }
-func (s *stubActor) Receive(ctx context.Context, msg Message) error {
+func (s *stubActor) ID() string                                       { return s.id }
+func (s *stubActor) Status() ActorStatus                              { return s.status }
+func (s *stubActor) CommStatus() comm.ActorStatus                     { return comm.ActorStatus(s.status) }
+func (s *stubActor) Receive(ctx context.Context, msg comm.Message) error {
 	s.received = append(s.received, msg)
 	return nil
 }
@@ -32,11 +35,11 @@ func TestActorInterface(t *testing.T) {
 }
 
 func TestMessageJSONRoundTrip(t *testing.T) {
-	msg := Message{
+	msg := comm.Message{
 		ID:        "msg-1",
 		From:      "agent-a",
 		To:        "human",
-		Type:      MsgTask,
+		Type:      comm.MsgTask,
 		Payload:   map[string]any{"task_id": "t1", "input": "hello"},
 		Timestamp: time.Now().Truncate(time.Second),
 	}
@@ -44,7 +47,7 @@ func TestMessageJSONRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var decoded Message
+	var decoded comm.Message
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +58,7 @@ func TestMessageJSONRoundTrip(t *testing.T) {
 
 func TestActorReceive(t *testing.T) {
 	a := &stubActor{id: "a1", status: ActorReady}
-	msg := Message{ID: "m1", From: "b1", To: "a1", Type: MsgNotify}
+	msg := comm.Message{ID: "m1", From: "b1", To: "a1", Type: comm.MsgNotify}
 	if err := a.Receive(context.Background(), msg); err != nil {
 		t.Fatal(err)
 	}
