@@ -224,18 +224,22 @@ External helper tools live under:
 tools/<tool-name>/
 ```
 
-Example:
+Current tools:
 
 ```text
-tools/axis-up/
+tools/axis-up/       # Onboarding helper
+tools/axis-gui/      # Observation dashboard (React + Go HTTP server)
 ```
 
 Rules:
 
 - Tools must not import `github.com/axis-cli/axis/internal/...`.
-- Tools should call public Axis binaries or public files only.
-- Tools must not mutate Axis source code unless explicitly designed for that task.
+- Tools must have their own `go.mod` (independent module).
+- Tools should call public Axis binaries or read `.axis/` files only.
+- Tools must not mutate Axis state or source code.
 - Tools should optimize usability without invading Axis core.
+- Tool source is tracked in git; build artifacts and `node_modules/` are gitignored.
+- Each tool must have a `README.md` documenting purpose, build, and boundary rules.
 
 ## Documentation Conventions
 

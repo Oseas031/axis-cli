@@ -136,6 +136,8 @@ Profiles are stored in `.axis/providers.json` and do not modify shell environmen
 | `axis context preview/inspect/preflight` | Context assembly preview and readiness check |
 | `axis judge` | Run self-judgement diagnostic |
 | `axis evolve inspect/promote/discard` | Sandboxed evolution inspection and decisions |
+| `axis skills list/show/validate/create` | Manage on-demand knowledge skills |
+| `axis gui [--port 3000]` | Launch observation dashboard (Web UI) |
 
 ## External Tools
 

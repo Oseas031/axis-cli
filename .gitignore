@@ -31,15 +31,13 @@ $GITHUB_ENV
 # Third-party agent runtime state (claude-flow daemon, etc.)
 .claude-flow/
 
-# Auxiliary tools — non-invasive helpers (axis-gui TUI, axis-up updater).
-# Sources live in their own repos; only compiled binaries land here on
-# `axis-up install`. Never commit them to the core repo: this would
-# leak 100MB+ of node_modules / .exe artefacts, drag the §1 "no Web/TUI
-# in core" boundary into the main module graph, and pin a binary
-# release into source history. See docs/tools/axis-up.md for how to
-# fetch them locally.
-# (Leading slash anchors to repo root so docs/tools/ is NOT ignored.)
-/tools/
+# Auxiliary tools — non-invasive helpers that observe Axis through public
+# interfaces. They have independent go.mod and MUST NOT import internal/.
+# Source is tracked; build artifacts and dependencies are not.
+/tools/axis-gui/axis-gui.exe
+/tools/axis-gui/frontend/node_modules/
+/tools/axis-gui/frontend/dist/
+/tools/axis-up/axis-up.exe
 
 # IDE local config
 .windsurf/
