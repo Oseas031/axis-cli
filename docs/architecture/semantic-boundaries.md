@@ -34,6 +34,9 @@ Good AI platform systems keep semantic boundaries explicit: a scheduler schedule
 - Draft evolution is not main system state.
 - Verification is evidence for promotion; it is not promotion by itself.
 - Discarded evolution remains audit history unless explicitly deleted by a documented cleanup path.
+- Kernel syscalls are fixed primitives; their semantics cannot be overridden by Agents or userland tools.
+- Userland tools extend Agent capabilities; they do not modify kernel scheduling, isolation, or state semantics.
+- Capability granting flows from Kernel to Agent; Agents cannot self-escalate without Kernel verification.
 
 ## Boundary Violation Signals
 
@@ -46,6 +49,8 @@ A change needs review if it:
 - makes shell commands behave differently from CLI commands without a spec
 - turns metadata into hidden policy enforcement
 - lets an evolution workspace mutate the main tree before explicit promotion
+- lets a userland tool modify syscall semantics (scheduling, isolation, state transitions)
+- lets an Agent bypass `request_capability` to access tools directly
 - treats a successful verification command as automatic promotion
 
 ## Rule of Thumb

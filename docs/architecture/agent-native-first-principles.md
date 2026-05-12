@@ -13,6 +13,12 @@
 
 The underlying nature of an Agent-native scheduling system is not "a smarter Cron + BPMN", but a **lifecycle governance system for autonomous computational entities**.
 
+More precisely: Axis is an **operating system for Agents**. It solves the problem of how to let a non-deterministic, autonomous entity exist safely, observably, and evolvably in a complex world.
+
+Like Linux provides processes with scheduling, memory, filesystem, and IPC — Axis provides Agents with scheduling, context, capabilities, and isolation. But unlike Linux (which manages deterministic processes), Axis manages entities whose next action cannot be predicted. This demands a fundamentally different relationship: not control, but substrate.
+
+See `docs/architecture/kernel-abstraction-model.md` for the structural expression of this thesis.
+
 ---
 
 ## Six First Principles

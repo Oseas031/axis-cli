@@ -1,6 +1,6 @@
 ﻿# Axis
 
-> Agent-native scheduling system. Not to control Agents, but to let Agents earn competence through task practice, gain autonomy, and ultimately generate themselves.
+> An operating system for Agents. Not to control them, but to provide the substrate conditions — scheduling, context, capabilities, isolation — for autonomous entities to exist safely, observably, and evolvably.
 
 Axis is not a smarter task queue, nor an LLM wrapper framework. Axis is an **Agent autogenesis execution substrate**: enabling Agents to understand tasks, organize actions, validate results, reflect on failures, generate follow-up tasks, and progressively earn greater autonomy through reliable performance.
 
@@ -147,6 +147,7 @@ Both tools do not import Axis internal packages; they communicate via CLI and HT
 ## Key Documentation
 
 - [Agent-Native First Principles](docs/architecture/agent-native-first-principles.md) **<-- read before coding**
+- [Kernel Abstraction Model](docs/architecture/kernel-abstraction-model.md) — syscall layer, core abstractions, infrastructure
 - [Bash is All You Need](docs/architecture/bash-is-all-you-need.md)
 - [System Conventions](docs/architecture/axis-system-conventions.md)
 - [Current Progress](docs/status/current-progress.md)
