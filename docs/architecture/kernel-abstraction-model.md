@@ -41,10 +41,10 @@ Kernel syscalls are the fixed primitives that define what an Agent can say to th
 | `acquire_context` | Request context loading | contextpack Assembler |
 | `request_capability` | Request access to a tool/skill | load_skill, permission ladder |
 | `compact` | Request context compaction | CompactionPipeline |
-| `spawn` | Create subtask/sub-agent with isolation | FollowUpTaskGenerator (partial) |
+| `spawn` | Create subtask/sub-agent with isolation | `spawn` tool (full/shared isolation) |
 | `introspect` | Get self-state snapshot | SelfContext, ContextBuilder |
-| `yield` | Voluntarily yield execution | Not yet implemented |
-| `checkpoint` | Persist intermediate state | Not yet implemented |
+| `yield` | Voluntarily yield execution | `yield` tool |
+| `checkpoint` | Persist intermediate state | `checkpoint` tool |
 
 ### Syscall vs Userland
 

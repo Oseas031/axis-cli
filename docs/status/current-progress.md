@@ -2,7 +2,7 @@
 
 **[Chinese version / 中文版](../zh/status/current-progress.md)**
 
-**Updated**: 2026-05-11
+**Updated**: 2026-05-12
 **Current Milestones**: M1 ✅ | M2 ✅ | M3 (Phase 1-3) ✅ | M4 ✅ (Original T1-T18 + Gap Fix T19-T22 + Hardening T23-T28) | M5 ✅ | M6 ✅
 
 ## Current Design Positioning
@@ -192,6 +192,44 @@ Key observations:
 - ✅ Monitoring 3 job failures — Fixed on milestone1-acceptance branch, pending PR merge to main
 - ✅ M4 T19-T22 gap fix: CLI env fallback, default model correction, empty key early detection, regression tests
 - ✅ M4 T23-T28 non-destructive hardening: provider test, retry, truncation, structured logging, cost tracking, status enhancement
+
+## Completed (2026-05-12)
+
+### Skills System (full implementation)
+- [x] internal/skills/: Discover, Load, Validate, parseFrontmatter
+- [x] CLI: axis skills list/show/validate/create
+- [x] load_skill tool registered in ToolRegistry
+- [x] Layer 1 system prompt injection (BuildSkillsPromptSection)
+- [x] Boundary enforcement tests (scheduler isolation, path safety)
+
+### Three-Layer Context Compaction
+- [x] EstimateTokens (4-char heuristic)
+- [x] ToolResultCompaction (truncate old tool results)
+- [x] SummarizationCompaction (LLM-based summarization)
+- [x] TruncationCompaction (sliding window backstop)
+- [x] CompactionPipeline integrated into executeMultiTurn
+- [x] compact tool registered
+
+### Structural Fixes
+- [x] internal/project/root.go: ResolveRoot (walk-up .axis/ discovery)
+- [x] Replaced 6 scattered os.Getwd() + .axis path constructions
+
+### Kernel Abstraction Model
+- [x] docs/architecture/kernel-abstraction-model.md (syscall layer, 4 core abstractions, infra layer)
+- [x] Axis repositioned as "OS for Agents"
+- [x] All 9 syscall primitives implemented: submit_task, query_state, acquire_context, request_capability, compact, spawn, introspect, yield, checkpoint
+
+### Actor Model & Communication Layer (P0)
+- [x] internal/actor/: Actor interface, Message, MessageType, ActorStatus
+- [x] internal/comm/: JSONL Mailbox (Send/Receive/Peek/Ack) + Router
+- [x] yield tool: voluntary execution pause
+- [x] checkpoint tool: intermediate state persistence
+- [x] spawn tool: isolated subtask creation (full/shared isolation)
+
+### Architecture Decisions
+- [x] Homogeneous Actor model chosen (人机同构)
+- [x] Actor-Comm spec triplet created (docs/specs/actor-comm/)
+- [x] Unified Actor Model & Communication Layer planned (P0-P3 phases)
 
 ## Important Reminders
 - M1 ✅ | M2 ✅ | M3 Phase 1-3 ✅ | **M4 ✅ (Original T1-T18 + Gap Fix T19-T22 + Hardening T23-T28)** | M5 ✅ | M6 ✅ Completed
