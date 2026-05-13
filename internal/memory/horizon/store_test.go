@@ -1,8 +1,11 @@
 package horizon
 
 import (
+	"context"
 	"testing"
 	"time"
+
+	"github.com/axis-cli/axis/internal/memory/longterm"
 )
 
 func TestStore_InitAndStore(t *testing.T) {
@@ -62,3 +65,59 @@ func TestStore_RecallAllCategories(t *testing.T) {
 		t.Errorf("expected 2 results across categories, got %d", len(results))
 	}
 }
+
+func TestDream_ClustersAndDistills(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(dir)
+	store.Init()
+
+	events := &mockEventStore{
+		events: []longterm.EventRecord{
+			{EventType: "task.failed", EntityID: "t1", Timestamp: time.Now(), Payload: map[string]any{"error": "connection timeout to api.example.com:8080/v2/users endpoint failed with network unreachable"}},
+			{EventType: "task.failed", EntityID: "t2", Timestamp: time.Now(), Payload: map[string]any{"error": "connection timeout to api.example.com:8080/v2/users endpoint failed with connection reset"}},
+			{EventType: "task.failed", EntityID: "t3", Timestamp: time.Now(), Payload: map[string]any{"error": "permission denied: /etc/shadow"}},
+		},
+	}
+
+	result, err := Dream(context.Background(), events, store, DreamOptions{})
+	if err != nil {
+		t.Fatalf("Dream failed: %v", err)
+	}
+	if result.EventsRead != 3 {
+		t.Errorf("expected 3 events read, got %d", result.EventsRead)
+	}
+	// "connection timeout" cluster has 2 events → 1 pattern
+	// "permission denied" has 1 event → no pattern (needs >=2)
+	if result.PatternsNew != 1 {
+		t.Errorf("expected 1 new pattern, got %d", result.PatternsNew)
+	}
+}
+
+func TestDream_NoEvents(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(dir)
+	store.Init()
+
+	events := &mockEventStore{events: nil}
+	result, err := Dream(context.Background(), events, store, DreamOptions{})
+	if err != nil {
+		t.Fatalf("Dream failed: %v", err)
+	}
+	if result.EventsRead != 0 || result.PatternsNew != 0 {
+		t.Errorf("expected empty result, got %+v", result)
+	}
+}
+
+// mockEventStore implements longterm.Store for testing.
+type mockEventStore struct {
+	events []longterm.EventRecord
+}
+
+func (m *mockEventStore) Append(ctx context.Context, event longterm.EventRecord) error { return nil }
+func (m *mockEventStore) QueryEvents(ctx context.Context, filter longterm.EventFilter) ([]longterm.EventRecord, error) {
+	return m.events, nil
+}
+func (m *mockEventStore) MarkForgotten(ctx context.Context, entityID string, at time.Time) error {
+	return nil
+}
+func (m *mockEventStore) Close() error { return nil }
