@@ -5,33 +5,45 @@
 set ROOT=%~dp0
 cd /d "%ROOT%"
 
-echo [Axis] Building...
+echo [Axis] Building engine...
 go build -o axis-dev.exe ./cmd/axis/ 2>nul
 if errorlevel 1 (
-    echo [Axis] Build failed. Run 'go build -o axis-dev.exe ./cmd/axis/' manually.
+    echo [Axis] Engine build failed.
     pause
     exit /b 1
 )
 
-echo [Axis] Starting engine...
-start "Axis Engine" /B axis-dev.exe start
+echo [Axis] Building GUI...
+go build -o tools\axis-gui\axis-gui.exe ./tools/axis-gui/ 2>nul
+if errorlevel 1 (
+    echo [Axis] GUI build failed.
+    pause
+    exit /b 1
+)
 
-:: Wait for runtime.json to appear
+:: Kill stale processes
+taskkill /F /IM axis-dev.exe >nul 2>&1
+taskkill /F /IM axis-gui.exe >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+echo [Axis] Starting engine...
+start "" /MIN axis-dev.exe start
+
+:: Wait for runtime.json
 :wait_runtime
 timeout /t 1 /nobreak >nul
 if not exist ".axis\runtime.json" goto wait_runtime
 
 echo [Axis] Engine running.
-
 echo [Axis] Starting GUI on port 3000...
-start "Axis GUI" /B tools\axis-gui\axis-gui.exe --port 3000 --root "%ROOT%"
+start "" /MIN tools\axis-gui\axis-gui.exe --port 3000 --root "%ROOT%"
 
-timeout /t 1 /nobreak >nul
+timeout /t 2 /nobreak >nul
 echo.
 echo ============================================
-echo   Axis Engine:  see .axis/runtime.json
+echo   Axis Engine:  running (see .axis/runtime.json)
 echo   Axis GUI:     http://localhost:3000
 echo ============================================
 echo.
-echo Press Ctrl+C or close this window to stop.
-pause >nul
+echo Both processes run in minimized windows.
+echo Close them manually or run: taskkill /F /IM axis-dev.exe ^& taskkill /F /IM axis-gui.exe

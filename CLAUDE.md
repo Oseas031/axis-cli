@@ -6,6 +6,20 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 > This file is the single source of truth for all coding constraints.
 > Other files (`HANDOVER.md`, `AGENT_INSTRUCTIONS.md`, `workflow/entry.md`) reference this file; they do NOT redefine constraints.
 
+## 0. 作者工作方法论（AI 必读）
+
+作者使用 **SRS Loop（Spec-Reflect-Sublate 循环）** 工作，共 A0-A8 八个阶段。
+当作者提到"我的工作流"、"按 SRS Loop"、"帮我做 A5/A7/A8"时，指的是这套方法论。
+
+**AI 协作参考文档（精简版）**：`docs/guides/SRS-LOOP-AI-REFERENCE.md` ← **每次开始新任务前读这个**
+**完整方法论文档**：`docs/guides/YOUR_IMPLICIT_METHODOLOGY.md`
+
+核心要点：
+- A0-A5 + A7-A8 是思想工作，A6 才是写代码。不要跳过思想阶段直接执行。
+- 工作的终点是"规则更新"（A8 写回），不是"代码合并"。
+- 作者写的长篇分析文档大多是 A1 外化工具，不是完整任务清单，不要全部实施。
+- 遇到实现选择时：先对齐原则（A4），再最小化（A5），最后执行（A6）。
+
 ---
 
 ## 1. Absolute Prohibitions
@@ -120,6 +134,8 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - Process termination: use `os.Process.Kill()` or platform abstraction, not `syscall.Kill`
 - Signal handling: graceful shutdown that degrades on Windows
 - Shell scripts/hooks: portable across WSL / Git Bash / PowerShell / macOS / Linux
+- File sharing: when a file may be held by another process for writing (e.g. event logs, JSONL), use `os.ReadFile` (snapshot read) not `os.Open` + streaming scanner — Windows default share mode blocks concurrent readers
+- Batch scripts: use `start "" /MIN` for independent background processes, not `start /B` (which dies with the parent console)
 
 ### Defensive Programming
 - Every public function validates inputs at entry: nil, empty, negative, special chars, boundary

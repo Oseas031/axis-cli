@@ -44,3 +44,11 @@ $GITHUB_ENV
 .windsurfrules
 .idea/
 .vscode/
+
+
+# External reference repos (read-only, not part of Axis)
+EXTERNAL/
+
+# Tool-local state
+.kiro/
+.context-summary.md

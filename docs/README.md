@@ -26,6 +26,8 @@ Documents are organized by purpose. Start with the entry points, then navigate t
 - [Beginner Guide (axis-up)](guides/BEGINNER_GUIDE.md)
 - [axis-up External Onboarding Tool](tools/axis-up.md)
 - [Bash is All You Need](architecture/bash-is-all-you-need.md)
+- **[SRS Loop — AI Collaboration Reference](guides/SRS-LOOP-AI-REFERENCE.md)** ← AI 协作必读：作者工作方法论（A0-A8）
+- [SRS Loop — Full Methodology](guides/YOUR_IMPLICIT_METHODOLOGY.md) ← 完整版
 
 ## 4. Architecture Reference
 
@@ -81,5 +83,9 @@ Documents are organized by purpose. Start with the entry points, then navigate t
 
 - [Reports Index](../reports/README.md)
 - [Deprecated Documents](deprecated/README.md)
+
+## 9. External References
+
+- [learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) — 教学仓库：从零开始构建 Claude Code 风格 Agent（12 渐进式课程：工具调用 → 任务规划 → 子 Agent → 上下文压缩 → 多 Agent 协作 → 自主执行）
 
 **Canonical design document**: `docs/architecture/agent-native-first-principles.md` (principles + design philosophy merged). Read before coding.

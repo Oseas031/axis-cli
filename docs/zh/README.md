@@ -80,4 +80,8 @@
 - [报告索引](../reports/README.md)
 - [废弃文档](deprecated/README.md)
 
+## 9. 外部参考
+
+- [learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) — 教学仓库：从零开始构建 Claude Code 风格 Agent（12 渐进式课程：工具调用 → 任务规划 → 子 Agent → 上下文压缩 → 多 Agent 协作 → 自主执行）
+
 **当前权威设计文档**：`docs/architecture/agent-native-first-principles.md`（原理 + 设计哲学合并版）。编码前必读。
