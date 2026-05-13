@@ -604,7 +604,7 @@ func TestOrchestrator_TaskFailsNoRetry(t *testing.T) {
 		t.Fatalf("Failed to start orchestrator: %v", err)
 	}
 
-	// max_retries=0 means no retry on first failure, wraps with ErrTaskTimeout
+	// max_retries=0 means no retry on first failure, wraps with ErrDispatchFailed
 	task := &types.AgentTask{
 		TaskID:     "fail-no-retry",
 		ContractID: "failing-once",
@@ -833,7 +833,7 @@ func TestOrchestrator_FatalFailureClass(t *testing.T) {
 		t.Fatalf("Failed to start orchestrator: %v", err)
 	}
 
-	// fatal failure class with max_retries=3: should not retry, immediate fail
+	// fatal failure class with max_retries=3: admission rejects contradictory config
 	task := &types.AgentTask{
 		TaskID:     "fatal-task",
 		ContractID: "fatal-fail",
@@ -843,11 +843,24 @@ func TestOrchestrator_FatalFailureClass(t *testing.T) {
 			types.SLAKeyFailureClass: types.FailureClassFatal,
 		},
 	}
-	if err := orch.SubmitTask(task); err != nil {
-		t.Fatalf("Failed to submit task: %v", err)
+	if err := orch.SubmitTask(task); err == nil {
+		t.Fatal("Expected admission to reject fatal + retries>0")
 	}
 
-	status := waitForTaskStatus(t, orch, task.TaskID, types.TaskStatusFailed)
+	// fatal with retries=0 should be accepted and fail on first attempt
+	task2 := &types.AgentTask{
+		TaskID:     "fatal-task-ok",
+		ContractID: "fatal-fail",
+		Input:      map[string]any{"msg": "test"},
+		Metadata: map[string]string{
+			types.SLAKeyFailureClass: types.FailureClassFatal,
+		},
+	}
+	if err := orch.SubmitTask(task2); err != nil {
+		t.Fatalf("Failed to submit fatal task with no retries: %v", err)
+	}
+
+	status := waitForTaskStatus(t, orch, task2.TaskID, types.TaskStatusFailed)
 	if status != types.TaskStatusFailed {
 		t.Errorf("Expected fatal task to fail, got %s", status)
 	}

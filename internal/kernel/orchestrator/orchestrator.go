@@ -272,9 +272,11 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 		return
 	}
 
-	// Fatal failure class: no retry allowed
-	if failureClass == types.FailureClassFatal {
+	// Fatal failure class: admission rejects fatal + retries > 0, so maxRetries is already 0 here.
+	// This assertion is a safety net, not a silent override.
+	if failureClass == types.FailureClassFatal && maxRetries > 0 {
 		maxRetries = 0
+		log.Printf("WARN: Task %s has fatal class with retries=%d (should have been rejected at admission); forcing retries=0", task.TaskID, maxRetries)
 	}
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
@@ -288,11 +290,8 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 			return o.dispatcher.Dispatch(execCtx, task)
 		}()
 
-		// Check for success (for degradable tasks, a Completed result is accepted even with an error)
+		// Check for success
 		success := dispatchErr == nil && result != nil && result.Status == types.TaskStatusCompleted
-		if !success && failureClass == types.FailureClassDegradable && result != nil && result.Status == types.TaskStatusCompleted {
-			success = true
-		}
 
 		if success {
 			if err := o.scheduler.UpdateTaskStatus(task.TaskID, types.TaskStatusCompleted); err != nil {
@@ -324,9 +323,9 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 		// All retries exhausted
 		retryErr := dispatchErr
 		if retryErr == nil {
-			retryErr = types.NewAgentError(types.ErrTaskTimeout, "dispatch failed")
+			retryErr = types.NewAgentError(types.ErrDispatchFailed, "dispatch returned non-success result")
 		} else if _, ok := retryErr.(*types.AgentError); !ok {
-			retryErr = types.NewAgentErrorWithCause(types.ErrTaskTimeout, "dispatch failed", retryErr)
+			retryErr = types.NewAgentErrorWithCause(types.ErrDispatchFailed, "dispatch failed", retryErr)
 		}
 		if maxRetries > 0 {
 			retryErr = types.NewAgentErrorWithCause(types.ErrTaskRetryExhausted,

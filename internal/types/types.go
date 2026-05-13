@@ -145,6 +145,7 @@ const (
 	ErrTaskTimeout          ErrorCode = "TASK_TIMEOUT"
 	ErrTaskRetryExhausted   ErrorCode = "TASK_RETRY_EXHAUSTED"
 	ErrTokenBudgetExhausted ErrorCode = "TOKEN_BUDGET_EXHAUSTED"
+	ErrDispatchFailed       ErrorCode = "DISPATCH_FAILED"
 )
 
 // AgentError is a structured error with a stable error code.

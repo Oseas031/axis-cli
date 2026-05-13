@@ -67,6 +67,14 @@ func validateSLA(task *types.AgentTask) error {
 		if v != types.FailureClassRetryable && v != types.FailureClassFatal && v != types.FailureClassDegradable {
 			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s=%q for task %s must be one of: retryable, fatal, degradable", types.SLAKeyFailureClass, v, task.TaskID))
 		}
+		// Fatal + retries > 0 is contradictory: reject explicitly rather than silent override at execution.
+		if v == types.FailureClassFatal {
+			if r, ok := task.Metadata[types.SLAKeyMaxRetries]; ok {
+				if n, err := strconv.Atoi(r); err == nil && n > 0 {
+					return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: task %s declares failure_class=fatal with max_retries=%d; fatal tasks cannot retry", task.TaskID, n))
+				}
+			}
+		}
 	}
 	if v, ok := task.Metadata[types.SLAKeyPriority]; ok {
 		n, err := strconv.Atoi(v)
