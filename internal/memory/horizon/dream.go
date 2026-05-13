@@ -16,6 +16,7 @@ type DreamResult struct {
 	EventsRead   int      `json:"events_read"`
 	Clusters     int      `json:"clusters"`
 	PatternsNew  int      `json:"patterns_new"`
+	Skipped      int      `json:"skipped"`
 	PatternIDs   []string `json:"pattern_ids,omitempty"`
 }
 
@@ -61,6 +62,12 @@ func Dream(ctx context.Context, events longterm.Store, store *Store, opts DreamO
 			continue // single occurrence, not a pattern
 		}
 		pattern := distillPattern(prefix, events)
+		// Dedup check: skip if similar pattern already exists
+		existing, _ := store.Recall(truncate(strings.ToLower(prefix), 40), CategoryPatterns)
+		if len(existing) > 0 {
+			result.Skipped++
+			continue
+		}
 		if err := store.Store(pattern); err != nil {
 			continue
 		}
