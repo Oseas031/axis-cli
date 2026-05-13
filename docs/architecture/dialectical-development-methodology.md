@@ -1,5 +1,7 @@
 # Dialectical Development Methodology
 
+> 展开自 CLAUDE.md §0（作者工作方法论）+ §13（矛盾治理框架）
+
 **Status**: Active Principle
 **Supersedes**: `docs/guides/YOUR_IMPLICIT_METHODOLOGY.md` (SRS Loop is the operational form; this is the ontological foundation)
 

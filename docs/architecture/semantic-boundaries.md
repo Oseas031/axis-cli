@@ -1,5 +1,7 @@
 # Semantic Boundaries
 
+> 展开自 CLAUDE.md §4（目录边界）+ §6（语义边界）
+
 ## Purpose
 
 This document defines what each Axis concept is allowed to mean and do.

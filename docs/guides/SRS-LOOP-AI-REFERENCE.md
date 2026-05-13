@@ -1,5 +1,6 @@
 # SRS Loop — AI Collaboration Reference
 
+> 展开自 CLAUDE.md §0（作者工作方法论）
 > AI 可读摘要。当作者说"按我的工作流"或"用 SRS Loop"时，指的就是这套流程。
 > 本体论层：`docs/architecture/dialectical-development-methodology.md`
 > 完整操作层：`docs/guides/YOUR_IMPLICIT_METHODOLOGY.md`

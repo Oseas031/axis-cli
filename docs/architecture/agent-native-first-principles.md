@@ -1,5 +1,7 @@
 # First Principles of Agent-Native Scheduling
 
+> 展开自 CLAUDE.md §1（绝对禁令）+ §6（语义边界）+ §11（演化原则）
+
 **Nature**: Foundational architectural rationale (immutable principle layer) — **read before coding**
 **Meta-principle**: These principles are governed by the [Dialectical Development Methodology](dialectical-development-methodology.md). When principles conflict, use the methodology's operational principles (主要矛盾优先、阶段论、对立统一) to resolve.
 **Related**: `reports/strategy/agent-native-scenario-principles-analysis-2026-05-11.md` (full scenario analysis and defect diagnosis)

@@ -8,8 +8,7 @@
 Project: **Axis** — Objectification infrastructure; providing the conditions for intent to become objective existence through AI.
 Core proposition: **More Context, More Action, Zero Control, Controllable Evolution**.
 
-> This file is the single source of truth for all coding constraints.
-> This file is the single source of truth for all AI behavior constraints. No other file may redefine or override these rules.
+> This file is the single source of truth for all AI behavior constraints. No other file may redefine or override these rules. Governance framework: §13.
 
 ## 0. 作者工作方法论（AI 必读）
 
@@ -41,7 +40,7 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 1. **不跳过 Phase II 直接执行**。收到任务后先确认边界，再动手。
 2. **Phase 转换时主动声明**。说明当前在哪个 Phase，退出条件是否满足。
 3. **执行失败回退到 Phase II**（重选最小单元），方向错误回退到 Phase I（重新外化）。
-4. **工作终点是规则更新（A8）**，不是代码合并。每次工作结束问：什么规则需要写回？
+4. **工作终点是规则更新（A8）**，不是代码合并。每次工作结束执行 §13.5 反馈闭环四问。
 5. **每次工作开始时输出 Phase 声明**，格式固定为三行：
    ```
    Phase: <I/II/III> (<名称>)
@@ -225,3 +224,89 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - Spec statuses: Draft -> Planned -> In Progress -> Completed | Paused | Deprecated | Cancelled
 - A task is Completed only when: code done, tests pass, docs synchronized, user-visible behavior described
 - Metadata promotion rule: move to typed field when multiple core modules require it, validation depends on it, tests need stable access, or CLI/API consumers rely on it
+
+## 13. Governance: 矛盾治理框架
+
+> 理论来源：毛泽东《实践论》《矛盾论》；黑格尔本体论（Objectification-Determinateness-Sublation）
+
+### 13.1 条款稳定性分类
+
+每条规则属于且仅属于以下三类之一：
+
+**永久条款（守正）** — 修改需哲学论证证明原有前提已不成立：
+- §0 辩证方法论三阶段结构
+- §1 绝对禁令
+- §11 演化原则
+- 本节（§13）治理框架本身
+
+**渐进条款（可扬弃）** — 修改需 ≥3 次实践反馈证据：
+- §2 Pre-Coding Checklist
+- §6 Semantic Boundaries
+- §7 Code & Architectural Style
+- §9 Build & Test
+- §10 Engineering Practices
+- §12 Naming & Structure
+
+**过渡条款（临时）** — 创建时声明失效条件，条件满足自动废止：
+- §0 rule #6 编码委派 subagent // transitional: Agent 编码可信后废止
+- §0 rule #9 push 后监控 CI // transitional: CI 稳定通过率 >95% 连续 2 周后废止
+- §9 CI Rules // transitional: 集成测试有独立 CI job 后废止
+
+**冲突仲裁**：永久 > 渐进 > 过渡。同级冲突上升一级裁决。
+
+### 13.2 纵向贯通：层级职责与权限
+
+| 层级 | 职责 | 权限 | 不得做 |
+|------|------|------|--------|
+| L1 CLAUDE.md | 定 **What**（做什么/不做什么） | 人类 or AI 通过 A8 修改 | 不写 How 的细节 |
+| L2 architecture/ + SRS-LOOP | 定 **How**（怎么做/为什么） | AI 可直接修改，不得与 L1 矛盾 | 不定义新的 What |
+| L3 specs/ + status/ | 定 **Where/When**（具体落地） | AI 自由修改 | 不引入新约束 |
+
+**上下贯通要求**：
+- L2 文档开头必须声明：`> 展开自 CLAUDE.md §X`
+- L3 spec 开头必须声明：`> 实现 <L2文档名> <原则编号>`
+
+### 13.3 横向协调：同级仲裁
+
+**L2 内部主从关系**：
+
+主文档（定义概念，冲突时胜出）：
+- `agent-native-first-principles.md` — 定义"什么是对的"
+- `semantic-boundaries.md` — 定义"什么不能碰什么"
+- `dialectical-development-methodology.md` — 定义"怎么决策"
+
+从文档（展开细节，不得与主文档矛盾）：
+- 所有 `*-conventions.md` 展开自 `semantic-boundaries.md`
+- `SRS-LOOP-AI-REFERENCE.md` 展开自 `dialectical-development-methodology.md`
+
+**L3 内部**：spec 之间声明依赖关系。修改 spec 时检查下游 spec 是否需要同步。
+
+### 13.4 理论-实践矛盾预判（《实践论》三种常态）
+
+不等问题出现再修正，预设识别标志和处置预案：
+
+**模式 A：理论超前实践**
+- 识别：L1/L2 定义了约束，但执行时当前能力做不到
+- 处置：标记 `// aspirational: 当前不强制，待 <条件> 满足后激活`
+- 不删除（保留方向），不强制（不卡死实践）
+
+**模式 B：理论束缚实践**
+- 识别：执行时反复绕过某条规则，绕过次数 ≥ 3 = 信号
+- 处置：触发 Phase I 重新审视。问：这条规则保护的是什么？保护对象是否还存在？
+- 保护对象消失 → 扬弃；规则形式错误 → 重写
+
+**模式 C：实践突破理论**
+- 识别：执行中产生 L1/L2 未预见的新模式，连续 ≥ 3 次成功使用
+- 处置：从 L3 提炼为 L2 原则；如果足够普遍则提升为 L1 约束
+- 案例：Phase 声明三行格式（实践涌现 → 验证有效 → 写入 L1 §0 rule #5）
+
+### 13.5 反馈闭环（A8 机制化）
+
+每次 Phase III 结束时，AI 必须回答：
+
+1. 本次执行是否暴露了 L2 原则的不足？→ 修改 L2
+2. L2 的修改是否意味着 L1 需要更新？→ 提议修改 L1（需声明条款类型和证据）
+3. 是否触发了 13.4 的任何模式？→ 按预案处置
+4. 如果都不需要 → 显式声明"无规则更新"
+
+这不是可选步骤，是 Phase III 的退出门禁。
