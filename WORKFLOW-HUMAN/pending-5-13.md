@@ -43,6 +43,39 @@
 
 - [ ] 添加 nag 提醒机制：Agent 遗忘任务跟踪时主动提醒
 
+### 记忆系统：Auto-Dream（做梦机制）
+
+模仿 Anthropic Claude Code 的 auto-dream，对最近编排的任务进行"回放"，纠错，合并与更新记忆。
+
+**核心思路**：
+- 触发时机：空闲时 / 任务批次完成后 / 手动触发
+- 回放最近 N 个任务的执行记录（events.jsonl）
+- 识别：重复错误模式、成功策略、过时记忆、矛盾记忆
+- 输出：合并/更新/删除记忆条目
+
+**存储方式**：半结构化（Unix files + markdown + Agent 驱动更新）
+```
+.axis/memory/
+├── dreams/                    # 每次 dream 的回放记录
+│   └── 2026-05-13-001.md
+├── learned/                   # Agent 从 dream 中提取的经验
+│   ├── patterns.md            # 成功/失败模式
+│   ├── corrections.md         # 纠错记录
+│   └── rules.md              # 自动提取的规则
+└── index.md                   # 记忆索引（Agent 可查询）
+```
+
+**操作**：
+- `axis dream` — 手动触发回放+记忆更新
+- `axis dream --since 1h` — 回放最近 1 小时
+- `axis memory list/query` — 查询已有记忆
+
+- [ ] 设计 dream 触发条件和回放范围
+- [ ] 设计记忆文件格式（markdown frontmatter + body）
+- [ ] 实现 dream 回放引擎（读取 events.jsonl → 摘要 → 提取模式）
+- [ ] 实现记忆 CRUD（Agent 通过 tool 读写 .axis/memory/）
+- [ ] 实现记忆注入（dream 结果注入到下次任务的 context）
+
 ### 结构性冲突审计与重构
 
 调查 Axis 已有实现，找出与当前设计哲学有结构性冲突的地方。

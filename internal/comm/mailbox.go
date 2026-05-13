@@ -126,7 +126,7 @@ func (m *Mailbox) writeAll(actorID string, msgs []Message) error {
 	defer f.Close()
 	for _, msg := range msgs {
 		data, _ := json.Marshal(msg)
-		f.Write(append(data, '\n'))
+		_, _ = f.Write(append(data, '\n'))
 	}
 	return nil
 }

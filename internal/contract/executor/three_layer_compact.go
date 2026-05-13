@@ -63,7 +63,7 @@ func (c *ThreeLayerCompaction) Compact(ctx context.Context, history []types.Mode
 	if EstimateTokens(history) > c.Budget && c.Auto != nil {
 		// Save transcript before summarization
 		if c.Transcript != nil {
-			c.Transcript.Save(c.TaskID, history)
+			_, _ = c.Transcript.Save(c.TaskID, history)
 		}
 		history, _ = c.Auto.Compact(ctx, history, c.Budget)
 	}

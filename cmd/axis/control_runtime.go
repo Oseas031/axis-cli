@@ -53,7 +53,7 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer) error {
 	if err := locator.Save(record); err != nil {
 		return fmt.Errorf("failed to write runtime locator: %w", err)
 	}
-	defer locator.Delete()
+	defer func() { _ = locator.Delete() }()
 
 	if out != nil {
 		fmt.Fprintf(out, "Local Axis runtime started at %s\n", record.Address)

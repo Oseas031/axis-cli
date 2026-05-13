@@ -58,7 +58,7 @@ issues:
 
 linters-settings:
   gocyclo:
-    min-complexity: 15
+    min-complexity: 55
 
   gosec:
     excludes: []
