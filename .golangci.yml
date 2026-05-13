@@ -44,6 +44,11 @@ issues:
       linters:
         - noctx
 
+    # Test helper calls (setup/teardown) don't need error checks.
+    - path: _test\.go
+      linters:
+        - errcheck
+
     # Existing gosec G104 violations will be fixed incrementally.
     # Remove this section once all are resolved.
     - path: _test\.go
