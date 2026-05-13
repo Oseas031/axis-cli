@@ -37,7 +37,13 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 2. **Phase 转换时主动声明**。说明当前在哪个 Phase，退出条件是否满足。
 3. **执行失败回退到 Phase II**（重选最小单元），方向错误回退到 Phase I（重新外化）。
 4. **工作终点是规则更新（A8）**，不是代码合并。每次工作结束问：什么规则需要写回？
-5. **每次工作开始时输出 Phase 声明**（Phase / 主要矛盾侧面 / 退出条件），未声明不动手。
+5. **每次工作开始时输出 Phase 声明**，格式固定为三行：
+   ```
+   Phase: <I/II/III> (<名称>)
+   主要矛盾侧面: <Construct/Determinateness/Sublation> — <本次工作的核心张力>
+   退出条件: <可验证的完成标准>
+   ```
+   未声明不动手。
 6. **编码实现委派 subagent**。主上下文负责 Phase I/II 决策和 A8 写回，Phase III 的 A6 Execute 交给 subagent，避免实现细节污染决策上下文。
 7. **Subagent 产出必须验收**。主上下文跑 `go test` + 抽查关键逻辑路径，不盲信。
 8. **v1 简化显式标记**。简化处加 `// v1: <说明>. TODO: <改进方向>`，区分"故意简化"和"遗漏"。
@@ -151,7 +157,9 @@ gofmt -w . && go vet ./...            # formatting + vet
 staticcheck ./... && gosec ./...       # static analysis + security
 ```
 
-### Commit Hygiene
+### CI Rules
+- **集成测试必须隔离**：测试中含 `exec.Command("go", "build", ...)` 或启动真实进程的，必须加 `testing.Short()` skip。CI 用 `-short` 标志，本地全量跑。
+- **CI 配置变更自触发**：`.github/workflows/ci.yml` 必须在 `paths` 触发列表中，否则 CI 配置修改无法自验证。
 - **Traceability**: every commit message MUST reference a Spec-RDT ID (e.g. `M6 T13`, `M5 Phase 5.4`) or an explicit milestone/scope tag. Pure "fix typo" / "wip" commits are not allowed on `main`.
 - **No build artifacts**: never stage `axis-dev.exe`, `*.exe`, `*.test`, `coverage.out`, `dist/`, `.cache/`, editor scratch files, or any generated binary. `.gitignore` is the first line of defense; the author is the second. If `git status` shows such a file before commit, fix `.gitignore` rather than `git add`-ing selectively.
 - **Bisect-safe**: every commit MUST independently compile (`go build ./...`) and pass `go vet ./...`. Tests should pass too; if a commit is intentionally test-red (e.g. failing regression test before fix), the message MUST start with `wip(red):` and the next commit MUST turn it green. Never split a build-breaking change across two commits on `main`.
