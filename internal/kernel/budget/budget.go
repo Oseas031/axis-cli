@@ -1,24 +1,24 @@
-package types
+// Package budget provides token budget tracking with stage-based allocation.
+package budget
 
 import (
 	"fmt"
 	"sync"
+
+	"github.com/axis-cli/axis/internal/types"
 )
 
-// SLA metadata key for token budget.
-const SLAKeyTokenBudget = "sla.token_budget"
-
-// TokenStage represents a named execution stage with a budget fraction.
-type TokenStage string
+// Stage represents a named execution stage with a budget fraction.
+type Stage string
 
 const (
-	StagePrototype  TokenStage = "prototype"  // 10% budget
-	StageSmallScale TokenStage = "small"      // 30% budget
-	StageLargeScale TokenStage = "large"      // 60% budget
+	StagePrototype  Stage = "prototype" // 10% budget
+	StageSmallScale Stage = "small"     // 30% budget
+	StageLargeScale Stage = "large"     // 60% budget
 )
 
 // StageAllocation maps stages to their budget fractions.
-var StageAllocation = map[TokenStage]float64{
+var StageAllocation = map[Stage]float64{
 	StagePrototype:  0.10,
 	StageSmallScale: 0.30,
 	StageLargeScale: 0.60,
@@ -29,23 +29,23 @@ type TokenBudget struct {
 	mu       sync.Mutex
 	total    int
 	consumed int
-	stage    TokenStage
+	stage    Stage
 }
 
-// NewTokenBudget creates a budget with the given total token limit.
-func NewTokenBudget(total int) *TokenBudget {
+// New creates a budget with the given total token limit.
+func New(total int) *TokenBudget {
 	return &TokenBudget{total: total, stage: StagePrototype}
 }
 
 // SetStage advances to the given stage.
-func (b *TokenBudget) SetStage(stage TokenStage) {
+func (b *TokenBudget) SetStage(stage Stage) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.stage = stage
 }
 
 // Stage returns the current stage.
-func (b *TokenBudget) Stage() TokenStage {
+func (b *TokenBudget) Stage() Stage {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.stage
@@ -91,7 +91,7 @@ func (b *TokenBudget) Consume(tokens int) error {
 	defer b.mu.Unlock()
 	b.consumed += tokens
 	if b.consumed > b.total {
-		return &AgentError{Code: ErrTokenBudgetExhausted, Message: fmt.Sprintf("token budget exhausted: consumed %d / %d", b.consumed, b.total)}
+		return types.NewAgentError(types.ErrTokenBudgetExhausted, fmt.Sprintf("token budget exhausted: consumed %d / %d", b.consumed, b.total))
 	}
 	return nil
 }

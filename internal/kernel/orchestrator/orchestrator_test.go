@@ -60,7 +60,7 @@ func TestOrchestrator_DefaultToolRegistryExposesCoreTools(t *testing.T) {
 	}
 	got := append([]string(nil), p.toolNames...)
 	sort.Strings(got)
-	want := []string{"bash", "checkpoint", "compact", "file_read", "file_write", "http_request", "load_skill", "spawn", "yield"}
+	want := []string{"bash", "checkpoint", "compact", "file_read", "file_write", "http_request", "load_skill", "spawn", "verify_bash", "yield"}
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("expected default tools %v, got %v", want, got)
 	}
@@ -447,15 +447,6 @@ func TestOrchestrator_ParseSLA_Invalid(t *testing.T) {
 	}
 	if backoff != "unknown" {
 		t.Errorf("backoff should pass through as-is, got %s", backoff)
-	}
-}
-
-func TestOrchestrator_ParseSLA_MaxRetryCap(t *testing.T) {
-	_, maxRetries, _, _ := parseSLA(map[string]string{
-		types.SLAKeyMaxRetries: "10",
-	})
-	if maxRetries != types.MaxRetryLimit {
-		t.Errorf("Expected maxRetries capped at %d, got %d", types.MaxRetryLimit, maxRetries)
 	}
 }
 

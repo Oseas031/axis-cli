@@ -212,6 +212,25 @@ func TestAdmissionValidator_Validate_SLA_MaxRetriesNegative(t *testing.T) {
 	}
 }
 
+func TestAdmissionValidator_Validate_SLA_MaxRetriesExceedsLimit(t *testing.T) {
+	ce := contractexec.NewContractExecutor()
+	if err := ce.RegisterContract(testDefaultContract()); err != nil {
+		t.Fatalf("Failed to register contract: %v", err)
+	}
+
+	av := NewAdmissionValidator(ce)
+	task := &types.AgentTask{
+		TaskID:     "task-1",
+		ContractID: "default",
+		Input:      map[string]any{"message": "hello"},
+		Metadata:   map[string]string{types.SLAKeyMaxRetries: "10"},
+	}
+
+	if err := av.Validate(task); err == nil {
+		t.Errorf("Task with sla.max_retries > MaxRetryLimit (%d) should be rejected", types.MaxRetryLimit)
+	}
+}
+
 func TestAdmissionValidator_Validate_SLA_NoMetadata(t *testing.T) {
 	ce := contractexec.NewContractExecutor()
 	if err := ce.RegisterContract(testDefaultContract()); err != nil {

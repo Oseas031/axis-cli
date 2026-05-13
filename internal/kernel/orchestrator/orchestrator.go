@@ -84,12 +84,10 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	skillsPromptLoader := skills.NewLoader(project.SkillsDir(root))
 	contractExec.SetSkillsLoader(skillsPromptLoader)
 
-	// Wire default compaction pipeline
-	contractExec.SetCompactionPipeline(&contractexec.CompactionPipeline{
-		Strategies: []contractexec.CompactionStrategy{
-			&contractexec.ToolResultCompaction{KeepRecent: 3},
-			&contractexec.TruncationCompaction{KeepRecent: 4},
-		},
+	// Wire default compaction pipeline (three-layer model)
+	contractExec.SetCompactionPipeline(&contractexec.ThreeLayerCompaction{
+		Micro:  &contractexec.ToolResultCompaction{KeepRecent: 3},
+		Auto:   &contractexec.SummarizationCompaction{Provider: nil, KeepRecent: 4},
 		Budget: 32000,
 	})
 	humanExec := humanexec.NewHumanExecutor()
@@ -139,6 +137,7 @@ func defaultToolRegistry() *tool.Registry {
 		}
 	}
 	_ = registry.Register(tool.NewBashTool(), []string{string(tool.ScopeSubprocess)})
+	_ = registry.Register(tool.NewVerifyBashTool(), []string{string(tool.ScopeSubprocess)})
 	_ = registry.Register(tool.NewFileReadTool(allowedDirs), []string{string(tool.ScopeFilesystemRead)})
 	_ = registry.Register(tool.NewFileWriteTool(allowedDirs), []string{string(tool.ScopeFilesystemWrite)})
 	_ = registry.Register(tool.NewHTTPClientTool([]string{"localhost", "127.0.0.1"}), []string{string(tool.ScopeNetwork)})
@@ -358,10 +357,6 @@ func parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int, failur
 		if n, err := strconv.Atoi(v); err == nil {
 			maxRetries = n
 		}
-	}
-	// Hard cap: never exceed MaxRetryLimit regardless of metadata value.
-	if maxRetries > types.MaxRetryLimit {
-		maxRetries = types.MaxRetryLimit
 	}
 	if v, ok := metadata[types.SLAKeyFailureClass]; ok {
 		failureClass = v

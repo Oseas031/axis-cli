@@ -91,6 +91,7 @@ const (
 	SLAKeyFailureClass = "sla.failure_class"
 	SLAKeyPriority     = "sla.priority"
 	SLAKeyBackoff      = "sla.backoff"
+	SLAKeyTokenBudget  = "sla.token_budget"
 )
 
 // Tool metadata keys stored in AgentTask.Metadata.

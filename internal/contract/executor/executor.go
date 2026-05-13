@@ -27,7 +27,7 @@ type ContractExecutorImpl struct {
 	provider           provider.ModelProvider
 	toolRegistry       *tool.Registry
 	skillsLoader       interface{ BuildSkillsPromptSection(context.Context) string }
-	compactionPipeline *CompactionPipeline
+	compactionPipeline Compactor
 }
 
 // NewContractExecutor creates a new contract executor
@@ -73,7 +73,7 @@ func (e *ContractExecutorImpl) SetSkillsLoader(sl interface{ BuildSkillsPromptSe
 }
 
 // SetCompactionPipeline sets the compaction pipeline for history management.
-func (e *ContractExecutorImpl) SetCompactionPipeline(p *CompactionPipeline) {
+func (e *ContractExecutorImpl) SetCompactionPipeline(p Compactor) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.compactionPipeline = p

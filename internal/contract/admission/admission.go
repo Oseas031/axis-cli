@@ -59,6 +59,9 @@ func validateSLA(task *types.AgentTask) error {
 		if err != nil || n < 0 {
 			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s=%q for task %s must be a non-negative integer", types.SLAKeyMaxRetries, v, task.TaskID))
 		}
+		if n > types.MaxRetryLimit {
+			return types.NewAgentError(types.ErrContractInputInvalid, fmt.Sprintf("admission rejected: %s=%d for task %s exceeds MaxRetryLimit (%d)", types.SLAKeyMaxRetries, n, task.TaskID, types.MaxRetryLimit))
+		}
 	}
 	if v, ok := task.Metadata[types.SLAKeyFailureClass]; ok {
 		if v != types.FailureClassRetryable && v != types.FailureClassFatal && v != types.FailureClassDegradable {

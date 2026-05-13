@@ -48,9 +48,6 @@ func TestVerifyBashResult_OutputContainsFail(t *testing.T) {
 	if v.Passed {
 		t.Error("expected fail for missing output")
 	}
-	if v.OutputOK {
-		t.Error("expected OutputOK=false")
-	}
 }
 
 func TestVerifyBashResult_OutputNotContains(t *testing.T) {
@@ -79,41 +76,60 @@ func TestVerifyBashResult_SideEffectFileMissing(t *testing.T) {
 	if v.Passed {
 		t.Error("expected fail for missing file")
 	}
-	if v.SideEffectOK {
-		t.Error("expected SideEffectOK=false")
+}
+
+func TestVerifyBashTool_Name(t *testing.T) {
+	vt := NewVerifyBashTool()
+	if vt.Name() != "verify_bash" {
+		t.Errorf("expected name verify_bash, got %q", vt.Name())
 	}
 }
 
-func TestVerifiedBashTool_Execute(t *testing.T) {
-	vt := NewVerifiedBashTool(nil)
-	result, err := vt.Execute(context.Background(), map[string]any{"command": "echo verified"})
+func TestVerifyBashTool_Execute_Pass(t *testing.T) {
+	vt := NewVerifyBashTool()
+	result, err := vt.Execute(context.Background(), map[string]any{
+		"exit_code": 0,
+		"stdout":    "hello world",
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	ver, ok := result["verification"].(map[string]any)
-	if !ok {
-		t.Fatal("expected verification field in result")
-	}
-	if ver["passed"] != true {
-		t.Errorf("expected verification passed, got: %v", ver)
+	if result["passed"] != true {
+		t.Errorf("expected passed=true, got %v", result)
 	}
 }
 
-func TestVerifiedBashTool_FailingCommand(t *testing.T) {
-	vt := NewVerifiedBashTool(&BashExpectation{ExitCode: 0})
-	result, err := vt.Execute(context.Background(), map[string]any{"command": "exit 1"})
+func TestVerifyBashTool_Execute_Fail(t *testing.T) {
+	vt := NewVerifyBashTool()
+	result, err := vt.Execute(context.Background(), map[string]any{
+		"exit_code":          float64(1),
+		"stdout":             "some output",
+		"expected_exit_code": float64(0),
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	ver, ok := result["verification"].(map[string]any)
-	if !ok {
-		t.Fatal("expected verification field in result")
-	}
-	if ver["passed"] != false {
-		t.Error("expected verification failed for exit 1")
+	if result["passed"] != false {
+		t.Error("expected passed=false for exit code mismatch")
 	}
 }
 
-func TestVerifiedBashTool_ImplementsInterface(t *testing.T) {
-	var _ Tool = NewVerifiedBashTool(nil)
+func TestVerifyBashTool_Execute_OutputCheck(t *testing.T) {
+	vt := NewVerifyBashTool()
+	result, err := vt.Execute(context.Background(), map[string]any{
+		"exit_code":        float64(0),
+		"stdout":           "build successful",
+		"output_contains":  "successful",
+		"output_not_contains": "error",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result["passed"] != true {
+		t.Errorf("expected passed=true, got %v", result)
+	}
+}
+
+func TestVerifyBashTool_ImplementsInterface(t *testing.T) {
+	var _ Tool = NewVerifyBashTool()
 }

@@ -25,6 +25,12 @@ type CompactionStrategy interface {
 	Compact(ctx context.Context, history []types.ModelMessage, budget int) ([]types.ModelMessage, bool)
 }
 
+// Compactor is the unified interface for context compaction.
+// Both CompactionPipeline and ThreeLayerCompaction implement this.
+type Compactor interface {
+	Compact(ctx context.Context, history []types.ModelMessage) []types.ModelMessage
+}
+
 // CompactionPipeline runs strategies in order until budget is satisfied.
 type CompactionPipeline struct {
 	Strategies []CompactionStrategy
