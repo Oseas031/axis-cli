@@ -69,7 +69,7 @@ func (s *Store) Store(entry Entry) error {
 	filename := sanitizeFilename(entry.ID) + ".md"
 	path := filepath.Join(dir, filename)
 	content := renderMarkdown(entry)
-	return os.WriteFile(path, []byte(content), 0644)
+	return os.WriteFile(path, []byte(content), 0600)
 }
 
 // Recall searches memory files by keyword across all categories (or a specific one).

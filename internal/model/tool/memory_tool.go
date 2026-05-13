@@ -94,9 +94,7 @@ func (t *StoreMemoryTool) Execute(ctx context.Context, input map[string]any) (ma
 
 	var tags []string
 	if tagsStr != "" {
-		for _, tag := range splitTags(tagsStr) {
-			tags = append(tags, tag)
-		}
+		tags = append(tags, splitTags(tagsStr)...)
 	}
 
 	id := fmt.Sprintf("%s-%d", sanitizeForID(title), time.Now().UnixMilli())

@@ -63,7 +63,7 @@ func Forget(store *Store, dryRun bool) (*ForgetResult, error) {
 			result.Details = append(result.Details, fmt.Sprintf("archive (%.0fd old): %s", age.Hours()/24, e.Name()))
 			if !dryRun {
 				archived := replacebody(content, "[archived]")
-				os.WriteFile(path, []byte(archived), 0644)
+				_ = os.WriteFile(path, []byte(archived), 0600)
 			}
 		default:
 			result.Skipped++

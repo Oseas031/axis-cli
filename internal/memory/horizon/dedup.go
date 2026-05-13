@@ -86,5 +86,5 @@ func markDeprecated(path string) error {
 	if strings.HasPrefix(content, "---\n") {
 		content = "---\ndeprecated: true\n" + content[4:]
 	}
-	return os.WriteFile(path, []byte(content), 0644)
+	return os.WriteFile(path, []byte(content), 0600)
 }
