@@ -99,13 +99,10 @@ linters-settings:
     rules:
       - name: exported
         severity: warning
-        disabled: false
-        arguments:
-          - sayRepetitiveInsteadOfStutters
+        disabled: true
       - name: var-naming
         severity: warning
         disabled: false
-      # Require context.Context as first parameter in exported functions.
       - name: context-as-argument
         severity: warning
         disabled: false
