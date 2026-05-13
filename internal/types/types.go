@@ -109,6 +109,10 @@ const (
 	FailureClassDegradable = "degradable"
 )
 
+// MaxRetryLimit is the absolute upper bound on retries regardless of metadata.
+// Based on MLS-Bench finding: repeated retries without strategy change are wasteful.
+const MaxRetryLimit = 3
+
 // Backoff strategy values for SLAKeyBackoff
 const (
 	BackoffFixed       = "fixed"
@@ -139,6 +143,7 @@ const (
 	ErrContractInputInvalid ErrorCode = "CONTRACT_INPUT_INVALID"
 	ErrTaskTimeout          ErrorCode = "TASK_TIMEOUT"
 	ErrTaskRetryExhausted   ErrorCode = "TASK_RETRY_EXHAUSTED"
+	ErrTokenBudgetExhausted ErrorCode = "TOKEN_BUDGET_EXHAUSTED"
 )
 
 // AgentError is a structured error with a stable error code.

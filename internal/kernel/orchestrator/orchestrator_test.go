@@ -450,6 +450,15 @@ func TestOrchestrator_ParseSLA_Invalid(t *testing.T) {
 	}
 }
 
+func TestOrchestrator_ParseSLA_MaxRetryCap(t *testing.T) {
+	_, maxRetries, _, _ := parseSLA(map[string]string{
+		types.SLAKeyMaxRetries: "10",
+	})
+	if maxRetries != types.MaxRetryLimit {
+		t.Errorf("Expected maxRetries capped at %d, got %d", types.MaxRetryLimit, maxRetries)
+	}
+}
+
 func TestOrchestrator_TaskWithSLA(t *testing.T) {
 	orch := NewOrchestrator()
 	ctx, cancel := context.WithCancel(context.Background())

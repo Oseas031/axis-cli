@@ -359,6 +359,10 @@ func parseSLA(metadata map[string]string) (timeoutMs int, maxRetries int, failur
 			maxRetries = n
 		}
 	}
+	// Hard cap: never exceed MaxRetryLimit regardless of metadata value.
+	if maxRetries > types.MaxRetryLimit {
+		maxRetries = types.MaxRetryLimit
+	}
 	if v, ok := metadata[types.SLAKeyFailureClass]; ok {
 		failureClass = v
 	}
