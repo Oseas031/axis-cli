@@ -159,3 +159,146 @@ func (m *mockEventStore) MarkForgotten(ctx context.Context, entityID string, at 
 	return nil
 }
 func (m *mockEventStore) Close() error { return nil }
+
+
+func TestForget_ArchivesOldNarrative(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+	s.Init()
+
+	s.Store(Entry{
+		ID:        "old-narrative",
+		Category:  CategoryNarrative,
+		Title:     "Something old",
+		Body:      "Original body content",
+		CreatedAt: time.Now().Add(-10 * 24 * time.Hour),
+	})
+
+	result, err := Forget(s, false)
+	if err != nil {
+		t.Fatalf("Forget failed: %v", err)
+	}
+	if result.Archived != 1 {
+		t.Errorf("expected 1 archived, got %d", result.Archived)
+	}
+
+	entries, _ := s.Recall("", CategoryNarrative)
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(entries))
+	}
+	if entries[0].Body != "[archived]" {
+		t.Errorf("expected body [archived], got %q", entries[0].Body)
+	}
+}
+
+func TestForget_DeletesVeryOld(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+	s.Init()
+
+	s.Store(Entry{
+		ID:        "very-old",
+		Category:  CategoryNarrative,
+		Title:     "Ancient",
+		Body:      "Should be deleted",
+		CreatedAt: time.Now().Add(-35 * 24 * time.Hour),
+	})
+
+	result, err := Forget(s, false)
+	if err != nil {
+		t.Fatalf("Forget failed: %v", err)
+	}
+	if result.Deleted != 1 {
+		t.Errorf("expected 1 deleted, got %d", result.Deleted)
+	}
+
+	entries, _ := s.Recall("", CategoryNarrative)
+	if len(entries) != 0 {
+		t.Errorf("expected 0 entries after delete, got %d", len(entries))
+	}
+}
+
+func TestForget_SkipsRecent(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+	s.Init()
+
+	s.Store(Entry{
+		ID:        "recent",
+		Category:  CategoryNarrative,
+		Title:     "Fresh",
+		Body:      "Should stay",
+		CreatedAt: time.Now().Add(-1 * 24 * time.Hour),
+	})
+
+	result, err := Forget(s, false)
+	if err != nil {
+		t.Fatalf("Forget failed: %v", err)
+	}
+	if result.Skipped != 1 {
+		t.Errorf("expected 1 skipped, got %d", result.Skipped)
+	}
+
+	entries, _ := s.Recall("Should stay", CategoryNarrative)
+	if len(entries) != 1 {
+		t.Errorf("expected 1 entry untouched, got %d", len(entries))
+	}
+}
+
+func TestForget_NeverTouchesPatterns(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+	s.Init()
+
+	s.Store(Entry{
+		ID:        "old-pattern",
+		Category:  CategoryPatterns,
+		Title:     "Old pattern",
+		Body:      "Pattern body",
+		CreatedAt: time.Now().Add(-35 * 24 * time.Hour),
+	})
+
+	result, err := Forget(s, false)
+	if err != nil {
+		t.Fatalf("Forget failed: %v", err)
+	}
+	if result.Archived != 0 || result.Deleted != 0 {
+		t.Errorf("expected no changes to patterns, got archived=%d deleted=%d", result.Archived, result.Deleted)
+	}
+
+	entries, _ := s.Recall("Pattern body", CategoryPatterns)
+	if len(entries) != 1 {
+		t.Errorf("expected pattern untouched, got %d entries", len(entries))
+	}
+}
+
+func TestForget_DryRun(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+	s.Init()
+
+	s.Store(Entry{
+		ID:        "dry-run-target",
+		Category:  CategoryNarrative,
+		Title:     "Will be archived?",
+		Body:      "Original content",
+		CreatedAt: time.Now().Add(-10 * 24 * time.Hour),
+	})
+
+	result, err := Forget(s, true)
+	if err != nil {
+		t.Fatalf("Forget failed: %v", err)
+	}
+	if result.Archived != 1 {
+		t.Errorf("expected 1 archived in dry-run, got %d", result.Archived)
+	}
+
+	// Verify file was NOT modified
+	entries, _ := s.Recall("Original content", CategoryNarrative)
+	if len(entries) != 1 {
+		t.Errorf("expected file untouched in dry-run, got %d entries", len(entries))
+	}
+	if entries[0].Body != "Original content" {
+		t.Errorf("expected original body preserved in dry-run, got %q", entries[0].Body)
+	}
+}

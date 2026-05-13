@@ -33,6 +33,7 @@ func newMemoryCommand() *cobra.Command {
 		newMemoryRecallCommand(),
 		newMemoryImmunityCommand(),
 		newMemoryDreamCommand(),
+		newMemoryForgetCommand(),
 	)
 	return cmd
 }
