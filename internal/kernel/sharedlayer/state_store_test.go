@@ -58,7 +58,7 @@ func TestMemoryStateStore_Delete(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	store.Save("test-1", state) //nolint:errcheck
+	store.Save("test-1", state)
 	err := store.Delete("test-1")
 	if err != nil {
 		t.Fatalf("Failed to delete state: %v", err)

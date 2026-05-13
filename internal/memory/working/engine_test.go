@@ -87,7 +87,7 @@ func TestRecall_BasicKeyword(t *testing.T) {
 		RetainedAt:  timeNow(),
 		AccessCount: 1,
 	}
-	eng.UpdateBundle(ctx, "ctx-search", bundle) //nolint:errcheck
+	eng.UpdateBundle(ctx, "ctx-search", bundle)
 
 	hits, err := eng.Recall(ctx, "scheduler", 10)
 	if err != nil {
@@ -114,7 +114,7 @@ func TestRecall_NoMatch(t *testing.T) {
 	defer eng.Close()
 	ctx := context.Background()
 
-	eng.Retain(ctx, "ctx-nomatch", "unrelated task") //nolint:errcheck
+	eng.Retain(ctx, "ctx-nomatch", "unrelated task")
 	hits, err := eng.Recall(ctx, "nonexistent", 10)
 	if err != nil {
 		t.Fatalf("Recall: %v", err)
@@ -130,8 +130,8 @@ func TestClear(t *testing.T) {
 	defer eng.Close()
 	ctx := context.Background()
 
-	eng.Retain(ctx, "a", "ra") //nolint:errcheck
-	eng.Retain(ctx, "b", "rb") //nolint:errcheck
+	eng.Retain(ctx, "a", "ra")
+	eng.Retain(ctx, "b", "rb")
 	if err := eng.Clear(ctx); err != nil {
 		t.Fatalf("Clear: %v", err)
 	}
@@ -151,8 +151,8 @@ func TestCompact(t *testing.T) {
 	defer eng.Close()
 	ctx := context.Background()
 
-	eng.Retain(ctx, "compact-1", "r1") //nolint:errcheck
-	eng.Retain(ctx, "compact-2", "r2") //nolint:errcheck
+	eng.Retain(ctx, "compact-1", "r1")
+	eng.Retain(ctx, "compact-2", "r2")
 	if err := eng.Compact(); err != nil {
 		t.Fatalf("Compact: %v", err)
 	}
