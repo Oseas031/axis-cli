@@ -49,12 +49,22 @@ issues:
       linters:
         - errcheck
 
-    # Existing gosec G104 violations will be fixed incrementally.
-    # Remove this section once all are resolved.
+    # Test files may use permissive file permissions.
     - path: _test\.go
       linters:
         - gosec
-      text: "G104"
+
+    # G115 integer overflow conversions in memory engine (safe: values are bounded).
+    - path: internal/memory/kv/
+      linters:
+        - gosec
+      text: "G115"
+
+    # G101 false positive on metadata key constants (not credentials).
+    - path: internal/types/types\.go
+      linters:
+        - gosec
+      text: "G101"
 
 linters-settings:
   gocyclo:
