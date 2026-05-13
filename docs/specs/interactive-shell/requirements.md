@@ -96,8 +96,8 @@ On `exit`, `quit`, Ctrl+C, or EOF, the shell must call orchestrator shutdown and
 
 ## Open Questions
 
-- Should `run <task-id>` also accept JSON input later?
-- Should shell expose task list once scheduler supports listing?
+- ~~Should `run <task-id>` also accept JSON input later?~~ (Resolved: axis ask handles rich input via --stdin)
+- ~~Should shell expose task list once scheduler supports listing?~~ (Resolved: axis status handles listing)
 
 ## Planned Extension: Natural Language Scheduling
 

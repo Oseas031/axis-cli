@@ -211,6 +211,8 @@ staticcheck ./... && gosec ./...       # static analysis + security
 
 ## 11. Evolution Principles
 
+> **Information Authority Hierarchy**: Axis 区分权威信息（contracts, permissions, event log）和建议信息（memory recall, context preview, immunity records）。权威信息约束行为，建议信息辅助决策。建议信息永远不能自动升级为权威信息——升级必须经过显式的 promote 操作。
+
 - Stable surfaces, replaceable internals
 - Safety defaults: dry-run, preview, redaction, validation, explicit submit
 - Auditable by design: every important decision leaves a trace

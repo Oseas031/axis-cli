@@ -103,7 +103,7 @@ Agent 必须：
 
 遇到不确定的问题，不允许直接套模板。必须先分解为已知子问题，每个子问题独立验证。这是对抗 LLM "分布外泛化差"的架构级解决方案。
 
-**最小分解粒度**：Crystal Unit——一个已解决问题的最小可复用单元，包含：问题签名 + 解题路径 + 闭合证明。分解的目标是把未知问题拆解到每个子问题都能找到对应的 Crystal（已知解题路径），或者明确标记为"需要新探索"。Crystal 存储的是路径，不是答案——这防止了"套答案"的确认偏误。（来源：`docs/specs/crystal-unit/requirements.md`）
+**最小分解粒度**：Crystal Unit——一个已解决问题的最小可复用单元，包含：问题签名 + 解题路径 + 闭合证明。分解的目标是把未知问题拆解到每个子问题都能找到对应的 Crystal（已知解题路径），或者明确标记为"需要新探索"。Crystal 存储的是路径，不是答案——这防止了"套答案"的确认偏误。（来源：`docs/deprecated/specs/crystal-unit/requirements.md (deprecated, concept extracted here)`）
 
 **最小分解粒度**：Crystal Unit——一个已解决问题的最小可复用单元，包含：问题签名 + 解题路径 + 闭合证明。分解的目标是把未知问题拆解到每个子问题都能找到对应的 Crystal（已知解题路径），或者明确标记为"需要新探索"。Crystal 存储的是路径，不是答案——这防止了"套答案"的确认偏误。
 
@@ -186,3 +186,13 @@ Phase 4 (Verify) 不可跳过——这是唯一的硬约束。
 - [ ] 实现 CodingAgent System Prompt
 - [ ] 实现 Tool 调用顺序约束（Phase 1→2→3→4）
 - [ ] 实现输出格式验证（Contract schema）
+
+
+---
+
+## Non-Goals
+
+- Will NOT autonomously modify its own system prompt
+- Will NOT bypass contract admission
+- Will NOT self-evaluate quality (Judge is external)
+- Will NOT persist state across sessions (Long Horizon handles that)

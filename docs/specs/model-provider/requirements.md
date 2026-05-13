@@ -93,20 +93,16 @@ The model provider must be testable with standard Go tests.
 
 ## Non-Goals
 
-- Streaming model output
-- Tool calling
-- Conversation memory
-- Provider routing
-- Retry/backoff policies
-- Cost tracking
-- Prompt templates
-- Real model provider implementation
+- Will NOT own task lifecycle or scheduling decisions
+- Will NOT persist credentials (ProviderConfig owns that)
+- Will NOT make autonomous model selection (routing is config-driven)
+- Will NOT modify Agent execution state
 
 ## Open Questions
 
-- Should future real providers be selected by environment variable or config file?
-- Should shell add `ask <task-id> <prompt>` after MockModelProvider is complete?
-- Should task input evolve from fixed `message: test` to user-provided prompt text?
+- Should future real providers be selected by environment variable or config file? **(Resolved)** Config file — `.axis/providers.json` with project-local profiles.
+- Should shell add `ask <task-id> <prompt>` after MockModelProvider is complete? **(Resolved)** Yes — `axis ask <prompt>` is implemented with dry-run and --submit modes.
+- Should task input evolve from fixed `message: test` to user-provided prompt text? **(Resolved)** Yes — natural language intent parsing compiles prompts into AgentTask.
 
 ## Provider Management Extension
 

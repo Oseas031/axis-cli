@@ -1,4 +1,4 @@
-﻿# First Principles of Agent-Native Scheduling
+﻿﻿# First Principles of Agent-Native Scheduling
 
 > 展开自 CLAUDE.md §1（绝对禁令）+ §6（语义边界）+ §11（演化原则）
 
