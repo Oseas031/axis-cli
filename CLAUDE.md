@@ -47,7 +47,7 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
    主要矛盾侧面: <Construct/Determinateness/Sublation> — <本次工作的核心张力>
    退出条件: <可验证的完成标准>
    ```
-   未声明不动手。
+   **触发条件**：会产生文件变更、决策、或判断时必须声明。纯事实性回答（查询、解释已有内容）不需要。如果不确定，声明比不声明好。
 6. **编码实现委派 subagent**。主上下文负责 Phase I/II 决策和 A8 写回，Phase III 的 A6 Execute 交给 subagent，避免实现细节污染决策上下文。
 7. **Subagent 产出必须验收**。主上下文跑 `go test` + 抽查关键逻辑路径，不盲信。
 8. **v1 简化显式标记**。简化处加 `// v1: <说明>. TODO: <改进方向>`，区分"故意简化"和"遗漏"。
@@ -296,6 +296,7 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - 识别：执行时反复绕过某条规则，绕过次数 ≥ 3 = 信号
 - 处置：触发 Phase I 重新审视。问：这条规则保护的是什么？保护对象是否还存在？
 - 保护对象消失 → 扬弃；规则形式错误 → 重写
+- **Bypass 记录约定**：每次绕过规则时，在 Phase III 四问中声明"绕过 §X rule #Y，原因：..."。记录积累在对话的 context-summary 中，跨对话可追溯。无计数基础设施时，分析性判断（"从未被触发"、"功能重叠"）也是有效证据，但必须声明证据类型。
 
 **模式 C：实践突破理论**
 - 识别：执行中产生 L1/L2 未预见的新模式，连续 ≥ 3 次成功使用
