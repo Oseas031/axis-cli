@@ -80,3 +80,8 @@ MiniMax Token Plan keys must use:
 ```text
 https://api.minimaxi.com/v1
 ```
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

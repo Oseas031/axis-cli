@@ -1,4 +1,4 @@
-# First Principles of Agent-Native Scheduling
+﻿# First Principles of Agent-Native Scheduling
 
 > 展开自 CLAUDE.md §1（绝对禁令）+ §6（语义边界）+ §11（演化原则）
 
@@ -104,30 +104,11 @@ See `docs/architecture/kernel-abstraction-model.md` for the structural expressio
 
 ## Evolution Layers
 
-```
-P0 (Local/Conservative)    P1 (Enhanced)              P2 (Distributed)           P3 (Autonomous)
-────────────────────────────────────────────────────────────────────────────────────────────────
-NL intent compilation   →  Intent quality scoring    →  Multimodal intent       →  Intent prediction
-Local control plane     →  Remote/federated nodes    →  Federated cluster       →  Global Agent network
-Context assembly        →  Context quality eval      →  RAG fusion             →  Active context query
-Sandboxed evolution     →  Auto verification gen     →  Multi-candidate evolve  →  Autonomous evolution
-Tool registry           →  Tool usage learning       →  Tool combo discovery   →  New tool invention
-Event log               →  Long-term storage/query   →  Behavior pattern mining →  Organizational intelligence
-```
-
----
+> Demoted to docs/status/current-progress.md. Roadmap content is Where/When (L3), not How (L2).
 
 ## Interaction Principles
 
-**bash is all you need, simple but robust, composable and extensible**
-
-- **Shell-native**: CLI first, scriptable, composable, callable by humans, CI, and Agents
-- **Simple but robust**: Reject redundant Web UI or complex TUI while providing necessary fault tolerance, confirmation, rollback, and observability
-- **Composable and extensible**: Interfaces support multi-dimensional composition with reserved extension points; Axis itself can be directly called, orchestrated, and adapted by Agents
-
-See [Bash is All You Need](bash-is-all-you-need.md) for details.
-
----
+> See ash-is-all-you-need.md. Stating the same content in two L2 docs violates harness §2 (deltas, not duplicates).
 
 ## Traditional Scheduling vs. Axis
 
@@ -176,3 +157,8 @@ Zero Control does not mean no constraints. It means the system does not prescrib
 ## Conclusion
 
 Axis's core is not about controlling Agents, but about giving Agents more context, more action capabilities, and controllable evolution space within observable, verifiable, and rollback-safe boundaries.
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

@@ -85,3 +85,8 @@ Never remove an observed field without:
 `intent.original_prompt` can remain metadata because it is provenance.
 
 A future `TimeoutMs` may become typed if scheduler/executor enforce it.
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

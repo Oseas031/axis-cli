@@ -105,6 +105,8 @@ Ensures one Agent's failure or misbehavior does not affect others.
 
 Maps to: `internal/evolution/`, Sandboxed Evolution Protocol, dispatcher routing
 
+> // aspirational: WAL, Snapshot, and semantic index described below have no current implementation. Activation condition: when event replay or point-in-time recovery becomes a requirement.
+
 ## Infrastructure Layer
 
 ### WAL + Event Stream

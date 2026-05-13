@@ -80,3 +80,8 @@ When replacing a legacy key:
 2. Read both old and new keys during transition.
 3. Document the deprecation.
 4. Remove the old key only after a migration window.
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

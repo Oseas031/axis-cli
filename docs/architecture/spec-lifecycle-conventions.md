@@ -72,6 +72,8 @@ Evolution work must separate:
 - promoted changes
 - discarded changes
 
+> // aspirational: This protocol has never been exercised. Activation condition: when automated spec promotion tooling is implemented.
+
 ## Promotion Semantics (CLAUDE.md v1.1)
 
 A status transition is a **promotion**. Promotion is gated by verification quality, not by promoter identity.

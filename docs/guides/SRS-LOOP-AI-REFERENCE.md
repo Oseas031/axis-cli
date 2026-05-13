@@ -1,16 +1,15 @@
-# SRS Loop — AI Collaboration Reference
+﻿# SRS Loop — AI Collaboration Reference
 
 > 展开自 CLAUDE.md §0（作者工作方法论）
 > AI 可读摘要。当作者说"按我的工作流"或"用 SRS Loop"时，指的就是这套流程。
 > 本体论层：`docs/architecture/dialectical-development-methodology.md`
-> 完整操作层：`docs/guides/YOUR_IMPLICIT_METHODOLOGY.md`
+> 完整操作层：`docs/guides/dialectical-development-methodology.md (docs/architecture/)`
 
 ---
 
-## 核心三元组
+> 核心三元组定义见 CLAUDE.md §0。本文档只展开操作层细节。
 
-| 环节 | 含义 | AI 角色 |
-|------|------|---------|
+------|------|---------|
 | **Construct**（对象化） | 意图→客观存在 | 执行生成 |
 | **Constraint**（规定性） | 划定质的界限 | 在边界内工作 |
 | **Judge**（扬弃） | 保留内核，否定偏差 | 辅助判断 |

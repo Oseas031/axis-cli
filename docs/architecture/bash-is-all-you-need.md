@@ -13,9 +13,16 @@ This philosophy does not reject UI, but emphasizes that Axis's default interacti
 
 ## Relationship to Core Design Philosophy
 
-`bash is all you need, simple but robust, composable and extensible` is the concrete realization of **More Context, More Action, Zero Control, Controllable Evolution** at the interaction layer.
+> See CLAUDE.md header for the four core propositions. This section only explains their CLI-specific implications.
 
-### More Context
+- **More Context** → CLI composability enables Agents to pipe/chain commands for richer context assembly
+- **More Action** → Every capability is a CLI command = every capability is scriptable
+- **Zero Control** → CLI doesn't prescribe workflow; it provides primitives
+- **Controllable Evolution** → All state changes leave filesystem traces (event logs, JSONL)
+
+---
+
+## More Context
 
 CLI output should provide sufficient context:
 
@@ -122,3 +129,8 @@ Axis's default interaction form should be:
 That is:
 
 > **bash is all you need, simple but robust, composable and extensible**.
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

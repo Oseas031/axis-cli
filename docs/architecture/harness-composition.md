@@ -130,3 +130,8 @@ These signals mean the layering has drifted again and §2 needs re-application:
 - A new runtime (next agent CLI, next IDE plugin) is integrated by *copying* CLAUDE.md content into its own config file
 
 Any of the above → run §5's 4-step playbook on the offending duplicate.
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

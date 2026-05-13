@@ -68,3 +68,8 @@ Mutating actions should be explicit.
 ## Dependency Rule
 
 A tool can depend on its own module dependencies, but must not force new dependencies into Axis core.
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

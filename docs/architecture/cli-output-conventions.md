@@ -111,3 +111,8 @@ Errors should eventually support:
   "message": "prompt is required"
 }
 ```
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

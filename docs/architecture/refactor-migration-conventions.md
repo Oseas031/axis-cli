@@ -71,3 +71,8 @@ A migration is complete when:
 - new location follows module conventions
 - docs/specs are updated
 - no stale duplicate implementation remains
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

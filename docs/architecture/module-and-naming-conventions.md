@@ -496,3 +496,8 @@ If a package mixes responsibilities, split it.
 If a feature needs planning, write the spec before the code.
 If a helper becomes reusable domain behavior, move it out of CLI.
 ```
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。

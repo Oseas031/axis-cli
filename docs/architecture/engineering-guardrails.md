@@ -19,8 +19,8 @@
 
 **Fix**:
 - [x] Remove `gosec.excludes: G104` → `.golangci.yml`
-- [x] Enable `nilerr` linter → `.golangci.yml`
-- [x] Enable `errchkjson` (Go 1.21+) → `.golangci.yml`
+- [ ] Enable `nilerr` // NOT in .golangci.yml — false completion claim corrected linter → `.golangci.yml`
+- [ ] Enable `errchkjson` // NOT in .golangci.yml — false completion claim corrected (Go 1.21+) → `.golangci.yml`
 - [x] CI uses `golangci-lint run` instead of standalone `staticcheck` → `.github/workflows/ci.yml`
 
 ---
@@ -106,3 +106,8 @@
 - ❌ Do not add custom go vet analyzers — high maintenance cost; standard linters already cover it
 - ❌ Do not enforce pre-commit hooks — CI is the single source of truth; keep local development flexible
 - ❌ Do not add new document-sync CI checks — syncing 4 documents relies on Agent self-discipline, which is sufficient; automation would become over-control
+
+
+---
+
+> 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。
