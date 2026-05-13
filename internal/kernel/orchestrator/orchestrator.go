@@ -20,6 +20,7 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
 	"github.com/axis-cli/axis/internal/kernel/scheduler"
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
+	"github.com/axis-cli/axis/internal/memory/horizon"
 	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/model/tool"
 	"github.com/axis-cli/axis/internal/project"
@@ -146,6 +147,13 @@ func defaultToolRegistry() *tool.Registry {
 	skillsDir := project.SkillsDir(allowedDir)
 	skillsLoader := skills.NewLoader(skillsDir)
 	_ = registry.Register(tool.NewLoadSkillTool(skillsLoader), []string{string(tool.ScopeFilesystemRead)})
+
+	// Memory: recall_memory + store_memory tools
+	memoryDir := project.MemoryDir(allowedDir)
+	memoryStore := horizon.NewStore(memoryDir)
+	_ = memoryStore.Init()
+	_ = registry.Register(tool.NewRecallMemoryTool(memoryStore), []string{string(tool.ScopeFilesystemRead)})
+	_ = registry.Register(tool.NewStoreMemoryTool(memoryStore), []string{string(tool.ScopeFilesystemWrite)})
 	_ = registry.Register(tool.NewCompactTool(), nil)
 	_ = registry.Register(tool.NewYieldTool(), nil)
 	_ = registry.Register(tool.NewCheckpointTool(), nil)
