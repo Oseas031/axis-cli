@@ -51,9 +51,9 @@
 
 ## P0：剩余
 
-### TodoWrite 增强
+### TodoWrite 增强 ✅
 
-- [ ] 添加 nag 提醒机制：Agent 遗忘任务跟踪时主动提醒
+- [x] Nag 提醒机制：多轮执行中超过 5 轮无 checkpoint/store_memory 时，System Prompt 追加软提醒
 
 ### 记忆系统：Long Horizon 实现 ✅
 

@@ -39,6 +39,8 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 4. **工作终点是规则更新（A8）**，不是代码合并。每次工作结束问：什么规则需要写回？
 5. **每次工作开始时输出 Phase 声明**（Phase / 主要矛盾侧面 / 退出条件），未声明不动手。
 6. **编码实现委派 subagent**。主上下文负责 Phase I/II 决策和 A8 写回，Phase III 的 A6 Execute 交给 subagent，避免实现细节污染决策上下文。
+7. **Subagent 产出必须验收**。主上下文跑 `go test` + 抽查关键逻辑路径，不盲信。
+8. **v1 简化显式标记**。简化处加 `// v1: <说明>. TODO: <改进方向>`，区分"故意简化"和"遗漏"。
 
 ### 参考文档
 
