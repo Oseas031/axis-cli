@@ -33,7 +33,7 @@ Axis provides: scheduling, context, capabilities, isolation, memory, judgement. 
 
 > 本文档理论基础层展开 CLAUDE.md §0（体系第一性原理）与 §13（Feedback Protocol），为 dialectical-development-methodology.md 提供认识论与方法论根基，不新增任何 What 级约束。
 
-> **认识论地位声明**：本层命题当前是**假说**（hypothesis），不是已验证的公理。它们从 Axis 有限实践中提炼，需要在后续迭代中被验证、修正或否定。其中标注为"公理"的命题是价值选择，不是可证伪的声明。
+> **认识论地位声明**：本层命题来自三重实践的结晶：（1）作者的思考与行动经验，（2）人类文明知识的积累（LLM 内化），（3）本对话中的认识迭代（犯错→否定→修正）。其中标注为"公理"的命题是价值选择，不是可证伪的声明。所有命题在后续实践中可被修正或深化。
 >
 > **受众声明**：本层面向人类设计者，不面向 Agent。Agent 通过 CLAUDE.md（L1）间接受约束，不需要理解哲学来源。
 
