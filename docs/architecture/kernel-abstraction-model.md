@@ -1,4 +1,7 @@
-# Kernel Abstraction Model
+﻿# Kernel Abstraction Model
+
+> 展开自 CLAUDE.md §6（语义边界）— 内核抽象的结构表达
+
 
 ## Positioning
 

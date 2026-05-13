@@ -1,4 +1,7 @@
-# Interactive Shell Requirements
+﻿# Interactive Shell Requirements
+
+> 实现 bash-is-all-you-need.md（CLI First）
+
 
 ## Summary
 

@@ -90,13 +90,15 @@ See `docs/architecture/kernel-abstraction-model.md` for the structural expressio
 
 ## Key Strategic Rejections
 
-| Rejection | Reason |
-|---|---|
-| Workflow canvas (drag-and-drop DAG editor) | Contracts and event logs themselves define the process |
-| Universal Agent (one Agent does everything) | Use contextpack + provider route to enable multiple specialized Agents to collaborate |
-| Black-box AI (unobservable behavior) | All behavior written to append-only event log, all context can be inspect/preflight |
-| Static permissions (unchanged after manual config) | Permissions dynamically adjusted based on performance, but promotion must go through sandbox verification |
-| Web/TUI first | CLI native, composable, scriptable — "bash is all you need" |
+> 逻辑学："否定是推理的核心动作"。Non-Goals 比 Goals 更重要——它们是 Determinateness 的逻辑表达。
+
+| Rejection | What it protects | Practice evidence |
+|---|---|---|
+| Workflow canvas (drag-and-drop DAG editor) | Contract is Structure — 契约本身定义流程 | M3 实现证明：无 GUI 也能完成全部调度 |
+| Universal Agent (one Agent does everything) | Layered Isolation — 隔离即协作 | Bootstrap Loop 证明：专业化 Agent 协作优于全能 Agent |
+| Black-box AI (unobservable behavior) | Interface is Existence — 不可观察 = 不存在 | Event log 从 M1 就是强制要求 |
+| Static permissions (unchanged after manual config) | Ladder is Boundary — 能力决定权限 | Autonomy Transition 规则引擎已实现 |
+| Web/TUI first | bash is all you need — CLI 可组合 | 所有功能 CLI-first 实现，axis-gui 是外部工具 |
 
 ---
 

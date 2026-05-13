@@ -1,5 +1,8 @@
 ﻿# Model Provider Requirements
 
+> 实现 semantic-boundaries.md Provider 边界
+
+
 ## Summary
 
 Add a minimal model provider layer to Axis so task execution can produce model-like results without coupling the kernel to any specific LLM vendor. The first implementation must be a `MockModelProvider` that requires no API key and is suitable for local development and beginner onboarding.

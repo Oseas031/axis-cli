@@ -1,4 +1,7 @@
-# Module and Naming Conventions
+﻿# Module and Naming Conventions
+
+> 展开自 CLAUDE.md §6（语义边界）+ §12（命名与结构）
+
 
 ## Purpose
 

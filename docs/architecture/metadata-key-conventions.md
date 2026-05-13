@@ -1,4 +1,7 @@
-# Metadata Key Conventions
+﻿# Metadata Key Conventions
+
+> 展开自 CLAUDE.md §1.6（命名空间元数据键）
+
 
 ## Purpose
 

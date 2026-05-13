@@ -1,4 +1,7 @@
-# Context Compaction Requirements
+﻿# Context Compaction Requirements
+
+> 实现 agent-native-first-principles.md P2（Query is Context）
+
 
 **Status**: Planned
 **Inspired by**: Anthropic Context Engineering (2026), Microsoft Agent Framework Compaction, learn-claude-code s06

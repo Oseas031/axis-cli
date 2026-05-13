@@ -1,4 +1,7 @@
-# Secret Handling
+﻿# Secret Handling
+
+> 展开自 CLAUDE.md §1.7（禁止输出密钥）
+
 
 ## Purpose
 

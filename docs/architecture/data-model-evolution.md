@@ -1,4 +1,7 @@
-# Data Model Evolution
+﻿# Data Model Evolution
+
+> 展开自 CLAUDE.md §11（演化原则）
+
 
 ## Purpose
 

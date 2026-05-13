@@ -1,4 +1,7 @@
-# External Tool Boundaries
+﻿# External Tool Boundaries
+
+> 展开自 CLAUDE.md §4（目录边界）+ §6（语义边界）
+
 
 ## Purpose
 

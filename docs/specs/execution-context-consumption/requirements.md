@@ -1,4 +1,7 @@
-# Execution-time Context Consumption Requirements
+﻿# Execution-time Context Consumption Requirements
+
+> 实现 agent-native-first-principles.md P2（Query is Context）
+
 
 ## Summary
 

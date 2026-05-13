@@ -1,4 +1,7 @@
-# Engineering Guardrails — Root Cause Elimination Plan
+﻿# Engineering Guardrails — Root Cause Elimination Plan
+
+> 展开自 CLAUDE.md §10（工程实践）
+
 
 **Principle**: Encode constraints into the compiler, linter, and CI, not into documents that require human memory.
 

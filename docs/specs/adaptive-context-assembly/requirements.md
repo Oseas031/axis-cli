@@ -1,4 +1,7 @@
-# Adaptive Context Assembly Requirements
+﻿# Adaptive Context Assembly Requirements
+
+> 实现 agent-native-first-principles.md P2（Query is Context）
+
 
 ## Summary
 

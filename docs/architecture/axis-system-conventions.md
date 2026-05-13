@@ -1,4 +1,7 @@
-# Axis System Conventions
+﻿# Axis System Conventions
+
+> 展开自 CLAUDE.md §7（代码与架构风格）
+
 
 ## Purpose
 

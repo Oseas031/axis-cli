@@ -1,4 +1,7 @@
-# CLI Output Conventions
+﻿# CLI Output Conventions
+
+> 展开自 CLAUDE.md §8（CLI 输出契约）
+
 
 ## Purpose
 

@@ -1,4 +1,7 @@
-# Spec Lifecycle Conventions
+﻿# Spec Lifecycle Conventions
+
+> 展开自 CLAUDE.md §5（Spec-First 协议）
+
 
 ## Purpose
 

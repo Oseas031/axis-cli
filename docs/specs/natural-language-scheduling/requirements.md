@@ -1,4 +1,7 @@
-# Natural Language Scheduling Requirements
+﻿# Natural Language Scheduling Requirements
+
+> 实现 agent-native-first-principles.md P5（Contract is Structure）
+
 
 ## Summary
 

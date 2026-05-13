@@ -1,4 +1,7 @@
-# Error Code Conventions
+﻿# Error Code Conventions
+
+> 展开自 CLAUDE.md §6（语义边界）
+
 
 ## Purpose
 

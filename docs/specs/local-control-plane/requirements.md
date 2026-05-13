@@ -1,4 +1,7 @@
-# Local Control Plane Requirements
+﻿# Local Control Plane Requirements
+
+> 实现 agent-native-first-principles.md P1（Interface is Existence）
+
 
 ## Summary
 

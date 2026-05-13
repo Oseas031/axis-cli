@@ -1,4 +1,7 @@
-# Immunity Memory Requirements
+﻿# Immunity Memory Requirements
+
+> 实现 agent-native-first-principles.md P4（Layered Isolation）
+
 
 **Status**: Planned
 **Inspired by**: Jelly Crystal Commons Architecture — Immunity Pool (失败免疫库)

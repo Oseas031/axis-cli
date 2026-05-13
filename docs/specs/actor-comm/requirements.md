@@ -1,4 +1,7 @@
-# Unified Actor & Communication Layer Requirements
+﻿# Unified Actor & Communication Layer Requirements
+
+> 实现 agent-native-first-principles.md P4（Layered Isolation）
+
 
 **Status**: Planned
 **Decision**: Homogeneous Actor model (人机同构)

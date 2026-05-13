@@ -1,4 +1,7 @@
-# Refactor and Migration Conventions
+﻿# Refactor and Migration Conventions
+
+> 展开自 CLAUDE.md §11（演化原则）+ §12（命名与结构）
+
 
 ## Purpose
 

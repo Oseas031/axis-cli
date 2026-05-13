@@ -1,4 +1,7 @@
-# Bash is All You Need
+﻿# Bash is All You Need
+
+> 展开自 CLAUDE.md §7（CLI First）
+
 
 **[Chinese version / 中文版](../zh/architecture/bash-is-all-you-need.md)**
 

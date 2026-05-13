@@ -1,4 +1,7 @@
-# Harness Composition — How CLAUDE.md Specializes Agent Defaults
+﻿# Harness Composition — How CLAUDE.md Specializes Agent Defaults
+
+> 展开自 CLAUDE.md §13（治理框架）— harness 层级组合
+
 
 **Status**: Adopted (2026-05-11)
 **Audience**: Anyone editing CLAUDE.md, AGENT_INSTRUCTIONS.md, `.devin/skills/`, or `.claude/commands/`.

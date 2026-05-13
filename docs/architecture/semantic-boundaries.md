@@ -4,9 +4,9 @@
 
 ## Purpose
 
-This document defines what each Axis concept is allowed to mean and do.
+> 本体论："Interface is existence"。语义边界定义的不是"谁负责什么"，而是"什么通过什么接口存在"。越界 = 让一个概念通过不属于它的接口存在 = 本体论错误。
 
-Good AI platform systems keep semantic boundaries explicit: a scheduler schedules, a provider generates model output, context prepares readiness, and permissions are not hidden inside unrelated layers.
+This document defines what each Axis concept is allowed to mean and do. The boundary table is a **否定表**（逻辑学："否定是核心动作"）——每个概念通过"Must Not Own"获得其 Determinateness。
 
 ## Boundary Table
 
@@ -60,3 +60,7 @@ A change needs review if it:
 ```text
 If a module's name does not explain why it is allowed to perform an action, the action likely belongs elsewhere.
 ```
+
+## 演化声明
+
+> 历史观："没有最终架构"。本文档的边界表反映当前矛盾的最优解。当模块职责因实践需要发生变化时，先修改本文档（L2），再修改代码（L3）。边界变更 = 架构决策，必须经过 Phase I→II→III。

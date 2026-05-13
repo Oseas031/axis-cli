@@ -1,4 +1,7 @@
-# Skills System Requirements
+﻿# Skills System Requirements
+
+> 实现 agent-native-first-principles.md P2（Query is Context）
+
 
 **Status**: Planned
 **Inspired by**: learn-claude-code s05: Skills — on-demand knowledge loading
