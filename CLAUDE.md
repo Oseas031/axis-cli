@@ -158,8 +158,8 @@ staticcheck ./... && gosec ./...       # static analysis + security
 ```
 
 ### CI Rules
-- **集成测试必须隔离**：测试中含 `exec.Command("go", "build", ...)` 或启动真实进程的，必须加 `testing.Short()` skip。CI 用 `-short` 标志，本地全量跑。
-- **CI 配置变更自触发**：`.github/workflows/ci.yml` 必须在 `paths` 触发列表中，否则 CI 配置修改无法自验证。
+- 集成测试（启动真实进程）加 `testing.Short()` skip，CI 用 `-short`。
+- `ci.yml` 必须在自身的 `paths` 触发列表中。
 - **Traceability**: every commit message MUST reference a Spec-RDT ID (e.g. `M6 T13`, `M5 Phase 5.4`) or an explicit milestone/scope tag. Pure "fix typo" / "wip" commits are not allowed on `main`.
 - **No build artifacts**: never stage `axis-dev.exe`, `*.exe`, `*.test`, `coverage.out`, `dist/`, `.cache/`, editor scratch files, or any generated binary. `.gitignore` is the first line of defense; the author is the second. If `git status` shows such a file before commit, fix `.gitignore` rather than `git add`-ing selectively.
 - **Bisect-safe**: every commit MUST independently compile (`go build ./...`) and pass `go vet ./...`. Tests should pass too; if a commit is intentionally test-red (e.g. failing regression test before fix), the message MUST start with `wip(red):` and the next commit MUST turn it green. Never split a build-breaking change across two commits on `main`.
