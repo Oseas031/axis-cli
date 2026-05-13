@@ -2,6 +2,7 @@ package horizon
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -105,6 +106,43 @@ func TestDream_NoEvents(t *testing.T) {
 	}
 	if result.EventsRead != 0 || result.PatternsNew != 0 {
 		t.Errorf("expected empty result, got %+v", result)
+	}
+}
+
+func TestBuildPrinciplesPromptSection_WithContent(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(dir)
+	store.Init()
+
+	// Write a principle
+	store.Store(Entry{
+		ID:        "test-principle",
+		Category:  CategoryPrinciples,
+		Title:     "Never retry without strategy change",
+		Body:      "Repeating the same action expecting different results is wasteful.",
+		CreatedAt: time.Now(),
+	})
+
+	section := store.BuildPrinciplesPromptSection()
+	if section == "" {
+		t.Fatal("expected non-empty principles section")
+	}
+	if !strings.Contains(section, "Repeating the same action") {
+		t.Errorf("expected body content in section, got: %s", section)
+	}
+	if !strings.Contains(section, "Derived principles") {
+		t.Errorf("expected header in section, got: %s", section)
+	}
+}
+
+func TestBuildPrinciplesPromptSection_Empty(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(dir)
+	store.Init()
+
+	section := store.BuildPrinciplesPromptSection()
+	if section != "" {
+		t.Errorf("expected empty section when no principles, got: %q", section)
 	}
 }
 

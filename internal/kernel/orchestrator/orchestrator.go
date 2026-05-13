@@ -85,6 +85,10 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	skillsPromptLoader := skills.NewLoader(project.SkillsDir(root))
 	contractExec.SetSkillsLoader(skillsPromptLoader)
 
+	// Wire principles loader for Layer 1 prompt injection (derived from dream)
+	principlesStore := horizon.NewStore(project.MemoryDir(root))
+	contractExec.SetPrinciplesLoader(principlesStore)
+
 	// Wire default compaction pipeline (three-layer model)
 	contractExec.SetCompactionPipeline(&contractexec.ThreeLayerCompaction{
 		Micro:  &contractexec.ToolResultCompaction{KeepRecent: 3},

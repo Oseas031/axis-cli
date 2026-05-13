@@ -27,6 +27,7 @@ type ContractExecutorImpl struct {
 	provider           provider.ModelProvider
 	toolRegistry       *tool.Registry
 	skillsLoader       interface{ BuildSkillsPromptSection(context.Context) string }
+	principlesLoader   interface{ BuildPrinciplesPromptSection() string }
 	compactionPipeline Compactor
 }
 
@@ -70,6 +71,13 @@ func (e *ContractExecutorImpl) SetSkillsLoader(sl interface{ BuildSkillsPromptSe
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.skillsLoader = sl
+}
+
+// SetPrinciplesLoader sets the principles loader for system prompt injection.
+func (e *ContractExecutorImpl) SetPrinciplesLoader(pl interface{ BuildPrinciplesPromptSection() string }) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.principlesLoader = pl
 }
 
 // SetCompactionPipeline sets the compaction pipeline for history management.
@@ -116,6 +124,10 @@ func (e *ContractExecutorImpl) Execute(ctx context.Context, contractID string, i
 		// Inject skills prompt if available
 		if e.skillsLoader != nil {
 			req.SystemPrompt = e.skillsLoader.BuildSkillsPromptSection(ctx)
+		}
+		// Inject derived principles (zero retrieval cost, always present)
+		if e.principlesLoader != nil {
+			req.SystemPrompt += e.principlesLoader.BuildPrinciplesPromptSection()
 		}
 
 		// Add tools if a registry is available with registered tools.
