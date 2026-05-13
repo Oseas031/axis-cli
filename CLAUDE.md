@@ -1,10 +1,15 @@
-﻿# AXIS AGENT CONSTITUTION (v1.1 — 2026-05-12)
+﻿# AXIS AGENT CONSTITUTION (v1.2 — 2026-05-13)
 
-Project: **Axis** — Agent-native scheduling system; early execution substrate for Agent autogenesis.
+> **BOOTSTRAP — 新对话第一步**
+> 1. 读完本文件全文
+> 2. 输出 Phase 声明（格式见 §0 rule #5）后再回应用户
+> 3. 本文件是所有约束的唯一权威来源。其他文档只展开本文件，不得与之矛盾。
+
+Project: **Axis** — Objectification infrastructure; providing the conditions for intent to become objective existence through AI.
 Core proposition: **More Context, More Action, Zero Control, Controllable Evolution**.
 
 > This file is the single source of truth for all coding constraints.
-> Other files (`HANDOVER.md`, `AGENT_INSTRUCTIONS.md`, `workflow/entry.md`) reference this file; they do NOT redefine constraints.
+> This file is the single source of truth for all AI behavior constraints. No other file may redefine or override these rules.
 
 ## 0. 作者工作方法论（AI 必读）
 
@@ -52,8 +57,7 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 ### 参考文档
 
 - **本体论层**：`docs/architecture/dialectical-development-methodology.md`
-- **操作层**：`docs/guides/YOUR_IMPLICIT_METHODOLOGY.md`
-- **AI 精简版**：`docs/guides/SRS-LOOP-AI-REFERENCE.md`
+- **操作层**：`docs/guides/SRS-LOOP-AI-REFERENCE.md`
 
 ---
 
@@ -71,7 +75,7 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 
 Before proposing any change, confirm ALL of the following:
 
-- [ ] Read `AGENT_INSTRUCTIONS.md` (handover entry) if this is your first task
+- [ ] Read §3 Mandatory Reading if this is your first task
 - [ ] New behavior is observable via CLI / filesystem / event log (not hidden)
 - [ ] CLI output follows `docs/architecture/cli-output-conventions.md`
 - [ ] Metadata keys use namespaced prefix
@@ -86,13 +90,17 @@ Before proposing any change, confirm ALL of the following:
 
 > If a change feels quick but violates any item above, it is the wrong change. Write the Spec-RDT first.
 
-## 3. Mandatory Reading
+## 3. Mandatory Reading (by priority)
 
 | Priority | File | Why |
 |----------|------|-----|
-| P0 | `docs/architecture/agent-native-first-principles.md` | Six first principles. Violating any = architectural breach. |
-| P1 | `docs/architecture/semantic-boundaries.md` | What each kernel module must NOT do. |
-| P2 | `docs/architecture/spec-lifecycle-conventions.md` | When to write/update a Spec-RDT. |
+| P0 | 本文件（CLAUDE.md） | 宪法。已在读。 |
+| P1 | `docs/guides/SRS-LOOP-AI-REFERENCE.md` | 方法论操作手册（§0 的展开版） |
+| P2 | `docs/architecture/agent-native-first-principles.md` | 六条设计原则。违反 = 架构级错误。 |
+| P3 | `docs/architecture/semantic-boundaries.md` | 每个模块的"不得做"清单 |
+| P4 | `docs/architecture/spec-lifecycle-conventions.md` | 何时写/更新 Spec-RDT |
+| P5 | `docs/status/current-progress.md` | 里程碑状态 ground truth |
+| Ref | `docs/architecture/dialectical-development-methodology.md` | 方法论本体论层（需要时查阅） |
 
 ## 4. Directory Boundaries
 

@@ -10,6 +10,12 @@
 - [SWE1.6 Renormalization Report](strategy/swe1-6-renormalization-report-2026-05-10.md)
 - [Agent Native Scenario & Principles Analysis](strategy/agent-native-scenario-principles-analysis-2026-05-11.md)
 
+## Analysis
+
+- [learn-claude-code Agent Execution Layer Analysis](analysis/learn-claude-code-agent-execution-layer-analysis-2026-05-12.md)
+- [altcode-main Absorption Research (SRS A0-A5)](analysis/altcode-absorption-research-2026-05-13.md)
+- [evolver-main Absorption Research (SRS A0-A5)](analysis/evolver-absorption-research-2026-05-13.md)
+
 ## Daily Retrospectives
 
 - [2026-05-08 Daily Retrospective](daily/daily-retrospective-2026-05-08.md)
