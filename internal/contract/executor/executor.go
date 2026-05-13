@@ -171,12 +171,17 @@ func (e *ContractExecutorImpl) Execute(ctx context.Context, contractID string, i
 // It implements a circuit breaker that aborts after 5 consecutive tool errors.
 func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
 	var history []types.ModelMessage
+	turnsSinceProgress := 0
 	maxTurns := 10
 	consecutiveErrors := 0
 	const circuitBreakerThreshold = 5
 
 	for turn := 0; turn < maxTurns; turn++ {
 		req.History = history
+		if turnsSinceProgress >= 5 {
+			req.SystemPrompt += "\nReminder: you have not updated task progress in the last 5 turns. Consider checkpointing or recording progress."
+			turnsSinceProgress = 0
+		}
 		resp, err := p.Execute(ctx, req)
 		if err != nil {
 			return &types.ExecutionResult{
@@ -238,6 +243,19 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 						Content:    string(content),
 					})
 				}
+			}
+			// Track progress tool usage
+			progressMade := false
+			for _, tc := range resp.ToolCalls {
+				if tc.Name == "checkpoint" || tc.Name == "store_memory" {
+					progressMade = true
+					break
+				}
+			}
+			if progressMade {
+				turnsSinceProgress = 0
+			} else {
+				turnsSinceProgress++
 			}
 			// Compact history if pipeline is configured
 			if e.compactionPipeline != nil {
