@@ -237,7 +237,6 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - §0 辩证方法论三阶段结构
 - §1 绝对禁令
 - §11 演化原则
-- 本节（§13）治理框架本身
 
 **渐进条款（可扬弃）** — 修改需 ≥3 次实践反馈证据：
 - §2 Pre-Coding Checklist
@@ -246,6 +245,7 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - §9 Build & Test
 - §10 Engineering Practices
 - §12 Naming & Structure
+- §13 治理框架本身 // 经过 ≥3 次完整迭代验证后可提升为永久
 
 **过渡条款（临时）** — 创建时声明失效条件，条件满足自动废止：
 - §0 rule #6 编码委派 subagent // transitional: Agent 编码可信后废止
@@ -270,10 +270,12 @@ staticcheck ./... && gosec ./...       # static analysis + security
 
 **L2 内部主从关系**：
 
-主文档（定义概念，冲突时胜出）：
-- `agent-native-first-principles.md` — 定义"什么是对的"
-- `semantic-boundaries.md` — 定义"什么不能碰什么"
-- `dialectical-development-methodology.md` — 定义"怎么决策"
+主文档（定义概念，冲突时按优先级仲裁）：
+1. `agent-native-first-principles.md` — 定义"什么是对的"（目标）
+2. `semantic-boundaries.md` — 定义"什么不能碰什么"（边界）
+3. `dialectical-development-methodology.md` — 定义"怎么决策"（过程）
+
+优先级：目标 > 边界 > 过程。
 
 从文档（展开细节，不得与主文档矛盾）：
 - 所有 `*-conventions.md` 展开自 `semantic-boundaries.md`
@@ -301,6 +303,8 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - 案例：Phase 声明三行格式（实践涌现 → 验证有效 → 写入 L1 §0 rule #5）
 
 ### 13.5 反馈闭环（A8 机制化）
+
+> // aspirational: 当前依赖 AI 主动执行。待工具化（自动 prompt 注入）后可强制。
 
 每次 Phase III 结束时，AI 必须回答：
 
