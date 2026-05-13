@@ -18,6 +18,9 @@ func (m *mockProvider) Execute(ctx context.Context, req *provider.ModelRequest) 
 	return &provider.ModelResponse{Output: m.output}, nil
 }
 
+// mockToolProvider is reserved for multi-turn tool-use tests.
+var _ provider.ModelProvider = (*mockToolProvider)(nil)
+
 type mockToolProvider struct {
 	callCount int
 }

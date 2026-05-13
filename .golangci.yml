@@ -66,6 +66,24 @@ issues:
         - gosec
       text: "G101"
 
+    # G306 file permissions in evolution workspace (sandboxed, non-secret files).
+    - path: internal/evolution/
+      linters:
+        - gosec
+      text: "G306"
+
+    # G204 subprocess with variable args (BashTool by design, skills cmd).
+    - path: (internal/evolution/|cmd/axis/skills_cmd)
+      linters:
+        - gosec
+      text: "G204"
+
+    # G306 in contract executor (transcript files, non-secret).
+    - path: internal/contract/executor/
+      linters:
+        - gosec
+      text: "G306"
+
 linters-settings:
   gocyclo:
     min-complexity: 55
