@@ -13,11 +13,11 @@ const defaultDreamLimit = 50
 
 // DreamResult holds the output of a dream replay session.
 type DreamResult struct {
-	EventsRead   int      `json:"events_read"`
-	Clusters     int      `json:"clusters"`
-	PatternsNew  int      `json:"patterns_new"`
-	Skipped      int      `json:"skipped"`
-	PatternIDs   []string `json:"pattern_ids,omitempty"`
+	EventsRead  int      `json:"events_read"`
+	Clusters    int      `json:"clusters"`
+	PatternsNew int      `json:"patterns_new"`
+	Skipped     int      `json:"skipped"`
+	PatternIDs  []string `json:"pattern_ids,omitempty"`
 }
 
 // DreamOptions configures a dream replay.

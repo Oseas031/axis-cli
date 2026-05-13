@@ -34,8 +34,8 @@ func (p *nagTestProvider) Execute(ctx context.Context, req *provider.ModelReques
 // noopTool is a minimal tool implementation for testing.
 type noopTool struct{}
 
-func (n *noopTool) Name() string                  { return "bash" }
-func (n *noopTool) Schema() types.ToolDefinition  { return types.ToolDefinition{Name: "bash"} }
+func (n *noopTool) Name() string                 { return "bash" }
+func (n *noopTool) Schema() types.ToolDefinition { return types.ToolDefinition{Name: "bash"} }
 func (n *noopTool) Execute(ctx context.Context, input map[string]any) (map[string]any, error) {
 	return map[string]any{"ok": true}, nil
 }

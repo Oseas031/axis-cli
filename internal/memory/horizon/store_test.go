@@ -160,7 +160,6 @@ func (m *mockEventStore) MarkForgotten(ctx context.Context, entityID string, at 
 }
 func (m *mockEventStore) Close() error { return nil }
 
-
 func TestForget_ArchivesOldNarrative(t *testing.T) {
 	dir := t.TempDir()
 	s := NewStore(dir)
