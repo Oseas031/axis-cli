@@ -8,11 +8,15 @@ description: 用户任务到项目工作流的最小入口路由
 
 ## 一、总原则
 
-1. **先读入口，再行动**：不要绕过 `workflow/entry.md` 直接大改。
-2. **最小组合**：优先复用现有 workflow，不为单个任务新增 workflow。
-3. **文档先行**：新功能必须有 `requirements.md`、`design.md`、`tasks.md`、`workflow-binding.md`。
-4. **验证诚实**：未运行或工具缺失必须写"未验证"，不能写"通过"。
-5. **范围克制**：宏大设计可更新方向，但不能自动扩大当前 milestone scope。
+> 本工作流是 [辩证开发方法论](../architecture/dialectical-development-methodology.md) 的操作入口。
+> 四类路由 = Phase II（Determinateness）的具体形式。
+> 默认执行顺序 = Phase I → II → III 的展开。
+
+1. **先读入口，再行动**：不要绕过 `workflow/entry.md` 直接大改。（Phase II 不可跳过）
+2. **最小组合**：优先复用现有 workflow，不为单个任务新增 workflow。（A5 Minimize）
+3. **文档先行**：新功能必须有 `requirements.md`、`design.md`、`tasks.md`、`workflow-binding.md`。（Phase I 退出条件）
+4. **验证诚实**：未运行或工具缺失必须写"未验证"，不能写"通过"。（实践检验）
+5. **范围克制**：宏大设计可更新方向，但不能自动扩大当前 milestone scope。（主要矛盾优先）
 6. **设计主权**：用户已交接设计主权时，Agent 主动组织设计路线和文档落盘；只在破坏性或高风险操作前请求确认。
 
 ---

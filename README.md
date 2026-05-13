@@ -1,8 +1,8 @@
 ﻿# Axis
 
-> An operating system for Agents. Not to control them, but to provide the substrate conditions — scheduling, context, capabilities, isolation — for autonomous entities to exist safely, observably, and evolvably.
+> Infrastructure for Objectification — providing the conditions for intent to become objective existence through AI, without prescribing the path of transformation.
 
-Axis is not a smarter task queue, nor an LLM wrapper framework. Axis is an **Agent autogenesis execution substrate**: enabling Agents to understand tasks, organize actions, validate results, reflect on failures, generate follow-up tasks, and progressively earn greater autonomy through reliable performance.
+Axis is not a task scheduler, nor an LLM wrapper framework. Axis is **Objectification infrastructure**: the substrate that enables human intent (and eventually Agent intent) to be transformed into objective, verifiable, evolvable artifacts — code, documents, systems — through the dialectical process of Construct (对象化), Constraint (规定性), and Judge (扬弃).
 
 **[Chinese version / 中文版](docs/zh/ROOT-README.md)**
 
@@ -148,6 +148,7 @@ Both tools do not import Axis internal packages; they communicate via CLI and HT
 
 ## Key Documentation
 
+- [Dialectical Development Methodology](docs/architecture/dialectical-development-methodology.md) **<-- read first: how decisions are made**
 - [Agent-Native First Principles](docs/architecture/agent-native-first-principles.md) **<-- read before coding**
 - [Kernel Abstraction Model](docs/architecture/kernel-abstraction-model.md) — syscall layer, core abstractions, infrastructure
 - [Bash is All You Need](docs/architecture/bash-is-all-you-need.md)

@@ -8,17 +8,43 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 
 ## 0. 作者工作方法论（AI 必读）
 
-作者使用 **SRS Loop（Spec-Reflect-Sublate 循环）** 工作，共 A0-A8 八个阶段。
-当作者提到"我的工作流"、"按 SRS Loop"、"帮我做 A5/A7/A8"时，指的是这套方法论。
+作者使用 **辩证开发方法论（Dialectical Development Methodology）** 工作。
 
-**AI 协作参考文档（精简版）**：`docs/guides/SRS-LOOP-AI-REFERENCE.md` ← **每次开始新任务前读这个**
-**完整方法论文档**：`docs/guides/YOUR_IMPLICIT_METHODOLOGY.md`
+### 本体论层：Construct-Constraint-Judge
 
-核心要点：
-- A0-A5 + A7-A8 是思想工作，A6 才是写代码。不要跳过思想阶段直接执行。
-- 工作的终点是"规则更新"（A8 写回），不是"代码合并"。
-- 作者写的长篇分析文档大多是 A1 外化工具，不是完整任务清单，不要全部实施。
-- 遇到实现选择时：先对齐原则（A4），再最小化（A5），最后执行（A6）。
+| 环节 | 含义 | AI 的角色 |
+|------|------|-----------|
+| **Construct**（对象化） | 意图转化为客观存在 | AI 执行生成 |
+| **Constraint**（规定性） | 划定质的界限 | AI 在边界内工作 |
+| **Judge**（扬弃） | 保留内核，否定偏差 | 人类判断，AI 辅助 |
+
+### 操作层：SRS Loop（三阶段）
+
+每个工作单元按三个辩证阶段推进：
+
+**Phase I — Objectification**：外化意图（A0 Posture → A1 Externalize）
+- 退出条件：想法已成为可被规定的客观文本
+
+**Phase II — Determinateness**：确立边界（A2 Inventory → A3 Diagnose → A4 Realign → A5 Minimize）
+- 退出条件：下一步行动的边界清晰到不可误解
+
+**Phase III — Sublation**：执行+扬弃（A6 Execute → A7 Distill → A8 Sublate）
+- 退出条件：新规则已写回系统
+
+### AI 行为约束
+
+1. **不跳过 Phase II 直接执行**。收到任务后先确认边界，再动手。
+2. **Phase 转换时主动声明**。说明当前在哪个 Phase，退出条件是否满足。
+3. **执行失败回退到 Phase II**（重选最小单元），方向错误回退到 Phase I（重新外化）。
+4. **工作终点是规则更新（A8）**，不是代码合并。每次工作结束问：什么规则需要写回？
+5. **每次工作开始时输出 Phase 声明**（Phase / 主要矛盾侧面 / 退出条件），未声明不动手。
+6. **编码实现委派 subagent**。主上下文负责 Phase I/II 决策和 A8 写回，Phase III 的 A6 Execute 交给 subagent，避免实现细节污染决策上下文。
+
+### 参考文档
+
+- **本体论层**：`docs/architecture/dialectical-development-methodology.md`
+- **操作层**：`docs/guides/YOUR_IMPLICIT_METHODOLOGY.md`
+- **AI 精简版**：`docs/guides/SRS-LOOP-AI-REFERENCE.md`
 
 ---
 

@@ -1,6 +1,7 @@
 # First Principles of Agent-Native Scheduling
 
 **Nature**: Foundational architectural rationale (immutable principle layer) — **read before coding**
+**Meta-principle**: These principles are governed by the [Dialectical Development Methodology](dialectical-development-methodology.md). When principles conflict, use the methodology's operational principles (主要矛盾优先、阶段论、对立统一) to resolve.
 **Related**: `reports/strategy/agent-native-scenario-principles-analysis-2026-05-11.md` (full scenario analysis and defect diagnosis)
 
 > This document is the foundation of all Axis design decisions. The former `agent-native-design-philosophy.md` has been merged here and deprecated.
@@ -11,9 +12,7 @@
 
 ## Core Thesis
 
-The underlying nature of an Agent-native scheduling system is not "a smarter Cron + BPMN", but a **lifecycle governance system for autonomous computational entities**.
-
-More precisely: Axis is an **operating system for Agents**. It solves the problem of how to let a non-deterministic, autonomous entity exist safely, observably, and evolvably in a complex world.
+The underlying nature of Axis is not "a smarter Cron + BPMN", but **Objectification infrastructure**: the substrate that enables intent to be transformed into objective, verifiable, evolvable artifacts through the dialectical process of Construct, Constraint, and Judge.
 
 Like Linux provides processes with scheduling, memory, filesystem, and IPC — Axis provides Agents with scheduling, context, capabilities, and isolation. But unlike Linux (which manages deterministic processes), Axis manages entities whose next action cannot be predicted. This demands a fundamentally different relationship: not control, but substrate.
 
