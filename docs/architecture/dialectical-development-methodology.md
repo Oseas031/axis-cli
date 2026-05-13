@@ -144,6 +144,36 @@ SRS Loop 是本方法论的操作形式。8 步归入三个辩证阶段：
 
 ---
 
+## Human-AI Collaboration Cognitive Model
+
+（来源：`docs/guides/AI_DRIVEN_DEVELOPMENT_WORKFLOW.md` 精华提炼）
+
+开发者在 AI 协作中的真实角色不是"写代码的人"，而是：
+
+- **AI Workflow Architect**：设计契约、边界、演化协议
+- **Quality Assurance Designer**：定义验证标准，不写验证代码
+- **Experimenter**：验证"AI 能否通过结构化执行基质产生可靠工作"的假说
+
+**核心洞察**：你的优势是**设计能力**而非编码经验。AI 的优势是**执行能力**而非设计判断。两者的分工不是"你指挥 AI 写代码"，而是"你设计约束空间，AI 在约束内自由生成"。
+
+这就是为什么 Determinateness（规定性）是人类的核心贡献——不是写代码，而是让 AI 只能写出对的代码。
+
+---
+
+## Sublation in Practice: SWE1.6 Renormalization
+
+（来源：`docs/architecture/swe1-6-renormalization-guide.md` 精华提炼）
+
+SWE1.6 重正化是 Axis 历史上第一次大规模 Sublation 实践：
+
+- **Objectification**：早期代码快速生成，积累了大量命名/结构不一致
+- **Determinateness**：制定了 11 份规范文档（命名、语义边界、元数据键等）
+- **Sublation**：用规范重写现有代码，保留功能（合理内核），否定不一致（错误偏差），提升到有序状态
+
+**关键约束**：重正化不是新增功能的借口。这条约束本身就是 Determinateness 的体现——扬弃必须有边界，否则就是无限扩张。
+
+---
+
 ## Operational Principles
 
 1. **主要矛盾优先**：每次 A5 Minimize 时问"这解决的是主要矛盾还是次要矛盾？"主要矛盾未解决前，不分散精力到次要矛盾。
