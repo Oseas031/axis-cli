@@ -12,6 +12,9 @@ import (
 )
 
 func TestSimulationAgentExecutor_FullPipeline(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	root := t.TempDir()
 	projectRoot, err := filepath.Abs("../..")
 	if err != nil {
