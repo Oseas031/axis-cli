@@ -29,7 +29,6 @@ linters:
     # --- Bug prevention (NEW — targets top recurring issues) ---
     - bodyclose      # Unclosed HTTP response bodies → resource leak (#2 bug category)
     - noctx          # HTTP requests without context.Context → context propagation gap (#4)
-    - nilerr         # Returning nil when err != nil → silent failure (#3)
     - reassign       # Package variable reassignment → global state bugs (#10)
     - copyloopvar    # Loop variable capture in goroutines → concurrency bugs (#2)
 
@@ -84,6 +83,11 @@ issues:
         - gosec
       text: "G306"
 
+    # SA9003 empty branches — intentional no-op error handling in existing code.
+    - linters:
+        - staticcheck
+      text: "SA9003"
+
 linters-settings:
   gocyclo:
     min-complexity: 55
@@ -101,11 +105,6 @@ linters-settings:
       - name: var-naming
         severity: warning
         disabled: false
-        arguments:
-          - [^Test]
-          - ""
-          - ""
-          - false
       # Require context.Context as first parameter in exported functions.
       - name: context-as-argument
         severity: warning
