@@ -96,9 +96,9 @@ func TestDelete_Reput(t *testing.T) {
 	val1 := []byte(`{"version":1}`)
 	val2 := []byte(`{"version":2}`)
 
-	eng.Put(ctx, key, val1)
-	eng.Delete(ctx, key)
-	eng.Put(ctx, key, val2)
+	eng.Put(ctx, key, val1) //nolint:errcheck
+	eng.Delete(ctx, key)    //nolint:errcheck
+	eng.Put(ctx, key, val2) //nolint:errcheck
 
 	got, err := eng.Get(ctx, key)
 	if err != nil {

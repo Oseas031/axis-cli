@@ -11,8 +11,8 @@ type testActor struct {
 	received []Message
 }
 
-func (a *testActor) ID() string                                      { return a.id }
-func (a *testActor) CommStatus() ActorStatus                         { return a.status }
+func (a *testActor) ID() string              { return a.id }
+func (a *testActor) CommStatus() ActorStatus { return a.status }
 func (a *testActor) Receive(ctx context.Context, msg Message) error {
 	a.received = append(a.received, msg)
 	return nil

@@ -9,7 +9,7 @@ import (
 type ActorStatus int
 
 const (
-	StatusReady   ActorStatus = iota
+	StatusReady ActorStatus = iota
 	StatusBusy
 	StatusOffline
 )

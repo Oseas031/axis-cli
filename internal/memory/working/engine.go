@@ -156,9 +156,9 @@ func (e *Engine) List(ctx context.Context) ([]WorkingSetItem, error) {
 		}
 		items = append(items, WorkingSetItem{
 			BundleID:    bundle.BundleID,
-			RetainedAt:    bundle.RetainedAt,
-			Reason:        bundle.Reason,
-			AccessCount:   bundle.AccessCount,
+			RetainedAt:  bundle.RetainedAt,
+			Reason:      bundle.Reason,
+			AccessCount: bundle.AccessCount,
 		})
 	}
 

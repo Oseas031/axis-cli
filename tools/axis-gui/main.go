@@ -49,7 +49,7 @@ func main() {
 	mux.HandleFunc("/api/runtime/start", handleRuntimeStart)
 	mux.HandleFunc("/api/runtime/stop", handleRuntimeStop)
 	mux.HandleFunc("/api/tasks/", handleTaskStatus) // /api/tasks/{id}/status
-	mux.HandleFunc("/api/tasks", handleTasks)        // GET list / POST submit
+	mux.HandleFunc("/api/tasks", handleTasks)       // GET list / POST submit
 	mux.HandleFunc("/ws/events", handleWSEvents)
 
 	// ── Legacy endpoints (kept for compatibility) ────────────────────────────

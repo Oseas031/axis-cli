@@ -16,9 +16,9 @@ type stubActor struct {
 	received []comm.Message
 }
 
-func (s *stubActor) ID() string                                       { return s.id }
-func (s *stubActor) Status() ActorStatus                              { return s.status }
-func (s *stubActor) CommStatus() comm.ActorStatus                     { return comm.ActorStatus(s.status) }
+func (s *stubActor) ID() string                   { return s.id }
+func (s *stubActor) Status() ActorStatus          { return s.status }
+func (s *stubActor) CommStatus() comm.ActorStatus { return comm.ActorStatus(s.status) }
 func (s *stubActor) Receive(ctx context.Context, msg comm.Message) error {
 	s.received = append(s.received, msg)
 	return nil

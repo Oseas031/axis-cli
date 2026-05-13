@@ -117,9 +117,9 @@ func TestVerifyBashTool_Execute_Fail(t *testing.T) {
 func TestVerifyBashTool_Execute_OutputCheck(t *testing.T) {
 	vt := NewVerifyBashTool()
 	result, err := vt.Execute(context.Background(), map[string]any{
-		"exit_code":        float64(0),
-		"stdout":           "build successful",
-		"output_contains":  "successful",
+		"exit_code":           float64(0),
+		"stdout":              "build successful",
+		"output_contains":     "successful",
 		"output_not_contains": "error",
 	})
 	if err != nil {

@@ -62,7 +62,7 @@ func TestThreeLayerCompaction_AutoTriggered(t *testing.T) {
 	c := &ThreeLayerCompaction{
 		Micro:      &ToolResultCompaction{KeepRecent: 1},
 		Auto:       &SummarizationCompaction{Provider: nil, KeepRecent: 2}, // nil provider = no-op summarize
-		Budget:     10, // very low budget to trigger auto
+		Budget:     10,                                                     // very low budget to trigger auto
 		Transcript: &TranscriptStore{Dir: dir},
 		TaskID:     "auto-test",
 	}

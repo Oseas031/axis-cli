@@ -11,8 +11,8 @@ import (
 
 // fakeEventStore is an in-memory EventStore for fast deterministic tests.
 type fakeEventStore struct {
-	events  []longterm.EventRecord
-	failOn  string // event type to fail on Append (for failure-injection)
+	events []longterm.EventRecord
+	failOn string // event type to fail on Append (for failure-injection)
 }
 
 func (f *fakeEventStore) Append(_ context.Context, e longterm.EventRecord) error {
