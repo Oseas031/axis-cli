@@ -277,19 +277,19 @@ func TestCompress_AllStrategies(t *testing.T) {
 
 	strategies := []CompressionStrategy{StrategyByPriority, StrategyByLineage, StrategyByRecency}
 
-	for _, strat := range strategies {
-		comp := NewContextCompressor(strat)
+	for _, stgy := range strategies {
+		comp := NewContextCompressor(stgy)
 		result := comp.Compress(ctx, 500)
 
 		if result == nil {
-			t.Errorf("strategy %v: result should not be nil", strat)
+			t.Errorf("strategy %v: result should not be nil", stgy)
 			continue
 		}
 		if result.TaskID != "task-1" {
-			t.Errorf("strategy %v: TaskID should be preserved", strat)
+			t.Errorf("strategy %v: TaskID should be preserved", stgy)
 		}
 		if result.StateSnapshot == nil {
-			t.Errorf("strategy %v: StateSnapshot should be preserved", strat)
+			t.Errorf("strategy %v: StateSnapshot should be preserved", stgy)
 		}
 	}
 }

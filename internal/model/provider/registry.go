@@ -94,7 +94,6 @@ func NewProvider(name string, opts ...ProviderOption) (ModelProvider, error) {
 	case "echo":
 		return NewEchoModelProvider(), nil
 	case "anthropic":
-		needsKey = true
 		if cfg.apiKey == "" {
 			return nil, fmt.Errorf("anthropic: API key missing. Set ANTHROPIC_API_KEY or run 'axis provider add --type anthropic --api-key <key>'")
 		}

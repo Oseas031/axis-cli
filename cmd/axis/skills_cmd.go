@@ -126,7 +126,7 @@ func newSkillsCreateCommand() *cobra.Command {
 			}
 			template := fmt.Sprintf("---\nname: %s\ndescription: TODO - add description\n---\n\n# %s\n\nAdd your instructions here.\n", name, name)
 			skillFile := filepath.Join(skillDir, "SKILL.md")
-			if err := os.WriteFile(skillFile, []byte(template), 0o644); err != nil {
+			if err := os.WriteFile(skillFile, []byte(template), 0o600); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Created: %s\n", skillFile)

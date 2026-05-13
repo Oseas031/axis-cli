@@ -111,7 +111,7 @@ func (cb *ContextBuilder) collectCodeSnapshot() (*CodeSnapshot, error) {
 	// Find modified Go files in internal/
 	if err := filepath.Walk(filepath.Join(cb.rootDir, "internal"), func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil // Skip inaccessible files
+			return nil //nolint:nilerr // Skip inaccessible files
 		}
 		if !info.IsDir() && strings.HasSuffix(path, ".go") {
 			snapshot.ModifiedFiles = append(snapshot.ModifiedFiles, path)
@@ -161,7 +161,7 @@ func (cb *ContextBuilder) collectDocSnapshot() (*DocSnapshot, error) {
 	docsDir := filepath.Join(cb.rootDir, "docs")
 	if err := filepath.Walk(docsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil
+			return nil //nolint:nilerr
 		}
 		if info.IsDir() {
 			return nil
