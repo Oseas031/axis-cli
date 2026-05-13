@@ -9,6 +9,7 @@ on:
       - 'go.sum'
       - '.github/config/registry.yml'
       - '.golangci.yml'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
@@ -17,6 +18,7 @@ on:
       - 'go.sum'
       - '.github/config/registry.yml'
       - '.golangci.yml'
+      - '.github/workflows/ci.yml'
 
 # Standard: Event type check before accessing event properties
 # See .github/workflows/CODING_STANDARDS.md section 1.1
