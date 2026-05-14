@@ -3,7 +3,7 @@
     "id": "vigil-85feda",
     "title": "defaultToolRegistry() hardcoded tool set",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -14,13 +14,21 @@
     "depends_on": null,
     "notes": "Needs Agent identity + per-task Contract tool_scopes",
     "created_at": "2026-05-14T11:33:48.4293422+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:46.8517981+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:46.8517981+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-8fda37",
     "title": "dispatcher hardcoded AutonomyLevelLow",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -31,13 +39,21 @@
     "depends_on": null,
     "notes": "Needs competence profile + autonomy rule engine",
     "created_at": "2026-05-14T11:33:48.8492071+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:47.298607+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:47.298607+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-bda908",
     "title": "multi-turn loop cap=10 termination",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -48,13 +64,21 @@
     "depends_on": null,
     "notes": "Needs Agent stop signal (__done tool)",
     "created_at": "2026-05-14T11:33:49.307745+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:48.5988323+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:48.5988323+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-6e8834",
     "title": "Permission scopes never checked",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -65,7 +89,15 @@
     "depends_on": null,
     "notes": "Needs Permission Ladder infrastructure",
     "created_at": "2026-05-14T11:33:49.7464986+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:45.8646322+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:45.8646322+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-aa60a3",
@@ -88,7 +120,7 @@
     "id": "vigil-2655b5",
     "title": "Set* temporal coupling",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -99,13 +131,21 @@
     "depends_on": null,
     "notes": "Wait for AgentConfig struct refactor",
     "created_at": "2026-05-14T11:33:50.6212442+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:47.7283957+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:47.7283957+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-020f38",
     "title": "circuit breaker=5 hardcoded",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -116,13 +156,21 @@
     "depends_on": null,
     "notes": "Can be Contract field, low priority",
     "created_at": "2026-05-14T11:33:51.0480199+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:46.3891301+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:46.3891301+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-b2f106",
     "title": "dispatcher no audit log",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -133,13 +181,21 @@
     "depends_on": null,
     "notes": "Needs structured event emitter",
     "created_at": "2026-05-14T11:33:51.4698505+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:49.0261022+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:49.0261022+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-1553ac",
     "title": "mock provider silent default",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -150,7 +206,15 @@
     "depends_on": null,
     "notes": "Reasonable for dev, fix before production",
     "created_at": "2026-05-14T11:33:51.896573+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:48.1634581+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:48.1634581+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-4c6383",
@@ -389,7 +453,7 @@
     "id": "vigil-8b8482",
     "title": "Feature progressive unlock (BashTool/Evolution/Permissions)",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "autonomy"
     ],
@@ -400,7 +464,15 @@
     "depends_on": null,
     "notes": "30 tasks + accuracy\u003e=90% + generalization\u003e=0.8 + reliability\u003e=95% + zero violations",
     "created_at": "2026-05-14T11:34:17.3231788+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:49.4822467+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:49.4822467+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-a2abbc",
@@ -457,7 +529,7 @@
     "id": "vigil-fdb806",
     "title": "Skills composable metadata",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture"
     ],
@@ -468,7 +540,15 @@
     "depends_on": null,
     "notes": "input_type/output_type/composable_with in SKILL.md frontmatter. Sublated from arXiv:2605.12239",
     "created_at": "2026-05-14T11:34:19.072044+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:49.9349477+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:49.9349477+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-1054a4",
@@ -629,7 +709,7 @@
     "id": "vigil-2b4048",
     "title": "ContextBundle: task-aware compression scoring",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "contextpack",
       "research"
@@ -641,7 +721,15 @@
     "depends_on": null,
     "notes": "arXiv:2605.11019 VPG-EA: score context chunks by task relevance before compression. Not simple truncation.",
     "created_at": "2026-05-14T12:10:20.1202144+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:26:50.4289182+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:50.4289182+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-15c221",
@@ -668,5 +756,23 @@
         "at": "2026-05-14T12:28:05.7923863+08:00"
       }
     ]
+  },
+  {
+    "id": "vigil-e91a00",
+    "title": "Runtime startup: mark orphaned running/pending tasks as abandoned",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "reliability",
+      "gap-a"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "On axis start, scan event log for running/pending tasks from previous PID. Append abandoned event. Prevents zombie tasks in GUI/event stream.",
+    "created_at": "2026-05-14T15:18:52+08:00",
+    "history": []
   }
 ]
