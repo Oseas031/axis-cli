@@ -1,0 +1,7 @@
+{
+  "name": "axis",
+  "description": "Axis project agent — CLAUDE.md is the constitutional authority",
+  "resources": [
+    "file://CLAUDE.md"
+  ]
+}

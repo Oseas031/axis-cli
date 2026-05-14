@@ -50,5 +50,6 @@ $GITHUB_ENV
 EXTERNAL/
 
 # Tool-local state
-.kiro/
+.kiro/*
+!.kiro/agents/
 .context-summary.md
