@@ -188,7 +188,7 @@
     "id": "vigil-c806e2",
     "title": "Judge: generalization scoring (OOD/ID ratio)",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "judge"
     ],
@@ -199,13 +199,21 @@
     "depends_on": null,
     "notes": "Agent cannot upgrade on familiar tasks alone. Threshold: \u003e=0.8 upgrade, \u003c0.5 downgrade",
     "created_at": "2026-05-14T11:34:03.6395868+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:04.9117772+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:04.9117772+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-ef8c34",
     "title": "Autonomy Transition rule refactor",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "autonomy"
     ],
@@ -216,7 +224,15 @@
     "depends_on": null,
     "notes": "Replace consecutive-success with: resource-constrained + OOD + architecture-driven",
     "created_at": "2026-05-14T11:34:04.065694+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:02.7456864+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:02.7456864+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-9d684f",
@@ -239,7 +255,7 @@
     "id": "vigil-253bf5",
     "title": "Refactor: split orchestrator",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "refactor"
     ],
@@ -250,7 +266,15 @@
     "depends_on": null,
     "notes": "Extract ToolRegistryBuilder + ExecutorFactory, orchestrator only does scheduling loop",
     "created_at": "2026-05-14T11:34:04.9557844+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:03.170585+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:03.170585+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-69274c",
@@ -273,7 +297,7 @@
     "id": "vigil-1651f6",
     "title": "Subagent context isolation",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture"
     ],
@@ -284,7 +308,15 @@
     "depends_on": null,
     "notes": "Parent fresh context dispatch, subagent returns summary only",
     "created_at": "2026-05-14T11:34:05.8034126+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:03.6028181+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:03.6028181+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-4f646e",
@@ -307,7 +339,7 @@
     "id": "vigil-5e1eab",
     "title": "Quality-Gated Model Escalation",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture"
     ],
@@ -318,13 +350,21 @@
     "depends_on": null,
     "notes": "Judge score \u003c threshold -\u003e auto upgrade provider tier. Sublated from arXiv:2605.12239",
     "created_at": "2026-05-14T11:34:06.6477413+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:04.0347057+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:04.0347057+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-d8a622",
     "title": "Background Tasks async execution",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture"
     ],
@@ -335,7 +375,15 @@
     "depends_on": null,
     "notes": "Slow operations go background, Agent continues thinking",
     "created_at": "2026-05-14T11:34:07.0688035+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:04.4745458+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:04.4745458+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-8b8482",
@@ -529,7 +577,7 @@
     "id": "vigil-e94383",
     "title": "Judge must use independent short context (Context Rot fix)",
     "priority": "P0",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "security",
       "judge"
@@ -541,13 +589,21 @@
     "depends_on": null,
     "notes": "arXiv:2605.12366: 800K token后漏检率2x-30x. Judge只看final artifacts+task spec, 不看完整transcript.",
     "created_at": "2026-05-14T11:58:55.1653083+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:02.2044284+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:02.2044284+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-5a10ec",
     "title": "CodingAgent: multi-candidate generation + differential testing",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "coding-agent",
       "research"
@@ -559,7 +615,15 @@
     "depends_on": null,
     "notes": "arXiv:2604.06485 SEP: generate N\u003e=3 candidates, run same inputs, select dominant equivalence class. Replaces single-shot + verify.",
     "created_at": "2026-05-14T12:10:19.6130531+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:05.354265+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:05.354265+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-2b4048",
@@ -583,7 +647,7 @@
     "id": "vigil-15c221",
     "title": "Judge: lightweight first-pass + escalation gate",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "judge",
       "research"
@@ -595,6 +659,14 @@
     "depends_on": null,
     "notes": "arXiv:2605.12384 TokenHD: 0.6B beats QwQ-32B at hallucination detection. Cheap judge first, expensive only on demand.",
     "created_at": "2026-05-14T12:10:20.5514906+08:00",
-    "history": []
+    "completed_at": "2026-05-14T12:28:05.7923863+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:05.7923863+08:00"
+      }
+    ]
   }
 ]
