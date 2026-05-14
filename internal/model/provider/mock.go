@@ -2,19 +2,38 @@ package provider
 
 import (
 	"context"
+	"log"
+	"sync"
 
 	"github.com/axis-cli/axis/internal/types"
 )
 
 // MockModelProvider returns an echo of the input for testing.
 // When tools are configured, it simulates tool calling behavior.
-type MockModelProvider struct{}
+type MockModelProvider struct {
+	warnOnce       sync.Once
+	warningHandler func(string)
+}
 
 func NewMockModelProvider() *MockModelProvider {
 	return &MockModelProvider{}
 }
 
+// SetWarningHandler allows overriding the default log warning for testability.
+func (m *MockModelProvider) SetWarningHandler(fn func(string)) {
+	m.warningHandler = fn
+}
+
 func (m *MockModelProvider) Execute(ctx context.Context, req *ModelRequest) (*ModelResponse, error) {
+	m.warnOnce.Do(func() {
+		msg := "[WARN] MockModelProvider: no real provider configured. Response will be empty."
+		if m.warningHandler != nil {
+			m.warningHandler(msg)
+		} else {
+			log.Println(msg)
+		}
+	})
+
 	// If history has a tool result as the last entry, incorporate it.
 	// This check must come first so the multi-turn loop can terminate.
 	if len(req.History) > 0 {

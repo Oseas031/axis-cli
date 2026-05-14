@@ -22,13 +22,17 @@ type ContractExecutor interface {
 
 // ContractExecutorImpl implements contract execution
 type ContractExecutorImpl struct {
-	mu                 sync.RWMutex
-	contracts          map[string]*types.AgentContract
-	provider           provider.ModelProvider
-	toolRegistry       *tool.Registry
-	skillsLoader       interface{ BuildSkillsPromptSection(context.Context) string }
-	principlesLoader   interface{ BuildPrinciplesPromptSection() string }
-	compactionPipeline Compactor
+	mu                      sync.RWMutex
+	contracts               map[string]*types.AgentContract
+	provider                provider.ModelProvider
+	toolRegistry            *tool.Registry
+	skillsLoader            interface{ BuildSkillsPromptSection(context.Context) string }
+	principlesLoader        interface{ BuildPrinciplesPromptSection() string }
+	compactionPipeline      Compactor
+	allowedScopes           []string
+	circuitBreakerThreshold int
+	maxTurns                int
+	executionStarted        bool
 }
 
 // NewContractExecutor creates a new contract executor
@@ -52,38 +56,53 @@ func (e *ContractExecutorImpl) RegisterContract(contract *types.AgentContract) e
 	return nil
 }
 
-// SetProvider sets the model provider for execution.
+// Deprecated: use NewContractExecutorWithConfig.
 func (e *ContractExecutorImpl) SetProvider(p provider.ModelProvider) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if e.executionStarted {
+		panic("SetProvider called after execution started")
+	}
 	e.provider = p
 }
 
-// SetToolRegistry sets the tool registry for the contract executor.
+// Deprecated: use NewContractExecutorWithConfig.
 func (e *ContractExecutorImpl) SetToolRegistry(tr *tool.Registry) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if e.executionStarted {
+		panic("SetToolRegistry called after execution started")
+	}
 	e.toolRegistry = tr
 }
 
-// SetSkillsLoader sets the skills loader for system prompt injection.
+// Deprecated: use NewContractExecutorWithConfig.
 func (e *ContractExecutorImpl) SetSkillsLoader(sl interface{ BuildSkillsPromptSection(context.Context) string }) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if e.executionStarted {
+		panic("SetSkillsLoader called after execution started")
+	}
 	e.skillsLoader = sl
 }
 
-// SetPrinciplesLoader sets the principles loader for system prompt injection.
+// Deprecated: use NewContractExecutorWithConfig.
 func (e *ContractExecutorImpl) SetPrinciplesLoader(pl interface{ BuildPrinciplesPromptSection() string }) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if e.executionStarted {
+		panic("SetPrinciplesLoader called after execution started")
+	}
 	e.principlesLoader = pl
 }
 
-// SetCompactionPipeline sets the compaction pipeline for history management.
+// Deprecated: use NewContractExecutorWithConfig.
 func (e *ContractExecutorImpl) SetCompactionPipeline(p Compactor) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if e.executionStarted {
+		panic("SetCompactionPipeline called after execution started")
+	}
 	e.compactionPipeline = p
 }
 
@@ -107,6 +126,10 @@ func safeMarshal(v any) ([]byte, error) {
 // Execute executes a contract: validates input, runs the provider (with optional
 // multi-turn tool loop), and validates output.
 func (e *ContractExecutorImpl) Execute(ctx context.Context, contractID string, input map[string]any) (*types.ExecutionResult, error) {
+	e.mu.Lock()
+	e.executionStarted = true
+	e.mu.Unlock()
+
 	if err := e.ValidateInput(contractID, input); err != nil {
 		return &types.ExecutionResult{
 			Error: fmt.Sprintf("input validation failed: %v", err),
@@ -172,15 +195,29 @@ func (e *ContractExecutorImpl) Execute(ctx context.Context, contractID string, i
 func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
 	var history []types.ModelMessage
 	turnsSinceProgress := 0
-	maxTurns := 10
+	maxTurns := e.maxTurns
+	if maxTurns == 0 {
+		maxTurns = 10
+	}
 	consecutiveErrors := 0
-	const circuitBreakerThreshold = 5
+	circuitBreakerThreshold := e.circuitBreakerThreshold
+	if circuitBreakerThreshold == 0 {
+		circuitBreakerThreshold = 5
+	}
 
+	var lastOutput map[string]any
 	for turn := 0; turn < maxTurns; turn++ {
 		req.History = history
 		if turnsSinceProgress >= 5 {
 			req.SystemPrompt += "\nReminder: you have not updated task progress in the last 5 turns. Consider checkpointing or recording progress."
 			turnsSinceProgress = 0
+		}
+		if turn == maxTurns-1 {
+			history = append(history, types.ModelMessage{
+				Role:    "system",
+				Content: "This is your final turn. You must produce a final answer now.",
+			})
+			req.History = history
 		}
 		resp, err := p.Execute(ctx, req)
 		if err != nil {
@@ -203,6 +240,21 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 						Role:       "tool",
 						ToolCallID: tc.ID,
 						Content:    fmt.Sprintf("error: tool %s not found", tc.Name),
+					})
+					consecutiveErrors++
+					if consecutiveErrors >= circuitBreakerThreshold {
+						return &types.ExecutionResult{
+							Error: fmt.Sprintf("circuit breaker triggered: %d consecutive tool errors, aborting", consecutiveErrors),
+						}, fmt.Errorf("circuit breaker triggered: %d consecutive tool errors", consecutiveErrors)
+					}
+					continue
+				}
+				// Check permission scopes
+				if !e.isScopeAllowed(tr, tc.Name) {
+					history = append(history, types.ModelMessage{
+						Role:       "tool",
+						ToolCallID: tc.ID,
+						Content:    fmt.Sprintf("error: tool %s requires scope %v which is not allowed", tc.Name, tr.GetScopes(tc.Name)),
 					})
 					consecutiveErrors++
 					if consecutiveErrors >= circuitBreakerThreshold {
@@ -272,11 +324,34 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 			}
 			return &types.ExecutionResult{Output: resp.Output}, nil
 		}
+		lastOutput = resp.Output
 	}
 
 	return &types.ExecutionResult{
-		Error: "tool execution exceeded maximum turn limit (10)",
-	}, fmt.Errorf("tool execution exceeded maximum turn limit (10)")
+		Output: lastOutput,
+		Error:  fmt.Sprintf("execution terminated: maximum turns (%d) reached without completion", maxTurns),
+	}, fmt.Errorf("execution terminated: maximum turns (%d) reached without completion", maxTurns)
+}
+
+// isScopeAllowed checks whether all scopes required by a tool are in the executor's allowed list.
+// If allowedScopes is empty, all tools are permitted (backward compatible).
+func (e *ContractExecutorImpl) isScopeAllowed(tr *tool.Registry, toolName string) bool {
+	if len(e.allowedScopes) == 0 {
+		return true
+	}
+	for _, required := range tr.GetScopes(toolName) {
+		found := false
+		for _, allowed := range e.allowedScopes {
+			if allowed == required {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 // ValidateInput validates input against the contract schema

@@ -444,3 +444,116 @@ func TestContractExecutor_Execute_CircuitBreaker_UnregisteredToolCounts(t *testi
 		t.Fatal("Result should not be nil")
 	}
 }
+
+
+func TestContractExecutor_Execute_ScopeAllowed(t *testing.T) {
+	reg := tool.NewRegistry()
+	reg.Register(&fixedTool{
+		name:   "bash",
+		result: map[string]any{"stdout": "hello", "exit_code": 0},
+	}, []string{"subprocess"})
+
+	exec := NewContractExecutorWithConfig(ExecutorConfig{
+		Provider:      provider.NewMockModelProvider(),
+		ToolRegistry:  reg,
+		AllowedScopes: []string{"subprocess"},
+	})
+
+	contract := &types.AgentContract{
+		ContractID: "scope-allowed",
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{
+				{Name: "status", Type: types.FieldTypeString, Required: true},
+			},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	result, err := exec.Execute(context.Background(), "scope-allowed", map[string]any{"tool": "bash"})
+	if err != nil {
+		t.Fatalf("Expected success when scope is allowed: %v", err)
+	}
+	if result.Output["status"] != "completed" {
+		t.Errorf("Expected status=completed, got %v", result.Output["status"])
+	}
+}
+
+func TestContractExecutor_Execute_ScopeDisallowed(t *testing.T) {
+	reg := tool.NewRegistry()
+	reg.Register(&fixedTool{
+		name:   "bash",
+		result: map[string]any{"stdout": "hello", "exit_code": 0},
+	}, []string{"subprocess"})
+
+	// scopedProvider always requests the "bash" tool
+	exec := NewContractExecutorWithConfig(ExecutorConfig{
+		Provider:      &scopedToolCallProvider{},
+		ToolRegistry:  reg,
+		AllowedScopes: []string{"filesystem:read"}, // does NOT include "subprocess"
+	})
+
+	contract := &types.AgentContract{
+		ContractID: "scope-disallowed",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "x", Type: types.FieldTypeString, Required: false}},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	result, err := exec.Execute(context.Background(), "scope-disallowed", map[string]any{"x": "y"})
+	if err == nil {
+		t.Fatal("Expected error when scope is disallowed (circuit breaker should trip)")
+	}
+	if result == nil {
+		t.Fatal("Result should not be nil")
+	}
+	if result.Error == "" {
+		t.Error("Expected error message about circuit breaker")
+	}
+}
+
+func TestContractExecutor_Execute_EmptyScopesAllowAll(t *testing.T) {
+	reg := tool.NewRegistry()
+	reg.Register(&fixedTool{
+		name:   "bash",
+		result: map[string]any{"stdout": "hello", "exit_code": 0},
+	}, []string{"subprocess"})
+
+	exec := NewContractExecutorWithConfig(ExecutorConfig{
+		Provider:      provider.NewMockModelProvider(),
+		ToolRegistry:  reg,
+		AllowedScopes: nil, // empty = allow all
+	})
+
+	contract := &types.AgentContract{
+		ContractID: "scope-empty",
+		OutputSchema: &types.OutputSchema{
+			Fields: []types.FieldDef{
+				{Name: "status", Type: types.FieldTypeString, Required: true},
+			},
+		},
+	}
+	exec.RegisterContract(contract)
+
+	result, err := exec.Execute(context.Background(), "scope-empty", map[string]any{"tool": "bash"})
+	if err != nil {
+		t.Fatalf("Expected success when AllowedScopes is empty: %v", err)
+	}
+	if result.Output["status"] != "completed" {
+		t.Errorf("Expected status=completed, got %v", result.Output["status"])
+	}
+}
+
+// scopedToolCallProvider always returns a tool call for "bash" tool.
+type scopedToolCallProvider struct {
+	callCount int
+}
+
+func (p *scopedToolCallProvider) Execute(_ context.Context, req *provider.ModelRequest) (*provider.ModelResponse, error) {
+	p.callCount++
+	return &provider.ModelResponse{
+		ToolCalls: []types.ToolCall{
+			{ID: fmt.Sprintf("call-%d", p.callCount), Name: "bash", Input: map[string]any{"command": "echo hi"}},
+		},
+	}, nil
+}

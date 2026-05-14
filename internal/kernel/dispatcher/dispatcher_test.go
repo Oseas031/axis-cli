@@ -696,3 +696,115 @@ func (p *capturingModelProvider) Execute(ctx context.Context, req *provider.Mode
 	p.request = req
 	return &provider.ModelResponse{Output: map[string]any{"status": "ok"}}, nil
 }
+
+
+func TestDispatcher_AutonomyResolver(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatcher := NewDispatcher(contractExec, humanExec)
+	agentExec := &capturingAgentExecutor{}
+	dispatcher.SetAgentExecutor(agentExec)
+
+	// Test 1: default resolver returns AutonomyLevelLow
+	task := &types.AgentTask{
+		TaskID:   "autonomy-default",
+		Input:    map[string]any{"input": "test"},
+		Metadata: map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+		Status:   types.TaskStatusPending,
+	}
+	_, err := dispatcher.Dispatch(context.Background(), task)
+	if err != nil {
+		t.Fatalf("dispatch should succeed: %v", err)
+	}
+	if agentExec.request.Autonomy != agent.AutonomyLevelLow {
+		t.Fatalf("expected AutonomyLevelLow, got %v", agentExec.request.Autonomy)
+	}
+
+	// Test 2: metadata autonomy_level=high
+	task2 := &types.AgentTask{
+		TaskID: "autonomy-metadata",
+		Input:  map[string]any{"input": "test"},
+		Metadata: map[string]string{
+			types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent,
+			"autonomy_level":             "high",
+		},
+		Status: types.TaskStatusPending,
+	}
+	_, err = dispatcher.Dispatch(context.Background(), task2)
+	if err != nil {
+		t.Fatalf("dispatch should succeed: %v", err)
+	}
+	if agentExec.request.Autonomy != agent.AutonomyLevelHigh {
+		t.Fatalf("expected AutonomyLevelHigh, got %v", agentExec.request.Autonomy)
+	}
+
+	// Test 3: custom resolver via WithAutonomyResolver
+	dispatcher.WithAutonomyResolver(func(t *types.AgentTask) agent.AutonomyLevel {
+		return agent.AutonomyLevelFull
+	})
+	task3 := &types.AgentTask{
+		TaskID:   "autonomy-custom",
+		Input:    map[string]any{"input": "test"},
+		Metadata: map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+		Status:   types.TaskStatusPending,
+	}
+	_, err = dispatcher.Dispatch(context.Background(), task3)
+	if err != nil {
+		t.Fatalf("dispatch should succeed: %v", err)
+	}
+	if agentExec.request.Autonomy != agent.AutonomyLevelFull {
+		t.Fatalf("expected AutonomyLevelFull, got %v", agentExec.request.Autonomy)
+	}
+}
+
+
+func TestDispatcher_AuditLog(t *testing.T) {
+	contractExec := contractexec.NewContractExecutor()
+	humanExec := humanexec.NewHumanExecutor()
+	dispatch := NewDispatcher(contractExec, humanExec)
+
+	contract := &types.AgentContract{
+		ContractID: "audit-contract",
+		InputSchema: &types.InputSchema{
+			Fields: []types.FieldDef{{Name: "name", Type: types.FieldTypeString, Required: true}},
+		},
+	}
+	contractExec.RegisterContract(contract)
+
+	task := &types.AgentTask{
+		TaskID:     "audit-task-1",
+		ContractID: "audit-contract",
+		Input:      map[string]any{"name": "test"},
+	}
+
+	ctx := context.Background()
+	_, err := dispatch.Dispatch(ctx, task)
+	if err != nil {
+		t.Fatalf("Dispatch should succeed: %v", err)
+	}
+
+	entries := dispatch.AuditLog()
+	if len(entries) != 1 {
+		t.Fatalf("Expected 1 audit entry, got %d", len(entries))
+	}
+
+	entry := entries[0]
+	if entry.TaskID != "audit-task-1" {
+		t.Errorf("Expected TaskID audit-task-1, got %s", entry.TaskID)
+	}
+	if entry.ExecutorType != "contract" {
+		t.Errorf("Expected ExecutorType contract, got %s", entry.ExecutorType)
+	}
+	if entry.Status != "completed" {
+		t.Errorf("Expected Status completed, got %s", entry.Status)
+	}
+	if entry.Duration < 0 {
+		t.Errorf("Expected non-negative Duration, got %v", entry.Duration)
+	}
+	if entry.Timestamp.IsZero() {
+		t.Error("Expected non-zero Timestamp")
+	}
+	if entry.Error != "" {
+		t.Errorf("Expected empty Error, got %s", entry.Error)
+	}
+}

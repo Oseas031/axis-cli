@@ -17,6 +17,7 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/memory/horizon"
 	"github.com/axis-cli/axis/internal/model/provider"
+	"github.com/axis-cli/axis/internal/model/tool"
 	"github.com/axis-cli/axis/internal/project"
 	"github.com/axis-cli/axis/internal/skills"
 	"github.com/axis-cli/axis/internal/types"
@@ -30,7 +31,14 @@ type OrchestratorOption func(*Orchestrator)
 // WithModelProvider sets the ModelProvider for contract execution.
 func WithModelProvider(p provider.ModelProvider) OrchestratorOption {
 	return func(o *Orchestrator) {
-		o.contractExecutor.SetProvider(p)
+		o.modelProvider = p
+	}
+}
+
+// WithToolRegistry sets a custom tool registry, overriding the default.
+func WithToolRegistry(r *tool.Registry) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.toolRegistry = r
 	}
 }
 
@@ -51,6 +59,8 @@ type Orchestrator struct {
 	admissionValidator *admission.AdmissionValidatorImpl
 	humanExecutor      *humanexec.HumanExecutorImpl
 	agentExecutor      agent.AgentExecutor
+	toolRegistry       *tool.Registry
+	modelProvider      provider.ModelProvider
 	mu                 sync.Mutex
 	running            bool
 	started            bool          // true if Start was ever called
@@ -69,7 +79,29 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	stateStore := sharedlayer.NewMemoryStateStore()
 	lifecycleManager := lifecycle.NewLifecycleManager()
 	sched := scheduler.NewScheduler(stateStore, lifecycleManager)
-	toolRegistry := defaultToolRegistry()
+	humanExec := humanexec.NewHumanExecutor()
+
+	orch := &Orchestrator{
+		stateStore:       stateStore,
+		lifecycleManager: lifecycleManager,
+		scheduler:        sched,
+		humanExecutor:    humanExec,
+		running:          false,
+		taskSubmitted:    make(chan struct{}, 1),
+		workerLimit:      defaultWorkerLimit,
+		workerSem:        make(chan struct{}, defaultWorkerLimit),
+		stopCh:           make(chan struct{}),
+		loopDone:         make(chan struct{}),
+	}
+
+	for _, opt := range opts {
+		opt(orch)
+	}
+
+	// Use default tool registry if none was provided via option
+	if orch.toolRegistry == nil {
+		orch.toolRegistry = defaultToolRegistry()
+	}
 
 	// Wire skills loader for Layer 1 prompt injection
 	root := project.MustResolveRoot()
@@ -78,9 +110,15 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	// Wire principles loader for Layer 1 prompt injection (derived from dream)
 	principlesStore := horizon.NewStore(project.MemoryDir(root))
 
+	// Resolve model provider
+	resolvedProvider := provider.ModelProvider(provider.NewMockModelProvider())
+	if orch.modelProvider != nil {
+		resolvedProvider = orch.modelProvider
+	}
+
 	contractExec := contractexec.NewContractExecutorWithConfig(contractexec.ExecutorConfig{
-		Provider:     provider.NewMockModelProvider(),
-		ToolRegistry: toolRegistry,
+		Provider:     resolvedProvider,
+		ToolRegistry: orch.toolRegistry,
 		SkillsLoader: skillsPromptLoader,
 		PrinciplesLoader: principlesStore,
 		CompactionPipeline: &contractexec.ThreeLayerCompaction{
@@ -89,36 +127,16 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 			Budget: 32000,
 		},
 	})
-	humanExec := humanexec.NewHumanExecutor()
-	dispatch := dispatcher.NewDispatcher(contractExec, humanExec)
-	admissionValidator := admission.NewAdmissionValidator(contractExec)
-
-	orch := &Orchestrator{
-		stateStore:         stateStore,
-		lifecycleManager:   lifecycleManager,
-		scheduler:          sched,
-		dispatcher:         dispatch,
-		contractExecutor:   contractExec,
-		admissionValidator: admissionValidator,
-		humanExecutor:      humanExec,
-		running:            false,
-		taskSubmitted:      make(chan struct{}, 1),
-		workerLimit:        defaultWorkerLimit,
-		workerSem:          make(chan struct{}, defaultWorkerLimit),
-		stopCh:             make(chan struct{}),
-		loopDone:           make(chan struct{}),
-	}
-
-	for _, opt := range opts {
-		opt(orch)
-	}
+	orch.contractExecutor = contractExec
+	orch.dispatcher = dispatcher.NewDispatcher(contractExec, humanExec)
+	orch.admissionValidator = admission.NewAdmissionValidator(contractExec)
 
 	// Inject agent executor into dispatcher if configured
 	if orch.agentExecutor != nil {
 		orch.dispatcher.SetAgentExecutor(orch.agentExecutor)
 		// Wire tool registry into LLM agent executor if applicable
 		if llmExec, ok := orch.agentExecutor.(*agent.LLMAgentExecutor); ok {
-			llmExec.SetToolRegistry(toolRegistry)
+			llmExec.SetToolRegistry(orch.toolRegistry)
 		}
 	}
 

@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/axis-cli/axis/internal/agent"
@@ -13,6 +15,16 @@ import (
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
 	"github.com/axis-cli/axis/internal/types"
 )
+
+// AuditEntry records a single dispatch event.
+type AuditEntry struct {
+	Timestamp    time.Time
+	TaskID       string
+	ExecutorType string // "contract", "agent", "human"
+	Duration     time.Duration
+	Status       string // "completed", "failed", "timeout"
+	Error        string
+}
 
 // Dispatcher interface defines task dispatching to executors
 type Dispatcher interface {
@@ -26,6 +38,9 @@ type DispatcherImpl struct {
 	humanExecutor    humanexec.HumanExecutor
 	agentExecutor    agent.AgentExecutor
 	timeout          time.Duration
+	autonomyResolver func(task *types.AgentTask) agent.AutonomyLevel
+	auditLog         []AuditEntry
+	auditMu          sync.RWMutex
 }
 
 // NewDispatcher creates a new dispatcher
@@ -34,7 +49,42 @@ func NewDispatcher(contractExec contractexec.ContractExecutor, humanExec humanex
 		contractExecutor: contractExec,
 		humanExecutor:    humanExec,
 		timeout:          30 * time.Minute, // Default timeout for milestone 1
+		autonomyResolver: DefaultAutonomyResolver,
 	}
+}
+
+// DefaultAutonomyResolver returns AutonomyLevelLow unless task metadata specifies otherwise.
+func DefaultAutonomyResolver(task *types.AgentTask) agent.AutonomyLevel {
+	if task.Metadata != nil {
+		if val, ok := task.Metadata["autonomy_level"]; ok {
+			switch val {
+			case "none":
+				return agent.AutonomyLevelNone
+			case "low":
+				return agent.AutonomyLevelLow
+			case "medium":
+				return agent.AutonomyLevelMedium
+			case "high":
+				return agent.AutonomyLevelHigh
+			case "execute":
+				return agent.AutonomyLevelExecute
+			case "decide":
+				return agent.AutonomyLevelDecide
+			case "plan":
+				return agent.AutonomyLevelPlan
+			case "learn":
+				return agent.AutonomyLevelLearn
+			case "full":
+				return agent.AutonomyLevelFull
+			}
+		}
+	}
+	return agent.AutonomyLevelLow
+}
+
+// WithAutonomyResolver sets a custom autonomy resolver function.
+func (d *DispatcherImpl) WithAutonomyResolver(fn func(*types.AgentTask) agent.AutonomyLevel) {
+	d.autonomyResolver = fn
 }
 
 // SetAgentExecutor sets the agent executor for agent-based task execution.
@@ -42,8 +92,18 @@ func (d *DispatcherImpl) SetAgentExecutor(e agent.AgentExecutor) {
 	d.agentExecutor = e
 }
 
+// AuditLog returns a copy of the current audit log entries.
+func (d *DispatcherImpl) AuditLog() []AuditEntry {
+	d.auditMu.RLock()
+	defer d.auditMu.RUnlock()
+	out := make([]AuditEntry, len(d.auditLog))
+	copy(out, d.auditLog)
+	return out
+}
+
 // Dispatch dispatches a task to the appropriate executor
 func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
+	start := time.Now()
 	timeoutCtx, cancel := context.WithTimeout(ctx, d.timeout)
 	defer cancel()
 
@@ -77,22 +137,58 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 		default:
 		}
 		timeoutErr := types.NewAgentError(types.ErrTaskTimeout, fmt.Sprintf("task %s timed out", task.TaskID))
-		return &types.TaskResult{
+		result := &types.TaskResult{
 			TaskID:    task.TaskID,
 			Status:    types.TaskStatusFailed,
 			Error:     timeoutErr.Error(),
 			Completed: time.Now(),
-		}, timeoutErr
+		}
+		d.recordAudit(start, task, result)
+		return result, timeoutErr
 	case result := <-resultChan:
+		d.recordAudit(start, task, result)
 		return result, nil
 	case err := <-errChan:
-		return &types.TaskResult{
+		result := &types.TaskResult{
 			TaskID:    task.TaskID,
 			Status:    types.TaskStatusFailed,
 			Error:     err.Error(),
 			Completed: time.Now(),
-		}, err
+		}
+		d.recordAudit(start, task, result)
+		return result, err
 	}
+}
+
+// recordAudit appends an audit entry for a completed dispatch.
+func (d *DispatcherImpl) recordAudit(start time.Time, task *types.AgentTask, result *types.TaskResult) {
+	executorType := "contract"
+	if task.Metadata != nil {
+		switch task.Metadata[types.TaskMetadataKeyExecutor] {
+		case types.ExecutorTypeAgent:
+			executorType = "agent"
+		case types.ExecutorTypeHuman:
+			executorType = "human"
+		}
+	}
+	status := "completed"
+	if result.Status == types.TaskStatusFailed {
+		status = "failed"
+		if result.Error != "" && strings.Contains(result.Error, string(types.ErrTaskTimeout)) {
+			status = "timeout"
+		}
+	}
+	entry := AuditEntry{
+		Timestamp:    start,
+		TaskID:       task.TaskID,
+		ExecutorType: executorType,
+		Duration:     time.Since(start),
+		Status:       status,
+		Error:        result.Error,
+	}
+	d.auditMu.Lock()
+	d.auditLog = append(d.auditLog, entry)
+	d.auditMu.Unlock()
 }
 
 // executeTask executes a task by routing to the appropriate executor.
@@ -145,7 +241,7 @@ func (d *DispatcherImpl) executeAgentTask(ctx context.Context, task *types.Agent
 	agentReq := &agent.AgentExecutionRequest{
 		Task:             task,
 		SelfContext:      selfContext,
-		Autonomy:         agent.AutonomyLevelLow,
+		Autonomy:         d.autonomyResolver(task),
 		ContextSummary:   summary,
 		RequestedSources: summary.RequestedSources,
 	}
