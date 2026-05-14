@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/axis-cli/axis/internal/contextpack"
 	"github.com/axis-cli/axis/internal/control"
@@ -105,12 +106,41 @@ func NewRootCommand(app *App) *cobra.Command {
 func runTask(cmd *cobra.Command, args []string) error {
 	initOrchestrator()
 
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	if err := orch.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start orchestrator: %w", err)
+	}
+	defer func() { _ = orch.Shutdown(context.Background()) }()
+
 	if err := submitTask(args[0]); err != nil {
 		return fmt.Errorf("failed to submit task: %w", err)
 	}
 
-	fmt.Printf("Task %s submitted successfully\n", args[0])
-	return nil
+	// v1: poll for completion. TODO: event-driven notification from orchestrator.
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Fprintf(cmd.ErrOrStderr(), "Task %s timed out\n", args[0])
+			return ctx.Err()
+		case <-ticker.C:
+			status, err := orch.GetTaskStatus(args[0])
+			if err != nil {
+				continue // task may not be picked up yet
+			}
+			switch status {
+			case types.TaskStatusCompleted:
+				fmt.Fprintf(cmd.OutOrStdout(), "Task %s completed\n", args[0])
+				return nil
+			case types.TaskStatusFailed:
+				fmt.Fprintf(cmd.OutOrStdout(), "Task %s failed\n", args[0])
+				return fmt.Errorf("task %s failed", args[0])
+			}
+		}
+	}
 }
 
 func getTaskStatus(cmd *cobra.Command, args []string) error {

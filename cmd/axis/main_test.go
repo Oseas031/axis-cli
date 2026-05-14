@@ -23,29 +23,29 @@ func TestRunTaskInitializesLocalOrchestrator(t *testing.T) {
 
 	output := captureStdout(t, func() {
 		if err := runTask(&cobra.Command{}, []string{"task-1"}); err != nil {
-			t.Fatalf("runTask should initialize and submit locally: %v", err)
+			t.Fatalf("runTask should initialize and execute locally: %v", err)
 		}
 	})
 
 	if strings.Contains(output, "axis start") {
 		t.Fatalf("runTask output should not tell users to run axis start first: %s", output)
 	}
-	if !strings.Contains(output, "Task task-1 submitted successfully") {
-		t.Fatalf("runTask output should confirm submission, got: %s", output)
+	if !strings.Contains(output, "Task task-1 completed") {
+		t.Fatalf("runTask output should confirm completion, got: %s", output)
 	}
 }
 
 func TestRunTask_InitOrchestratorError(t *testing.T) {
 	resetCLIState()
 
-	// First call succeeds (sets up orchestrator)
+	// First call succeeds (sets up orchestrator and executes)
 	output := captureStdout(t, func() {
 		if err := runTask(&cobra.Command{}, []string{"task-1"}); err != nil {
 			t.Fatalf("first runTask should succeed: %v", err)
 		}
 	})
-	if !strings.Contains(output, "Task task-1 submitted successfully") {
-		t.Fatalf("Expected success, got: %s", output)
+	if !strings.Contains(output, "Task task-1 completed") {
+		t.Fatalf("Expected completion, got: %s", output)
 	}
 }
 
