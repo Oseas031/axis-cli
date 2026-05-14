@@ -15,6 +15,7 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/orchestrator"
 	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/model/providerconfig"
+	"github.com/axis-cli/axis/internal/project"
 	"github.com/axis-cli/axis/internal/types"
 	"github.com/spf13/cobra"
 )
@@ -46,6 +47,15 @@ type App struct {
 	providerName string
 	modelName    string
 	root         string // project root for file-backed stores; empty means in-memory
+}
+
+// resolvedRoot returns the project root, resolving from cwd if not explicitly set.
+func (app *App) resolvedRoot() string {
+	if app.root != "" {
+		return app.root
+	}
+	app.root = project.MustResolveRoot()
+	return app.root
 }
 
 func main() {
@@ -145,7 +155,7 @@ func runTask(cmd *cobra.Command, args []string) error {
 
 func getTaskStatus(cmd *cobra.Command, args []string) error {
 	taskID := args[0]
-	client := control.NewClient(control.NewRuntimeLocator("."), http.DefaultClient)
+	client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), http.DefaultClient)
 	status, err := client.Status(context.Background(), taskID)
 	if err != nil {
 		return fmt.Errorf("failed to get task %s status: %w", taskID, err)
@@ -173,7 +183,7 @@ func startOrchestrator(cmd *cobra.Command, args []string) error {
 	}()
 
 	fmt.Println("Orchestrator started. Press Ctrl+C to stop.")
-	return runLocalRuntime(ctx, ".", cmd.OutOrStdout())
+	return runLocalRuntime(ctx, defaultApp.resolvedRoot(), cmd.OutOrStdout())
 }
 
 func initOrchestrator() {
@@ -200,7 +210,7 @@ func (app *App) resolveProvider() (string, []provider.ProviderOption) {
 	if app.providerName != "mock" || app.modelName != "" {
 		return app.providerName, app.providerOptions()
 	}
-	cfg, err := providerconfig.NewStore(".").Load()
+	cfg, err := providerconfig.NewStore(app.resolvedRoot()).Load()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to load provider config: %v\n", err)
 		return app.providerName, app.providerOptions()

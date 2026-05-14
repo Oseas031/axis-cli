@@ -86,6 +86,7 @@ func TestGetTaskStatusUsesLocalRuntime(t *testing.T) {
 		t.Fatalf("submit task to runtime: %v", err)
 	}
 	resetCLIState()
+	defaultApp.root = rootDir
 	oldWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("get working directory: %v", err)
@@ -614,7 +615,7 @@ func newAxisRoot() *cobra.Command {
 
 func resetCLIState() {
 	orch = nil
-	defaultApp = &App{providerName: "mock"}
+	defaultApp = &App{providerName: "mock", root: os.TempDir()}
 	contextpack.DefaultRegistry = contextpack.NewReadinessRegistry()
 }
 

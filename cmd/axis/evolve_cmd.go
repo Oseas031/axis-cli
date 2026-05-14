@@ -28,7 +28,7 @@ func newEvolveInspectCommand() *cobra.Command {
 
 func evolveInspect(cmd *cobra.Command, args []string) error {
 	runID := args[0]
-	store, err := evolution.NewStore("")
+	store, err := evolution.NewStore(defaultApp.resolvedRoot())
 	if err != nil {
 		return fmt.Errorf("open evolution store: %w", err)
 	}
@@ -98,7 +98,7 @@ func newEvolvePromoteCommand() *cobra.Command {
 
 func evolvePromote(cmd *cobra.Command, args []string) error {
 	runID := args[0]
-	store, err := evolution.NewStore("")
+	store, err := evolution.NewStore(defaultApp.resolvedRoot())
 	if err != nil {
 		return fmt.Errorf("open evolution store: %w", err)
 	}
@@ -122,7 +122,7 @@ func newEvolveDiscardCommand() *cobra.Command {
 
 func evolveDiscard(cmd *cobra.Command, args []string) error {
 	runID := args[0]
-	store, err := evolution.NewStore("")
+	store, err := evolution.NewStore(defaultApp.resolvedRoot())
 	if err != nil {
 		return fmt.Errorf("open evolution store: %w", err)
 	}

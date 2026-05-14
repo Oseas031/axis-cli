@@ -64,7 +64,7 @@ func newAskCommand() *cobra.Command {
 						return err
 					}
 				}
-				client := control.NewClient(control.NewRuntimeLocator("."), http.DefaultClient)
+				client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), http.DefaultClient)
 				if _, err := client.SubmitTask(context.Background(), result.Task); err != nil {
 					return fmt.Errorf("failed to submit task: %w", err)
 				}

@@ -80,6 +80,7 @@ func TestAskCommand_SubmitUsesLocalRuntime(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	resetCLIState()
+	defaultApp.root = rootDir
 	oldWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("get working directory: %v", err)
@@ -163,6 +164,7 @@ func TestAskCommand_WithContextSubmitAttachesReadinessMetadata(t *testing.T) {
 	if err := locator.Save(control.RuntimeRecord{Protocol: "http", Address: server.URL, ProjectRoot: rootDir, StartedAt: time.Now().UTC()}); err != nil {
 		t.Fatalf("save runtime locator: %v", err)
 	}
+	defaultApp.root = rootDir
 	oldWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("get working directory: %v", err)

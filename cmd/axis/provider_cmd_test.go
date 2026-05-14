@@ -13,10 +13,16 @@ func TestProviderCommand_AddUseStatusDoesNotPrintSecret(t *testing.T) {
 		t.Fatalf("Getwd failed: %v", err)
 	}
 	dir := t.TempDir()
+	if err := os.MkdirAll(dir+"/.axis", 0o755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
 	if err := os.Chdir(dir); err != nil {
 		t.Fatalf("Chdir failed: %v", err)
 	}
 	defer os.Chdir(cwd)
+
+	// Reset defaultApp to use tempdir as root (provider_cmd uses defaultApp.resolvedRoot())
+	defaultApp = &App{providerName: "mock", root: dir}
 
 	root := NewRootCommand(&App{providerName: "mock"})
 	root.SetArgs([]string{"provider", "add", "openai-local", "--type", "openai", "--api-key", "secret-key", "--model", "gpt-4o-mini", "--base-url", "https://api.openai.com"})

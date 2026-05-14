@@ -23,7 +23,7 @@ func newProviderAddCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profile.Name = args[0]
-			if err := providerconfig.NewStore(".").AddProfile(profile); err != nil {
+			if err := providerconfig.NewStore(defaultApp.resolvedRoot()).AddProfile(profile); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Provider profile %s saved\n", profile.Name)
@@ -45,7 +45,7 @@ func newProviderListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "List project-local provider profiles",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := providerconfig.NewStore(".").Load()
+			cfg, err := providerconfig.NewStore(defaultApp.resolvedRoot()).Load()
 			if err != nil {
 				return err
 			}
@@ -71,7 +71,7 @@ func newProviderUseCommand() *cobra.Command {
 		Short: "Switch active provider profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			backup, err := providerconfig.NewStore(".").Switch(args[0])
+			backup, err := providerconfig.NewStore(defaultApp.resolvedRoot()).Switch(args[0])
 			if err != nil {
 				return err
 			}
@@ -89,7 +89,7 @@ func newProviderStatusCommand() *cobra.Command {
 		Use:   "status",
 		Short: "Show active project-local provider state",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := providerconfig.NewStore(".").Load()
+			cfg, err := providerconfig.NewStore(defaultApp.resolvedRoot()).Load()
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func newProviderTestCommand() *cobra.Command {
 		Use:   "test",
 		Short: "Test provider connectivity with a lightweight ping (consumes ~1-10 tokens)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			store := providerconfig.NewStore(".")
+			store := providerconfig.NewStore(defaultApp.resolvedRoot())
 			cfg, err := store.Load()
 			if err != nil {
 				return err
@@ -156,7 +156,7 @@ func newProviderRemoveCommand() *cobra.Command {
 		Short: "Remove a non-active provider profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := providerconfig.NewStore(".").Remove(args[0]); err != nil {
+			if err := providerconfig.NewStore(defaultApp.resolvedRoot()).Remove(args[0]); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Provider profile %s removed\n", args[0])
@@ -171,7 +171,7 @@ func newProviderArchiveCommand() *cobra.Command {
 		Short: "Archive a non-active provider profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := providerconfig.NewStore(".").Archive(args[0]); err != nil {
+			if err := providerconfig.NewStore(defaultApp.resolvedRoot()).Archive(args[0]); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Provider profile %s archived\n", args[0])
