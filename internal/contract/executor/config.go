@@ -40,6 +40,7 @@ func NewContractExecutorWithConfig(cfg ExecutorConfig) *ContractExecutorImpl {
 		skillsLoader:           cfg.SkillsLoader,
 		principlesLoader:       cfg.PrinciplesLoader,
 		compactionPipeline:     cfg.CompactionPipeline,
+		allowedScopes:          cfg.AllowedScopes,
 		circuitBreakerThreshold: cbThreshold,
 		maxTurns:               maxTurns,
 	}

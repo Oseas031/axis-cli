@@ -213,11 +213,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 			turnsSinceProgress = 0
 		}
 		if turn == maxTurns-1 {
-			history = append(history, types.ModelMessage{
-				Role:    "system",
-				Content: "This is your final turn. You must produce a final answer now.",
-			})
-			req.History = history
+			req.SystemPrompt += "\nThis is your final turn. You must produce a final answer now."
 		}
 		resp, err := p.Execute(ctx, req)
 		if err != nil {
@@ -317,6 +313,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 		}
 
 		if resp.Output != nil {
+			lastOutput = resp.Output
 			if err := e.ValidateOutput(contractID, resp.Output); err != nil {
 				return &types.ExecutionResult{
 					Error: fmt.Sprintf("output validation failed: %v", err),
@@ -324,7 +321,6 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 			}
 			return &types.ExecutionResult{Output: resp.Output}, nil
 		}
-		lastOutput = resp.Output
 	}
 
 	return &types.ExecutionResult{

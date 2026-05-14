@@ -59,8 +59,13 @@ func ParseSkillMetadata(content string) (*SkillMetadata, string) {
 }
 
 func splitList(raw string) []string {
-	if strings.TrimSpace(raw) == "" {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
 		return nil
+	}
+	// Handle YAML bracket syntax: [a, b, c]
+	if strings.HasPrefix(raw, "[") && strings.HasSuffix(raw, "]") {
+		raw = raw[1 : len(raw)-1]
 	}
 	parts := strings.Split(raw, ",")
 	out := make([]string, 0, len(parts))

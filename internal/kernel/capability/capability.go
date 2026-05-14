@@ -1,6 +1,9 @@
 package capability
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // CapabilityType classifies what kind of capability this is.
 type CapabilityType string
@@ -20,6 +23,7 @@ type Capability interface {
 
 // CapabilityRegistry holds all registered capabilities.
 type CapabilityRegistry struct {
+	mu           sync.RWMutex
 	capabilities map[string]Capability
 }
 
@@ -28,6 +32,8 @@ func NewCapabilityRegistry() *CapabilityRegistry {
 }
 
 func (r *CapabilityRegistry) Register(c Capability) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	name := c.CapName()
 	if _, exists := r.capabilities[name]; exists {
 		return fmt.Errorf("capability already registered: %s", name)
@@ -37,11 +43,15 @@ func (r *CapabilityRegistry) Register(c Capability) error {
 }
 
 func (r *CapabilityRegistry) Get(name string) (Capability, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	c, ok := r.capabilities[name]
 	return c, ok
 }
 
 func (r *CapabilityRegistry) ListByType(t CapabilityType) []Capability {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	var result []Capability
 	for _, c := range r.capabilities {
 		if c.CapType() == t {
