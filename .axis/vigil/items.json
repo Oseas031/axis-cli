@@ -503,5 +503,23 @@
     "notes": "Lightweight judge surpasses QwQ-32B. Maps to Judge drafter/verifier pattern",
     "created_at": "2026-05-14T11:53:34.6053212+08:00",
     "history": []
+  },
+  {
+    "id": "vigil-e94383",
+    "title": "Judge must use independent short context (Context Rot fix)",
+    "priority": "P0",
+    "status": "pending",
+    "tags": [
+      "security",
+      "judge"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "arXiv:2605.12366: 800K token后漏检率2x-30x. Judge只看final artifacts+task spec, 不看完整transcript.",
+    "created_at": "2026-05-14T11:58:55.1653083+08:00",
+    "history": []
   }
 ]

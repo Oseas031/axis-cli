@@ -358,4 +358,5 @@ staticcheck ./... && gosec ./...       # static analysis + security
 | Tool | Path | When to use |
 |------|------|-------------|
 | vigil | `axis vigil` (built-in) | Work tracking across sessions. See `.axis/skills/vigil/SKILL.md` for full usage. |
+| research-pipeline | (workflow skill) | End-to-end research: amp → filter → study → sublate → vigil. See `.axis/skills/research-pipeline/SKILL.md`. |
 | MindMagnifier (amp) | `C:\Users\ASUS\Desktop\MindMagnifier\amp.exe` | Research/papers/AI news queries. See `.axis/skills/mind-magnifier/SKILL.md` for full usage. |
