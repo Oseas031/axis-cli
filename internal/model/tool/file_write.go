@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/axis-cli/axis/internal/types"
 )
@@ -38,15 +37,7 @@ func (t *FileWriteTool) Schema() types.ToolDefinition {
 
 // validatePath checks if the path is within allowed directories.
 func (t *FileWriteTool) validatePath(requestedPath string) error {
-	cleanPath := filepath.Clean(requestedPath)
-
-	for _, dir := range t.allowedDirs {
-		cleanDir := filepath.Clean(dir)
-		if strings.HasPrefix(cleanPath, cleanDir) {
-			return nil
-		}
-	}
-	return &PathValidationError{Path: requestedPath, Reason: "path is not in allowed directories"}
+	return validateAllowedPath(requestedPath, t.allowedDirs)
 }
 
 // Execute writes content to the file.
@@ -61,19 +52,26 @@ func (t *FileWriteTool) Execute(ctx context.Context, input map[string]any) (map[
 		return map[string]any{"error": "content is required and must be a string"}, nil
 	}
 
-	if err := t.validatePath(path); err != nil {
+	// Clean and resolve to absolute path BEFORE validation and use.
+	// This ensures validation and execution operate on the same canonical path.
+	cleanPath, err := filepath.Abs(filepath.Clean(path))
+	if err != nil {
+		return map[string]any{"error": "invalid path: " + err.Error()}, nil
+	}
+
+	if err := t.validatePath(cleanPath); err != nil {
 		return map[string]any{"error": err.Error()}, nil
 	}
 
 	// Create parent directories if they don't exist
-	parentDir := filepath.Dir(path)
+	parentDir := filepath.Dir(cleanPath)
 	if err := os.MkdirAll(parentDir, 0750); err != nil {
 		return map[string]any{"error": "failed to create parent directory: " + err.Error()}, nil
 	}
 
-	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+	if err := os.WriteFile(cleanPath, []byte(content), 0600); err != nil {
 		return map[string]any{"error": err.Error()}, nil
 	}
 
-	return map[string]any{"success": true, "path": path}, nil
+	return map[string]any{"success": true, "path": cleanPath}, nil
 }
