@@ -222,7 +222,7 @@
     "id": "vigil-9d684f",
     "title": "Permission Ladder Level 0 whitelist",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "security"
     ],
@@ -256,7 +256,7 @@
     "id": "vigil-69274c",
     "title": "Refactor: AgentConfig struct",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "refactor"
     ],
@@ -290,7 +290,7 @@
     "id": "vigil-4f646e",
     "title": "Guarantee Registry",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture"
     ],
@@ -452,5 +452,56 @@
         "at": "2026-05-14T11:45:03.1972469+08:00"
       }
     ]
+  },
+  {
+    "id": "vigil-1384ea",
+    "title": "Research: Symbolic Equivalence Partitioning (arXiv:2604.06485)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "CodingAgent P2: equivalence classes for code selection. +7.2% at N=10",
+    "created_at": "2026-05-14T11:53:26.7092462+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-71ce28",
+    "title": "Research: Variational Posterior Guidance (arXiv:2605.11019)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "Compression = finding equivalent short paths. Maps to three-layer compaction",
+    "created_at": "2026-05-14T11:53:34.0509617+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-96f52f",
+    "title": "Research: Token-Level Hallucination Detection 0.6B (arXiv:2605.12384)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "Lightweight judge surpasses QwQ-32B. Maps to Judge drafter/verifier pattern",
+    "created_at": "2026-05-14T11:53:34.6053212+08:00",
+    "history": []
   }
 ]
