@@ -475,21 +475,108 @@ func serveMailboxList(w http.ResponseWriter, dir string) {
 }
 
 func serveSkillsList(w http.ResponseWriter, dir string) {
-	type skillMeta struct {
-		Name string `json:"name"`
-		Path string `json:"path"`
+	type skillInfo struct {
+		Name          string   `json:"name"`
+		Description   string   `json:"description,omitempty"`
+		Tags          []string `json:"tags,omitempty"`
+		Version       string   `json:"version,omitempty"`
+		DependsOn     []string `json:"depends_on,omitempty"`
+		ConflictsWith []string `json:"conflicts_with,omitempty"`
 	}
-	var skills []skillMeta
+	var skills []skillInfo
 	_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || !d.IsDir() || path == dir {
 			return nil
 		}
 		skillFile := filepath.Join(path, "SKILL.md")
-		if _, err := os.Stat(skillFile); err == nil {
-			skills = append(skills, skillMeta{Name: d.Name(), Path: skillFile})
+		data, readErr := os.ReadFile(skillFile)
+		if readErr != nil {
+			return filepath.SkipDir
 		}
+		info := skillInfo{Name: d.Name()}
+		if meta := parseSkillFrontmatter(string(data)); meta != nil {
+			if meta.Name != "" {
+				info.Name = meta.Name
+			}
+			info.Description = meta.Description
+			info.Tags = meta.Tags
+			info.Version = meta.Version
+			info.DependsOn = meta.DependsOn
+			info.ConflictsWith = meta.ConflictsWith
+		}
+		skills = append(skills, info)
 		return filepath.SkipDir
 	})
+	if skills == nil {
+		skills = []skillInfo{}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(skills) //nolint:errcheck
+}
+
+// parseSkillFrontmatter extracts YAML frontmatter from SKILL.md content.
+// Inline implementation — axis-gui does not import internal/ packages.
+func parseSkillFrontmatter(content string) *struct {
+	Name, Description, Version string
+	Tags, DependsOn, ConflictsWith []string
+} {
+	const delim = "---"
+	if !strings.HasPrefix(content, delim) {
+		return nil
+	}
+	rest := content[len(delim):]
+	rest = strings.TrimPrefix(rest, "\r\n")
+	rest = strings.TrimPrefix(rest, "\n")
+	idx := strings.Index(rest, "\n"+delim)
+	if idx < 0 {
+		return nil
+	}
+	yamlBlock := rest[:idx]
+	meta := &struct {
+		Name, Description, Version string
+		Tags, DependsOn, ConflictsWith []string
+	}{}
+	for _, line := range strings.Split(yamlBlock, "\n") {
+		line = strings.TrimRight(line, "\r")
+		colonIdx := strings.Index(line, ":")
+		if colonIdx < 0 {
+			continue
+		}
+		key := strings.TrimSpace(line[:colonIdx])
+		val := strings.TrimSpace(line[colonIdx+1:])
+		switch key {
+		case "name":
+			meta.Name = val
+		case "description":
+			meta.Description = val
+		case "tags":
+			meta.Tags = parseFrontmatterList(val)
+		case "depends_on":
+			meta.DependsOn = parseFrontmatterList(val)
+		case "conflicts_with":
+			meta.ConflictsWith = parseFrontmatterList(val)
+		case "version":
+			meta.Version = val
+		}
+	}
+	return meta
+}
+
+func parseFrontmatterList(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	if strings.HasPrefix(raw, "[") && strings.HasSuffix(raw, "]") {
+		raw = raw[1 : len(raw)-1]
+	}
+	parts := strings.Split(raw, ",")
+	var out []string
+	for _, p := range parts {
+		t := strings.TrimSpace(p)
+		if t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }

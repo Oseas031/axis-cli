@@ -699,7 +699,7 @@
       "ref": ""
     },
     "depends_on": null,
-    "notes": "arXiv:2605.12366: 800K token后漏检率2x-30x. Judge只看final artifacts+task spec, 不看完整transcript.",
+    "notes": "arXiv:2605.12366: 800K token鍚庢紡妫€鐜?x-30x. Judge鍙湅final artifacts+task spec, 涓嶇湅瀹屾暣transcript.",
     "created_at": "2026-05-14T11:58:55.1653083+08:00",
     "completed_at": "2026-05-14T12:28:02.2044284+08:00",
     "commit_hash": "0f0c4a5",
@@ -814,5 +814,390 @@
         "at": "2026-05-14T15:31:59.9570441+08:00"
       }
     ]
+  },
+  {
+    "id": "vigil-f01a00",
+    "title": "Docker-based SandboxedBashTool (true process/network/fs isolation)",
+    "priority": "P0",
+    "status": "completed",
+    "tags": [
+      "security",
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Implement SandboxedBashTool using docker exec. Low trust tasks run in container (read-only project mount + tmpfs workdir + network none + resource limits). Fallback to direct exec if Docker unavailable. Replaces L0 whitelist as primary security boundary.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "completed_at": "2026-05-14T20:34:00+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T20:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f01b00",
+    "title": "Rename Sandboxed Evolution to Staged Evolution (remaining: spec directory + file refs)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "naming",
+      "credibility"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "README already uses 'Staged Evolution Protocol'. Remaining: rename docs/specs/sandboxed-evolution/ directory to docs/specs/staged-evolution/, update internal cross-references. Downgraded from P0 to P2 since public-facing naming is already correct.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f01c00",
+    "title": "Autonomy negative feedback: auto-downgrade on consecutive failures",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "autonomy",
+      "reliability"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "AutonomyRules has upgrade path but no downgrade trigger. Add: N consecutive task failures -\u003e auto-downgrade autonomy level. N consecutive tool errors -\u003e restrict to L0 whitelist.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f01d00",
+    "title": "Runaway detection: semantic progress tracking",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "reliability",
+      "agent"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "VALIDATED by iter-07b: Agent blind-retried 'go test' twice (turns 1-2 identical output). Runaway detection would save 1 turn. Impl: if last 2 tool calls have identical command+output -> inject 'try different approach' feedback instead of abort. Cheap heuristic, proven needed.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f01e00",
+    "title": "Honest positioning: README/docs reflect single-user dev tool, not distributed infra",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "docs",
+      "credibility"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "README has explicit 'Current Limitations' section covering: single-machine, no multi-tenant, Docker dependency, Self-Judgement advisory, no production validation.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "completed_at": "2026-05-14T20:34:00+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T20:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f01f00",
+    "title": "Real-world validation: run 10+ coding tasks, collect data, calibrate parameters",
+    "priority": "P1",
+    "status": "completed",
+    "completed_at": "2026-05-14T21:27:00+08:00",
+    "tags": [
+      "validation",
+      "agent"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "DONE: 25+ tasks executed. MaxIterations=20/MaxErrors=5/TurnTimeout=60s adequate. ExecutionJudge 4-criteria replaces rubber-stamp. See validation-report-2026-05-14.md",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T21:27:00+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f01g00",
+    "title": "Reposition SelfJudgement as auxiliary signal, not reliable verdict",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture",
+      "honesty"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "README Current Limitations states: 'Self-Judgement is advisory: LLM judging LLM has unresolvable same-source bias. Only compiler/test results are authoritative verification.'",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "completed_at": "2026-05-14T20:34:00+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T20:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f02a00",
+    "title": "Aspirational spec: single-machine to distributed architecture evolution path",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture",
+      "aspirational"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Write docs/architecture/distributed-evolution-path.md. Mark aspirational. Define activation condition: when real-world validation (f01f00) proves single-machine ceiling is hit. Direction \u003e correctness at this stage.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f02b00",
+    "title": "Abstract StateStore interface (enable future persistence swap)",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture",
+      "interface"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Extract StateStore interface from in-memory state. Current impl becomes MemoryStateStore. Interface: Save/Load/List/Delete. Enables future swap to SQLite/BoltDB without rewriting consumers. Interface is existence.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f02c00",
+    "title": "Abstract MessageTransport interface (enable future MQ swap)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "architecture",
+      "interface"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Extract MessageTransport interface from JSONL mailbox. Current impl becomes JSONLTransport. Interface: Send/Receive/Ack. Enables future swap to channel/queue without rewriting comm layer.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f02d00",
+    "title": "Semantic layer anti-spoofing: validate Agent's semantic_layer declaration",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "security",
+      "trust"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Agent self-declares utility/primary. Add LayerValidator: compare declared layer vs historical token consumption for same task type. If mismatch (declares primary but task pattern matches utility), downgrade to utility. Prevents gaming for expensive models.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f02e00",
+    "title": "Cost budget as first-class constraint: AgentTask.cost_budget + auto-downgrade",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "architecture",
+      "cost"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Add cost_budget field to AgentTask. Dispatcher checks accumulated token cost per task. If approaching budget, auto-downgrade to cheaper model tier. Closes the cost control loop that token accounting opened.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03a00",
+    "title": "FollowUpTask population: LLMAgentExecutor parses Agent output for next steps",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "agent",
+      "bootstrap"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "validation-report-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Validation found: FollowUpHandler wired in dispatcher but LLMAgentExecutor never populates FollowUpTasks field. Agent output needs parsing for 'next steps' section. Without this, Bootstrap Loop is dead code.",
+    "created_at": "2026-05-14T21:27:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03b00",
+    "title": "BashTool Windows PATH: inject go/node/python paths or document system prompt hint",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "reliability",
+      "dx"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "validation-report-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Validation iter-07b: Agent wasted 7 turns discovering cmd.exe works for go test. Fix: either inject common tool paths into BashTool env, or add Windows hint to Agent system prompt ('use cmd.exe /c for go/node commands').",
+    "created_at": "2026-05-14T21:27:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03c00",
+    "title": "Adversarial validation: tasks designed to trigger judgement_failed",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "validation",
+      "judge"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "validation-report-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Validation gap: no production judgement_failed event yet. Need tasks that truly cannot be completed (missing files, impossible constraints) to verify ExecutionJudge rejects and retry-on-failure triggers.",
+    "created_at": "2026-05-14T21:27:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03d00",
+    "title": "MemoryTool: Agent can persist learnings across tasks",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "agent",
+      "memory"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "freecode-research-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "EVIDENCE: iter-07b Agent spent 7 turns rediscovering cmd.exe works for go commands. With memory, next task knows immediately. Impl: MemoryTool (read/write .axis/memory/*.md), Agent decides what to remember. Not a background service �?Agent calls it explicitly. Inspired by free-code memdir but respects Zero Prescription.",
+    "created_at": "2026-05-14T23:00:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03e00",
+    "title": "Feature Gate compile-time elimination (dead code removal for disabled capabilities)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "security",
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "freecode-research-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "free-code uses bun:bundle feature() for compile-time DCE. Axis equivalent: go build tags per capability tier. Disabled capabilities should not exist in binary, not just be runtime-gated. Stronger security guarantee than Permission Ladder alone.",
+    "created_at": "2026-05-14T23:00:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-e3f3e7",
+    "title": "Chat: time separator between messages \u003e30min apart",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "gui"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "Insert date/time divider when adjacent messages are \u003e30min apart for visual session grouping",
+    "created_at": "2026-05-14T20:52:42.6860224+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-1119ff",
+    "title": "Chat: localStorage capacity protection (auto-trim \u003e2000 msgs)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "gui"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "When messages exceed 2000, auto-trim oldest to prevent localStorage overflow",
+    "created_at": "2026-05-14T20:52:47.4653744+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-a1f271",
+    "title": "Chat: selective message deletion (single or before-timestamp)",
+    "priority": "P3",
+    "status": "pending",
+    "tags": [
+      "gui"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "Allow user to delete individual messages or clear all before a certain time point",
+    "created_at": "2026-05-14T20:52:54.068479+08:00",
+    "history": []
   }
 ]

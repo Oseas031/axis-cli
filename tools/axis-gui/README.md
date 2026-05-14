@@ -46,7 +46,18 @@ tools/axis-gui/
 | `/api/providers` | GET | `.axis/providers.json` | Provider profiles |
 | `/api/mailbox/` | GET | `.axis/comm/` | List actors |
 | `/api/mailbox/{id}` | GET | `.axis/comm/{id}.jsonl` | Actor messages |
-| `/api/skills` | GET | `.axis/skills/` | Available skills |
+| `/api/skills` | GET | `.axis/skills/` | Skills with parsed metadata (name, description, tags, version, depends_on, conflicts_with) |
+
+## Frontend Views
+
+| Route | View | Description |
+|-------|------|-------------|
+| `/` | Dashboard | Runtime status, task summary, quick actions |
+| `/tasks` | Tasks | Task list from event log |
+| `/providers` | Providers | LLM provider profiles |
+| `/events` | Events | Raw event stream |
+| `/skills` | Skills | Installed skills with metadata, CLI command reference |
+| `/chat` | Chat | Submit tasks via natural language, history search/collapse |
 
 ## Dev Loop
 
