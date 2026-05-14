@@ -624,3 +624,47 @@ func TestRuleEngine_EdgeCases(t *testing.T) {
 		t.Error("Should not upgrade when success rate is below threshold")
 	}
 }
+
+
+func TestRuleEngine_CustomConfig(t *testing.T) {
+	config := RuleConfig{
+		UpgradeMinTasks:      5,
+		UpgradeMinSuccess:    0.7,
+		UpgradeMinValidation: 0.8,
+		DowngradeMaxSuccess:  0.4,
+	}
+	re := NewRuleEngineWithConfig(config, nil)
+
+	// Should upgrade with relaxed thresholds
+	evidence := CompetenceEvidence{
+		TasksCompleted:     6,
+		SuccessRate:        0.75,
+		ValidationPassRate: 0.85,
+	}
+	transition := re.EvaluateTransition(AutonomyLevelExecute, evidence)
+	if !transition.IsUpgrade() {
+		t.Error("Expected upgrade with custom relaxed config")
+	}
+
+	// Should NOT downgrade at 0.45 since custom threshold is 0.4
+	noDowngrade := CompetenceEvidence{
+		TasksCompleted:     6,
+		SuccessRate:        0.45,
+		ValidationPassRate: 0.5,
+	}
+	transition = re.EvaluateTransition(AutonomyLevelPlan, noDowngrade)
+	if transition.IsDowngrade() {
+		t.Error("Should not downgrade when success rate is above custom DowngradeMaxSuccess")
+	}
+
+	// Should downgrade at 0.35 (below custom 0.4 threshold)
+	downgrade := CompetenceEvidence{
+		TasksCompleted:     6,
+		SuccessRate:        0.35,
+		ValidationPassRate: 0.5,
+	}
+	transition = re.EvaluateTransition(AutonomyLevelPlan, downgrade)
+	if !transition.IsDowngrade() {
+		t.Error("Expected downgrade with success rate below custom threshold")
+	}
+}

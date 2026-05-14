@@ -18,19 +18,44 @@ const (
 	DowngradeMaxSuccessRate = 0.5
 )
 
+// RuleConfig holds configurable thresholds for autonomy transitions.
+type RuleConfig struct {
+	UpgradeMinTasks      int
+	UpgradeMinSuccess    float64
+	UpgradeMinValidation float64
+	DowngradeMaxSuccess  float64
+}
+
+// DefaultRuleConfig returns the default rule configuration matching the original hardcoded values.
+func DefaultRuleConfig() RuleConfig {
+	return RuleConfig{
+		UpgradeMinTasks:      UpgradeMinTasksCompleted,
+		UpgradeMinSuccess:    UpgradeMinSuccessRate,
+		UpgradeMinValidation: UpgradeMinValidationRate,
+		DowngradeMaxSuccess:  DowngradeMaxSuccessRate,
+	}
+}
+
 // RuleEngine evaluates competence evidence to determine autonomy transitions.
 type RuleEngine struct {
+	config RuleConfig
 	logger func(string, ...interface{})
 }
 
-// NewRuleEngine creates a new RuleEngine with optional logger.
+// NewRuleEngine creates a new RuleEngine with default config and optional logger.
 func NewRuleEngine(logger func(string, ...interface{})) *RuleEngine {
+	return NewRuleEngineWithConfig(DefaultRuleConfig(), logger)
+}
+
+// NewRuleEngineWithConfig creates a new RuleEngine with the given config and optional logger.
+func NewRuleEngineWithConfig(config RuleConfig, logger func(string, ...interface{})) *RuleEngine {
 	if logger == nil {
 		logger = func(format string, args ...interface{}) {
 			log.Printf("[AutonomyRule] "+format, args...)
 		}
 	}
 	return &RuleEngine{
+		config: config,
 		logger: logger,
 	}
 }
@@ -57,8 +82,8 @@ func levelName(level AutonomyLevel) string {
 func (re *RuleEngine) EvaluateTransition(currentLevel AutonomyLevel, evidence CompetenceEvidence) AutonomyTransition {
 	// Check for downgrade first (critical) - even at max level
 	if currentLevel != AutonomyLevelExecute && // Can't downgrade from minimum
-		evidence.SuccessRate < DowngradeMaxSuccessRate &&
-		evidence.TasksCompleted >= UpgradeMinTasksCompleted {
+		evidence.SuccessRate < re.config.DowngradeMaxSuccess &&
+		evidence.TasksCompleted >= re.config.UpgradeMinTasks {
 		return re.evaluateDowngrade(currentLevel, evidence)
 	}
 
@@ -77,9 +102,9 @@ func (re *RuleEngine) EvaluateTransition(currentLevel AutonomyLevel, evidence Co
 }
 
 func (re *RuleEngine) shouldUpgrade(evidence CompetenceEvidence) bool {
-	return evidence.TasksCompleted >= UpgradeMinTasksCompleted &&
-		evidence.SuccessRate >= UpgradeMinSuccessRate &&
-		evidence.ValidationPassRate >= UpgradeMinValidationRate
+	return evidence.TasksCompleted >= re.config.UpgradeMinTasks &&
+		evidence.SuccessRate >= re.config.UpgradeMinSuccess &&
+		evidence.ValidationPassRate >= re.config.UpgradeMinValidation
 }
 
 func (re *RuleEngine) evaluateUpgrade(currentLevel AutonomyLevel, evidence CompetenceEvidence) AutonomyTransition {
@@ -131,15 +156,15 @@ func (re *RuleEngine) evaluateDowngrade(currentLevel AutonomyLevel, evidence Com
 	case AutonomyLevelFull:
 		newLevel = AutonomyLevelLearn
 		reason = fmt.Sprintf("success rate (%.1f%%) below threshold (%.1f%%)",
-			evidence.SuccessRate*100, DowngradeMaxSuccessRate*100)
+			evidence.SuccessRate*100, re.config.DowngradeMaxSuccess*100)
 	case AutonomyLevelLearn:
 		newLevel = AutonomyLevelPlan
 		reason = fmt.Sprintf("success rate (%.1f%%) below threshold (%.1f%%)",
-			evidence.SuccessRate*100, DowngradeMaxSuccessRate*100)
+			evidence.SuccessRate*100, re.config.DowngradeMaxSuccess*100)
 	case AutonomyLevelPlan:
 		newLevel = AutonomyLevelDecide
 		reason = fmt.Sprintf("success rate (%.1f%%) below threshold (%.1f%%)",
-			evidence.SuccessRate*100, DowngradeMaxSuccessRate*100)
+			evidence.SuccessRate*100, re.config.DowngradeMaxSuccess*100)
 	case AutonomyLevelDecide:
 		newLevel = AutonomyLevelExecute
 		reason = fmt.Sprintf("success rate (%.1f%%) critically low",
@@ -226,7 +251,7 @@ func (re *RuleEngine) CanDowngrade(fromLevel AutonomyLevel, evidence CompetenceE
 	if fromLevel == AutonomyLevelExecute {
 		return false
 	}
-	return evidence.SuccessRate < DowngradeMaxSuccessRate && evidence.TasksCompleted >= UpgradeMinTasksCompleted
+	return evidence.SuccessRate < re.config.DowngradeMaxSuccess && evidence.TasksCompleted >= re.config.UpgradeMinTasks
 }
 
 // CalculateAutonomyDelta returns the delta between two autonomy levels.

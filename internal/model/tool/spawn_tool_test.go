@@ -2,6 +2,7 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 )
 
@@ -18,8 +19,8 @@ func TestSpawnTool_Schema(t *testing.T) {
 	if schema.Name != "spawn" {
 		t.Error("schema name mismatch")
 	}
-	if len(schema.Parameters) != 3 {
-		t.Errorf("expected 3 params, got %d", len(schema.Parameters))
+	if len(schema.Parameters) != 4 {
+		t.Errorf("expected 4 params, got %d", len(schema.Parameters))
 	}
 }
 
@@ -72,5 +73,80 @@ func TestSpawnTool_Execute_InvalidIsolation(t *testing.T) {
 	})
 	if result["error"] == nil {
 		t.Error("expected error for invalid isolation level")
+	}
+}
+
+func TestSpawnTool_DefaultIsolationPolicy(t *testing.T) {
+	st := NewSpawnTool()
+	result, err := st.Execute(context.Background(), map[string]any{
+		"task_id": "sub-isolated",
+		"prompt":  "do isolated work",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	policyStr, ok := result["isolation_policy"].(string)
+	if !ok {
+		t.Fatal("isolation_policy not present in result")
+	}
+
+	var policy IsolationPolicy
+	if err := json.Unmarshal([]byte(policyStr), &policy); err != nil {
+		t.Fatalf("failed to parse isolation_policy: %v", err)
+	}
+
+	if policy.InheritMemory {
+		t.Error("default InheritMemory should be false")
+	}
+	if policy.InheritContext {
+		t.Error("default InheritContext should be false")
+	}
+	if len(policy.SharedArtifacts) != 0 {
+		t.Errorf("default SharedArtifacts should be empty, got %v", policy.SharedArtifacts)
+	}
+}
+
+func TestSpawnTool_SharedIsolationPolicy(t *testing.T) {
+	st := NewSpawnTool()
+	result, err := st.Execute(context.Background(), map[string]any{
+		"task_id":   "sub-shared",
+		"prompt":    "shared work",
+		"isolation": "shared",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var policy IsolationPolicy
+	json.Unmarshal([]byte(result["isolation_policy"].(string)), &policy)
+
+	if policy.InheritMemory {
+		t.Error("shared isolation should not inherit memory")
+	}
+	if !policy.InheritContext {
+		t.Error("shared isolation should inherit context")
+	}
+}
+
+func TestSpawnTool_SharedArtifacts(t *testing.T) {
+	st := NewSpawnTool()
+	result, err := st.Execute(context.Background(), map[string]any{
+		"task_id":          "sub-artifacts",
+		"prompt":           "use these artifacts",
+		"shared_artifacts": []any{"artifact-1", "artifact-2"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var policy IsolationPolicy
+	json.Unmarshal([]byte(result["isolation_policy"].(string)), &policy)
+
+	if len(policy.SharedArtifacts) != 2 {
+		t.Fatalf("expected 2 shared artifacts, got %d", len(policy.SharedArtifacts))
+	}
+	if policy.SharedArtifacts[0] != "artifact-1" || policy.SharedArtifacts[1] != "artifact-2" {
+		t.Errorf("unexpected artifacts: %v", policy.SharedArtifacts)
 	}
 }

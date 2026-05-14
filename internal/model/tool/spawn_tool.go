@@ -2,11 +2,28 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/axis-cli/axis/internal/types"
 )
+
+// IsolationPolicy declares the context boundary for a spawned subtask.
+type IsolationPolicy struct {
+	InheritMemory   bool     `json:"inherit_memory"`   // default: false
+	InheritContext  bool     `json:"inherit_context"`  // default: false
+	SharedArtifacts []string `json:"shared_artifacts"` // explicit list of artifacts to pass
+}
+
+// DefaultIsolationPolicy returns a policy with full isolation (no inheritance).
+func DefaultIsolationPolicy() IsolationPolicy {
+	return IsolationPolicy{
+		InheritMemory:   false,
+		InheritContext:  false,
+		SharedArtifacts: nil,
+	}
+}
 
 // SpawnTool allows an Agent to create an isolated subtask.
 // The subtask runs with a clean context (no parent history leakage)
@@ -25,6 +42,7 @@ func (t *SpawnTool) Schema() types.ToolDefinition {
 			{Name: "task_id", Type: types.FieldTypeString, Required: true, Description: "Unique ID for the subtask"},
 			{Name: "prompt", Type: types.FieldTypeString, Required: true, Description: "Instructions for the subtask"},
 			{Name: "isolation", Type: types.FieldTypeString, Required: false, Description: "Isolation level: full (default) or shared"},
+			{Name: "shared_artifacts", Type: types.FieldTypeArray, Required: false, Description: "Explicit list of artifact IDs to pass to subtask"},
 		},
 	}
 }
@@ -44,16 +62,32 @@ func (t *SpawnTool) Execute(ctx context.Context, input map[string]any) (map[stri
 		return map[string]any{"error": fmt.Sprintf("invalid isolation level: %s (use 'full' or 'shared')", isolation)}, nil
 	}
 
-	// In P0, spawn records the intent. The orchestrator/scheduler
-	// picks up spawned tasks and executes them with isolation guarantees:
-	// - full: clean history, no parent context, limited tool scope
-	// - shared: inherits parent's context snapshot (read-only), own history
+	// Build isolation policy based on isolation level
+	policy := DefaultIsolationPolicy()
+	if isolation == "shared" {
+		policy.InheritContext = true
+	}
+
+	// Parse shared_artifacts if provided
+	if artifacts, ok := input["shared_artifacts"]; ok {
+		if arr, ok := artifacts.([]any); ok {
+			for _, a := range arr {
+				if s, ok := a.(string); ok {
+					policy.SharedArtifacts = append(policy.SharedArtifacts, s)
+				}
+			}
+		}
+	}
+
+	policyJSON, _ := json.Marshal(policy)
+
 	return map[string]any{
-		"status":    "spawned",
-		"task_id":   taskID,
-		"prompt":    prompt,
-		"isolation": isolation,
-		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"message":   fmt.Sprintf("Subtask %s spawned with %s isolation. Result will be returned as a summary.", taskID, isolation),
+		"status":           "spawned",
+		"task_id":          taskID,
+		"prompt":           prompt,
+		"isolation":        isolation,
+		"isolation_policy": string(policyJSON),
+		"timestamp":        time.Now().UTC().Format(time.RFC3339),
+		"message":          fmt.Sprintf("Subtask %s spawned with %s isolation. Result will be returned as a summary.", taskID, isolation),
 	}, nil
 }

@@ -65,12 +65,17 @@ func defaultLogger(format string, args ...interface{}) {
 }
 
 // Judge performs judgement on an execution result using the provided criteria.
+// Input is passed through IsolateContext to strip intermediate transcript data
+// and prevent Context Rot degradation in judgement accuracy.
 func (e *Engine) Judge(
 	input any,
 	criteria []strategies.JudgementCriteria,
 ) (*JudgementResult, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+
+	// Isolate context: extract only final artifacts to prevent Context Rot
+	isolated := IsolateContext(input)
 
 	result := NewJudgementResult()
 
@@ -111,7 +116,7 @@ func (e *Engine) Judge(
 			continue
 		}
 
-		item, err := strategy.Validate(input, c)
+		item, err := strategy.Validate(isolated, c)
 		if err != nil {
 			e.logger("Validation error for %s: %v", c.Name, err)
 			item = &strategies.JudgementItem{

@@ -88,6 +88,7 @@ func NewRootCommand(app *App) *cobra.Command {
 	}
 	runCmd.Flags().String("prompt", "", "Natural language task input")
 	runCmd.Flags().String("input", "", "JSON task input (e.g. '{\"message\": \"hello\"}')")
+	runCmd.Flags().Bool("background", false, "Submit task and return immediately without waiting")
 
 	statusCmd := &cobra.Command{
 		Use:   "status [task-id]",
@@ -101,6 +102,7 @@ func NewRootCommand(app *App) *cobra.Command {
 		Short: "Start the orchestrator",
 		RunE:  startOrchestrator,
 	}
+	startCmd.Flags().Int("port", 0, "Fixed port for the control server (0 = random)")
 
 	shellCmd := &cobra.Command{
 		Use:   "shell",
@@ -118,10 +120,34 @@ func NewRootCommand(app *App) *cobra.Command {
 }
 
 func runTask(cmd *cobra.Command, args []string) error {
-	initOrchestrator()
-
 	prompt, _ := cmd.Flags().GetString("prompt")
 	inputJSON, _ := cmd.Flags().GetString("input")
+	background, _ := cmd.Flags().GetBool("background")
+
+	// Background mode: submit to running Local Control Plane (requires `axis start`)
+	if background {
+		var input map[string]any
+		switch {
+		case inputJSON != "":
+			if err := json.Unmarshal([]byte(inputJSON), &input); err != nil {
+				return fmt.Errorf("invalid --input JSON: %w", err)
+			}
+		case prompt != "":
+			input = map[string]any{"message": prompt}
+		default:
+			input = map[string]any{"message": args[0]}
+		}
+		task := &types.AgentTask{TaskID: args[0], ContractID: "default", Input: input, Status: types.TaskStatusPending}
+		client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), http.DefaultClient)
+		if _, err := client.SubmitTask(context.Background(), task); err != nil {
+			return fmt.Errorf("failed to submit to runtime (is 'axis start' running?): %w", err)
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Task %s submitted. Use 'axis status %s' to check progress.\n", args[0], args[0])
+		return nil
+	}
+
+	// Synchronous mode: in-process execution
+	initOrchestrator()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -169,6 +195,13 @@ func getTaskStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Task %s status: %s\n", taskID, status.Status)
+	if status.Error != "" {
+		fmt.Printf("Error: %s\n", status.Error)
+	}
+	if len(status.Output) > 0 {
+		out, _ := json.MarshalIndent(status.Output, "", "  ")
+		fmt.Printf("Output:\n%s\n", out)
+	}
 	return nil
 }
 
@@ -190,7 +223,8 @@ func startOrchestrator(cmd *cobra.Command, args []string) error {
 	}()
 
 	fmt.Println("Orchestrator started. Press Ctrl+C to stop.")
-	return runLocalRuntime(ctx, defaultApp.resolvedRoot(), cmd.OutOrStdout())
+	port, _ := cmd.Flags().GetInt("port")
+	return runLocalRuntime(ctx, defaultApp.resolvedRoot(), cmd.OutOrStdout(), port)
 }
 
 func initOrchestrator() {
