@@ -1,4 +1,10 @@
-# 待办工作：2026-05-13 起
+# ⚠️ DEPRECATED — 已迁移到 axis vigil
+
+> 所有待办项已于 2026-05-14 迁移到 `axis vigil`。
+> 查看当前待办：`axis vigil list`
+> 新会话入口：`axis vigil resume`
+>
+> 本文件保留为只读历史参考，不再更新。
 
 ## 主要矛盾
 
