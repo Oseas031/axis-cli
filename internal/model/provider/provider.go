@@ -14,6 +14,7 @@ type ModelRequest struct {
 	Tools        []types.ToolDefinition // Available tools for this execution
 	History      []types.ModelMessage   // Prior turns in multi-turn execution
 	SystemPrompt string                 // Optional system prompt (includes skills metadata)
+	Metadata     map[string]any         // Optional metadata for routing (e.g. request_type)
 }
 
 // ModelResponse is the output from a model provider call.

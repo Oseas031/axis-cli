@@ -4,6 +4,7 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -156,6 +157,9 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 	o.running = true
 	o.started = true
 
+	// Mark orphaned tasks from previous run
+	o.markOrphanedTasks()
+
 	// Start the task execution loop; waits for workers on exit,
 	// then closes loopDone so Shutdown knows all work is finished.
 	go func() {
@@ -165,6 +169,22 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 	}()
 
 	return nil
+}
+
+// markOrphanedTasks marks tasks left in Running state from a previous run as Failed.
+func (o *Orchestrator) markOrphanedTasks() {
+	states, err := o.stateStore.ListAll()
+	if err != nil {
+		return
+	}
+	for id, s := range states {
+		if s.Task != nil && s.Task.Status == types.TaskStatusRunning {
+			s.Task.Status = types.TaskStatusFailed
+			s.UpdatedAt = time.Now()
+			_ = o.stateStore.Save(id, s)
+			log.Printf("[Orchestrator] Marked orphaned task %s as failed", id)
+		}
+	}
 }
 
 // SubmitTask submits a task to the orchestrator after admission validation.

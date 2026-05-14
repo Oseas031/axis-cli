@@ -973,3 +973,30 @@ func (p *fileWriteToolCallProvider) Execute(_ context.Context, req *provider.Mod
 	}
 	return &provider.ModelResponse{Output: map[string]any{"status": "completed"}}, nil
 }
+
+
+func TestOrchestrator_MarkOrphanedTasksOnStart(t *testing.T) {
+	orch := NewOrchestrator()
+
+	// Manually inject a task in Running state into the state store (simulating a crash)
+	task := &types.AgentTask{TaskID: "orphan-1", Status: types.TaskStatusRunning}
+	state := types.TaskState{Task: task, UpdatedAt: time.Now()}
+	if err := orch.stateStore.Save("orphan-1", state); err != nil {
+		t.Fatalf("failed to seed state: %v", err)
+	}
+
+	ctx := context.Background()
+	if err := orch.Start(ctx); err != nil {
+		t.Fatalf("Start failed: %v", err)
+	}
+	defer orch.Shutdown(context.Background())
+
+	// Verify the orphaned task was marked as Failed
+	loaded, err := orch.stateStore.Load("orphan-1")
+	if err != nil {
+		t.Fatalf("failed to load state: %v", err)
+	}
+	if loaded.Task.Status != types.TaskStatusFailed {
+		t.Errorf("expected orphaned task status to be %q, got %q", types.TaskStatusFailed, loaded.Task.Status)
+	}
+}

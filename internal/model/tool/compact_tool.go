@@ -24,6 +24,6 @@ func (t *CompactTool) Schema() types.ToolDefinition {
 func (t *CompactTool) Execute(ctx context.Context, input map[string]any) (map[string]any, error) {
 	return map[string]any{
 		"status":  "compaction_requested",
-		"message": "Context compaction has been triggered. Older tool results will be summarized to free space.",
+		"message": "Context compaction will be applied on next turn.",
 	}, nil
 }

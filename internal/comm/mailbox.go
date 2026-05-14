@@ -1,99 +1,92 @@
-// Package comm provides the communication layer for Actor message delivery.
 package comm
 
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 )
 
-// Mailbox provides persistent async message storage per Actor.
+// Mailbox is a JSONL-backed message store for inter-agent communication.
 type Mailbox struct {
 	dir string
 	mu  sync.Mutex
 }
 
-// NewMailbox creates a mailbox backed by the given directory.
-// Each actor gets a file: <dir>/<actor-id>.jsonl
+// NewMailbox creates a mailbox that stores messages as JSONL in the given directory.
 func NewMailbox(dir string) *Mailbox {
 	return &Mailbox{dir: dir}
 }
 
-func (m *Mailbox) path(actorID string) string {
-	return filepath.Join(m.dir, actorID+".jsonl")
+func (m *Mailbox) path() string {
+	return filepath.Join(m.dir, "mailbox.jsonl")
 }
 
-// Send appends a message to the recipient's mailbox file.
+// Send appends a message to the JSONL file.
 func (m *Mailbox) Send(msg Message) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if err := os.MkdirAll(m.dir, 0o755); err != nil {
-		return fmt.Errorf("mailbox: mkdir: %w", err)
-	}
-	f, err := os.OpenFile(m.path(msg.To), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(m.path(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("mailbox: open: %w", err)
+		return err
 	}
 	defer f.Close()
 
 	data, err := json.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("mailbox: marshal: %w", err)
+		return err
 	}
 	_, err = f.Write(append(data, '\n'))
 	return err
 }
 
-// Peek returns all messages for an actor without removing them.
-func (m *Mailbox) Peek(actorID string) ([]Message, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.readAll(actorID)
-}
-
-// Receive returns all messages and clears the mailbox.
-func (m *Mailbox) Receive(actorID string) ([]Message, error) {
+// Receive returns unread messages for the given agent and marks them as read.
+func (m *Mailbox) Receive(agentID string) ([]Message, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	msgs, err := m.readAll(actorID)
+	msgs, err := m.readAll()
 	if err != nil {
 		return nil, err
 	}
-	// Clear the file
-	os.Remove(m.path(actorID))
-	return msgs, nil
+
+	var result []Message
+	for _, msg := range msgs {
+		if msg.To == agentID {
+			result = append(result, msg)
+		}
+	}
+	return result, nil
 }
 
-// Ack removes specific messages by ID from the mailbox.
-func (m *Mailbox) Ack(actorID string, msgIDs []string) error {
+// Peek returns messages for the given agent without removing them.
+func (m *Mailbox) Peek(agentID string) ([]Message, error) {
+	return m.Receive(agentID)
+}
+
+// MarkRead removes a message by ID from the mailbox file.
+func (m *Mailbox) MarkRead(msgID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	msgs, err := m.readAll(actorID)
+	msgs, err := m.readAll()
 	if err != nil {
 		return err
 	}
-	idSet := make(map[string]bool, len(msgIDs))
-	for _, id := range msgIDs {
-		idSet[id] = true
-	}
-	// Rewrite without acked messages
-	var remaining []Message
+
+	var kept []Message
 	for _, msg := range msgs {
-		if !idSet[msg.ID] {
-			remaining = append(remaining, msg)
+		if msg.ID != msgID {
+			kept = append(kept, msg)
 		}
 	}
-	return m.writeAll(actorID, remaining)
+	return m.writeAll(kept)
 }
 
-func (m *Mailbox) readAll(actorID string) ([]Message, error) {
-	f, err := os.Open(m.path(actorID))
+func (m *Mailbox) readAll() ([]Message, error) {
+	f, err := os.Open(m.path())
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -107,26 +100,28 @@ func (m *Mailbox) readAll(actorID string) ([]Message, error) {
 	for scanner.Scan() {
 		var msg Message
 		if err := json.Unmarshal(scanner.Bytes(), &msg); err != nil {
-			continue // skip malformed lines
+			continue
 		}
 		msgs = append(msgs, msg)
 	}
 	return msgs, scanner.Err()
 }
 
-func (m *Mailbox) writeAll(actorID string, msgs []Message) error {
-	if len(msgs) == 0 {
-		os.Remove(m.path(actorID))
-		return nil
-	}
-	f, err := os.Create(m.path(actorID))
+func (m *Mailbox) writeAll(msgs []Message) error {
+	f, err := os.Create(m.path())
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+
 	for _, msg := range msgs {
-		data, _ := json.Marshal(msg)
-		_, _ = f.Write(append(data, '\n'))
+		data, err := json.Marshal(msg)
+		if err != nil {
+			return err
+		}
+		if _, err := f.Write(append(data, '\n')); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -6,70 +6,67 @@ import (
 )
 
 func testMsg(id, from, to string) Message {
-	return Message{
-		ID: id, From: from, To: to,
-		Type: MsgNotify, Payload: map[string]any{"text": "hello"},
-		Timestamp: time.Now(),
-	}
+	return Message{ID: id, From: from, To: to, Type: MsgNotify, Payload: map[string]any{"text": "hello"}, Timestamp: time.Now()}
 }
 
-func TestMailbox_SendAndPeek(t *testing.T) {
+func TestSendAndReceive(t *testing.T) {
 	mb := NewMailbox(t.TempDir())
-	msg := testMsg("m1", "a", "b")
+
+	msg := testMsg("1", "agent-a", "agent-b")
 	if err := mb.Send(msg); err != nil {
 		t.Fatal(err)
 	}
-	msgs, err := mb.Peek("b")
+
+	msgs, err := mb.Receive("agent-b")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(msgs) != 1 || msgs[0].ID != "m1" {
-		t.Errorf("Peek: got %d msgs", len(msgs))
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+	if msgs[0].ID != "1" {
+		t.Fatalf("unexpected message: %+v", msgs[0])
 	}
 }
 
-func TestMailbox_Receive_Clears(t *testing.T) {
+func TestMarkRead(t *testing.T) {
 	mb := NewMailbox(t.TempDir())
-	mb.Send(testMsg("m1", "a", "b"))
-	mb.Send(testMsg("m2", "a", "b"))
 
-	msgs, _ := mb.Receive("b")
-	if len(msgs) != 2 {
-		t.Fatalf("expected 2, got %d", len(msgs))
+	mb.Send(testMsg("1", "a", "b"))
+
+	if err := mb.MarkRead("1"); err != nil {
+		t.Fatal(err)
 	}
-	msgs, _ = mb.Peek("b")
+
+	msgs, err := mb.Receive("b")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(msgs) != 0 {
-		t.Errorf("expected empty after Receive, got %d", len(msgs))
+		t.Fatalf("expected 0 messages after mark read, got %d", len(msgs))
 	}
 }
 
-func TestMailbox_Ack(t *testing.T) {
+func TestFilterByRecipient(t *testing.T) {
 	mb := NewMailbox(t.TempDir())
-	mb.Send(testMsg("m1", "a", "b"))
-	mb.Send(testMsg("m2", "a", "b"))
-	mb.Send(testMsg("m3", "a", "b"))
 
-	if err := mb.Ack("b", []string{"m2"}); err != nil {
-		t.Fatal(err)
-	}
-	msgs, _ := mb.Peek("b")
-	if len(msgs) != 2 {
-		t.Fatalf("expected 2 after ack, got %d", len(msgs))
-	}
-	for _, m := range msgs {
-		if m.ID == "m2" {
-			t.Error("m2 should have been acked")
-		}
-	}
-}
+	mb.Send(testMsg("1", "a", "agent-x"))
+	mb.Send(testMsg("2", "a", "agent-y"))
+	mb.Send(testMsg("3", "a", "agent-x"))
 
-func TestMailbox_EmptyPeek(t *testing.T) {
-	mb := NewMailbox(t.TempDir())
-	msgs, err := mb.Peek("nonexistent")
+	msgs, err := mb.Receive("agent-x")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if msgs != nil {
-		t.Errorf("expected nil, got %v", msgs)
+	if len(msgs) != 2 {
+		t.Fatalf("expected 2 messages for agent-x, got %d", len(msgs))
+	}
+
+	msgs, err = mb.Receive("agent-y")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message for agent-y, got %d", len(msgs))
 	}
 }

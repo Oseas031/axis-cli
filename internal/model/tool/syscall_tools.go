@@ -2,7 +2,6 @@ package tool
 
 import (
 	"context"
-	"time"
 
 	"github.com/axis-cli/axis/internal/types"
 )
@@ -26,12 +25,9 @@ func (t *YieldTool) Schema() types.ToolDefinition {
 }
 
 func (t *YieldTool) Execute(ctx context.Context, input map[string]any) (map[string]any, error) {
-	reason, _ := input["reason"].(string)
 	return map[string]any{
-		"status":    "yielded",
-		"reason":    reason,
-		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"message":   "Execution yielded. Task will be re-queued for later resumption.",
+		"status":  "yielded",
+		"message": "Agent yielded. Execution paused.",
 	}, nil
 }
 
@@ -56,12 +52,8 @@ func (t *CheckpointTool) Schema() types.ToolDefinition {
 
 func (t *CheckpointTool) Execute(ctx context.Context, input map[string]any) (map[string]any, error) {
 	summary, _ := input["summary"].(string)
-	nextStep, _ := input["next_step"].(string)
 	return map[string]any{
-		"status":    "checkpointed",
-		"summary":   summary,
-		"next_step": nextStep,
-		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"message":   "State checkpointed. Can be resumed from this point.",
+		"status":  "checkpoint_recorded",
+		"summary": summary,
 	}, nil
 }

@@ -30,6 +30,9 @@ func TestCompactTool_Execute(t *testing.T) {
 		t.Fatal(err)
 	}
 	if result["status"] != "compaction_requested" {
-		t.Errorf("status = %v", result["status"])
+		t.Errorf("status = %v, want compaction_requested", result["status"])
+	}
+	if result["message"] != "Context compaction will be applied on next turn." {
+		t.Errorf("message = %v", result["message"])
 	}
 }
