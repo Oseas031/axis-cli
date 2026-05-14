@@ -28,6 +28,7 @@ $GITHUB_ENV
 # Runtime state (axis start / vigil)
 .axis/*
 !.axis/vigil/
+!.axis/skills/
 
 # Third-party agent runtime state (claude-flow daemon, etc.)
 .claude-flow/

@@ -69,7 +69,7 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
     - 本次产出暴露了哪个 L1/L2 层面的结构性盲区？
 
     触发条件同 rule #10（双重确认）：Agent 觉得重大就提议自审，用户觉得重大就指示自审。自审结论走 §13.5 反馈闭环写回。
-13. **工作追踪用 vigil**。新会话开始时执行 `axis vigil resume` 作为工作起点。commit message 中用 `vigil:<id>` 标记关联的工作项。工作结束时无需手动标记完成——git hook 自动处理。
+13. **工作追踪用 vigil**。详见 `.axis/skills/vigil/SKILL.md`。新会话第一步：`axis vigil resume`。
 
 ### 参考文档
 
@@ -357,4 +357,5 @@ staticcheck ./... && gosec ./...       # static analysis + security
 
 | Tool | Path | When to use |
 |------|------|-------------|
+| vigil | `axis vigil` (built-in) | Work tracking across sessions. See `.axis/skills/vigil/SKILL.md` for full usage. |
 | MindMagnifier (amp) | `C:\Users\ASUS\Desktop\MindMagnifier\amp.exe` | Research/papers/AI news queries. See `.axis/skills/mind-magnifier/SKILL.md` for full usage. |
