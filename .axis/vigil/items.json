@@ -156,7 +156,7 @@
     "id": "vigil-4c6383",
     "title": "FileWriteTool path validation weaker than FileReadTool",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt",
       "security"
@@ -168,7 +168,21 @@
     "depends_on": null,
     "notes": "Security fix, can be done independently",
     "created_at": "2026-05-14T11:33:52.3117147+08:00",
-    "history": []
+    "started_at": "2026-05-14T11:39:37.3391886+08:00",
+    "completed_at": "2026-05-14T11:45:02.5219912+08:00",
+    "commit_hash": "ce44079",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-14T11:39:37.3391886+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-14T11:45:02.5219912+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-c806e2",
@@ -412,7 +426,7 @@
     "id": "vigil-1054a4",
     "title": "CodingAgent spec: requirements.md + design.md",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "coding-agent"
     ],
@@ -423,6 +437,20 @@
     "depends_on": null,
     "notes": "Based on first-principles.md, implement 4-Phase tool call ordering + output format Contract",
     "created_at": "2026-05-14T11:34:19.4945461+08:00",
-    "history": []
+    "started_at": "2026-05-14T11:39:37.7594392+08:00",
+    "completed_at": "2026-05-14T11:45:03.1972469+08:00",
+    "commit_hash": "b7d795f",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-14T11:39:37.7594392+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-14T11:45:03.1972469+08:00"
+      }
+    ]
   }
 ]
