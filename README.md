@@ -124,20 +124,20 @@ Profiles are stored in `.axis/providers.json` and do not modify shell environmen
 
 ## CLI Commands
 
-| Command | Purpose |
-|---------|---------|
-| `axis start` | Start local runtime (loopback control server) |
-| `axis run <task-id>` | Submit and run a task |
-| `axis status <task-id>` | Query task status (via local runtime) |
-| `axis ask <prompt>` | Natural language to AgentTask (dry-run by default) |
-| `axis ask <prompt> --submit` | Submit natural-language task to local runtime |
-| `axis shell` | Start interactive in-process shell |
-| `axis provider add/use/status/list/remove/archive` | Manage project-local LLM provider profiles |
-| `axis context preview/inspect/preflight` | Context assembly preview and readiness check |
-| `axis judge` | Run self-judgement diagnostic |
-| `axis evolve inspect/promote/discard` | Sandboxed evolution inspection and decisions |
-| `axis skills list/show/validate/create` | Manage on-demand knowledge skills |
-| `axis gui [--port 3000]` | Launch observation dashboard (Web UI) |
+| Command | Purpose | Requires Runtime |
+|---------|---------|:---:|
+| `axis run <task-id>` | Execute a task synchronously (in-process) | No |
+| `axis start` | Start local runtime (loopback control server) | N/A (creates it) |
+| `axis status <task-id>` | Query task status (via local runtime) | **Yes** |
+| `axis ask <prompt>` | Natural language to AgentTask (dry-run by default) | No |
+| `axis ask <prompt> --submit` | Submit natural-language task to local runtime | **Yes** |
+| `axis shell` | Start interactive in-process shell | No |
+| `axis provider add/use/status/list/remove/archive` | Manage project-local LLM provider profiles | No |
+| `axis context preview/inspect/preflight` | Context assembly preview and readiness check | No |
+| `axis judge` | Run self-judgement diagnostic | No |
+| `axis evolve inspect/promote/discard` | Sandboxed evolution inspection and decisions | No |
+| `axis skills list/show/validate/create` | Manage on-demand knowledge skills | No |
+| `axis gui [--port 3000]` | Launch observation dashboard (Web UI) | No |
 
 ## External Tools
 
