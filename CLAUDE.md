@@ -70,6 +70,7 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 
     触发条件同 rule #10（双重确认）：Agent 觉得重大就提议自审，用户觉得重大就指示自审。自审结论走 §13.5 反馈闭环写回。
 13. **工作追踪用 vigil**。详见 `.axis/skills/vigil/SKILL.md`。新会话第一步：`axis vigil resume`。
+14. **研究必须走完管线**。触发词：找论文/研究/查文献/用放大镜。强制流程：发现（amp）→ 筛选（判断相关度）→ 深入（写 `docs/research/` 报告）→ 扬弃（提取精华）→ 落地（`axis vigil add`）。不允许只写报告不落地待办，不允许只加待办不写报告。详见 `.axis/skills/research-pipeline/SKILL.md`。
 
 ### 参考文档
 
