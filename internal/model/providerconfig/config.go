@@ -17,10 +17,11 @@ const (
 )
 
 type Config struct {
-	ActiveProfile string             `json:"active_profile"`
-	Profiles      map[string]Profile `json:"profiles"`
-	Routes        map[string]Route   `json:"routes"`
-	UpdatedAt     time.Time          `json:"updated_at"`
+	ActiveProfile   string             `json:"active_profile"`
+	FallbackProfile string             `json:"fallback_profile,omitempty"`
+	Profiles        map[string]Profile `json:"profiles"`
+	Routes          map[string]Route   `json:"routes"`
+	UpdatedAt       time.Time          `json:"updated_at"`
 }
 
 type Profile struct {

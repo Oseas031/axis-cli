@@ -3,7 +3,54 @@
 **[Chinese version / 中文版](../zh/status/current-progress.md)**
 
 **Updated**: 2026-05-14
-**Current Milestones**: M1 ✅ | M2 ✅ | M3 (Phase 1-3) ✅ | M4 ✅ (Original T1-T18 + Gap Fix T19-T22 + Hardening T23-T28) | M5 ✅ | M6 ✅ | Coding Agent P0 ✅ | Hardening A8 ✅
+**Current Milestones**: M1 ✅ | M2 ✅ | M3 (Phase 1-3) ✅ | M4 ✅ (Original T1-T18 + Gap Fix T19-T22 + Hardening T23-T28) | M5 ✅ | M6 ✅ | Coding Agent P0 ✅ | Hardening A8 ✅ | Architecture Critique Fix ✅ | Real-World Validation ✅
+
+## Real-World Validation (2026-05-14 evening)
+
+### 25+ Task Execution
+- Multi-turn tool loop verified (avg 3.08 tool calls, max 20)
+- Agent strategy adaptation confirmed (iter-07b: 7 failures → cmd.exe discovery → success)
+- Parameters calibrated: MaxIterations=20, MaxErrors=5, TurnTimeout=60s — all adequate
+
+### Self-Judgement Overhaul
+- **ExecutionJudge** replaces rubber-stamp ToolTraceJudge (4 verifiable criteria)
+- Retry-on-judgement-failure wired (inject correction feedback → retry once → re-judge)
+- `PostExecutionJudge` interface for pluggable judges
+
+### Provider Fallback
+- **FallbackProvider**: 429 rate-limit → auto-switch to backup provider, 60s cooldown → retry primary
+- MiniMax relay (highspeed) + MiniMax official API configured as mutual backup
+
+### Vigil Status
+- Total: 45 | Completed: 33 | Pending: 12 (0 P0, 4 P1, 8 P2)
+
+## Architecture Critique Fix (2026-05-14 afternoon)
+
+### P0 — Architectural Hard Fixes
+- **Docker SandboxedBashTool**: True process/network/filesystem isolation via Docker containers. Read-only project mount, `--network none`, memory/CPU limits, per-turn timeout. Graceful fallback if Docker unavailable.
+- **Renamed "Sandboxed Evolution" → "Staged Evolution"**: Honest naming — the protocol uses isolated workspace + review gate, not OS-level sandboxing. Zero residual references.
+
+### P0 → P2 Tech Debt Batch (8 items cleared)
+- `circuit breaker=5 hardcoded` → externalized via `multiturn.LoopConfig.MaxErrors`
+- `Set* temporal coupling` → replaced by `ExecutorConfig` struct + `factory.go`
+- `multi-turn cap=10` → externalized via `LoopConfig.MaxIterations`
+- `mock provider silent default` → warning printed to stderr
+- `dispatcher no audit log` → `SetAuditFunc` + dispatch_start/dispatch_end events
+- `hardcoded tool set` → `BuildToolRegistry(root, filter)` with optional filter
+- `hardcoded AutonomyLevelLow` → reads from task metadata `agent.autonomy_level`
+- `Permission scopes never checked` → explicit log marker (v1 scope_check gap)
+
+### Structural Improvements
+- **Orchestrator split**: `factory.go` extracts `BuildToolRegistry` + `BuildContractExecutor`
+- **Multi-turn loop unified**: `internal/model/multiturn/loop.go` — shared loop used by LLMAgentExecutor (ContractExecutor migration planned)
+- **Orphan cleanup hardened**: shared TaskEventLog instance, Append error propagation, 256KB scanner buffer
+- **terminationProvider retry cap**: max 3 Continue retries prevents infinite loop
+- **Tool execution timeout**: tools now respect `TurnTimeout` (previously only provider calls had timeout)
+- **SummarizationCompaction nil fix**: Provider correctly passed to compaction pipeline
+- **Frontend source tracked in git**: 16 files staged (previously untracked, at risk of loss)
+
+### Vigil Status
+- Total: 40 | Completed: 28 | Pending: 12 (0 P0, 4 P1, 8 P2)
 
 ## Current Design Positioning
 
@@ -185,7 +232,7 @@ Key observations:
 - [x] RuleEngine (competence evidence-based rule engine)
 - [x] Integration tests (Full DAG workflow, concurrent tracking)
 - [x] M5 documentation updates (requirements.md, design.md, tasks.md marked Complete)
-- [x] Phase 2: Sandboxed Evolution T1-T10 fully completed (data model/storage/workspace/ledger/verification/inspect/promote/discard/tests/docs)
+- [x] Phase 2: Staged Evolution T1-T10 fully completed (data model/storage/workspace/ledger/verification/inspect/promote/discard/tests/docs)
 - [x] Agent Context Query Model T8 completed: `context.requested_sources` metadata key, `ExecutionContextSummary` 3-field extension, `AgentExecutionRequest.RequestedSources`, dispatcher duplicate parsing elimination, review fixes
 
 ## Completed Tasks (M6)
@@ -342,7 +389,7 @@ Key observations:
 | A | Cross-process context fracture: ReadinessRegistry is in-process only; no local-control-plane awareness | **Critical** | Breaks multi-terminal workflow, cluster ops, enterprise audit | Partial: Local Control Plane T1-T8 completed |
 | B | Orchestrator is pseudo-parallel single-thread loop; no inter-Agent collaboration primitives | **Critical** | Blocks AI-native startup pipelines, digital workforce chaining | Open |
 | C | Event log is append-only but lacks structured query API or feedback loop | **High** | Prevents competence-based autonomy, organizational intelligence | Open |
-| D | ~~Sandboxed Evolution is spec-only; zero implementation~~ | **Critical** | ~~"Controllable Evolution" = "No Evolution"~~ | **RESOLVED** — T2-T10 fully implemented (2026-05-11) |
+| D | ~~Staged Evolution is spec-only; zero implementation~~ | **Critical** | ~~"Controllable Evolution" = "No Evolution"~~ | **RESOLVED** — T2-T10 fully implemented (2026-05-11) |
 | E | Tool boundaries are static fences, not dynamic ladders | **High** | "Competence earns autonomy" remains unimplemented | Open |
 | F | Model routing is manual gearbox; no latency/cost-aware dynamic scheduling or fallback | **High** | Token cost uncontrolled, no auto-degradation on provider failure | Partial: T27 token cost tracking implemented (`ModelResponse.CostEstimateUSD`); full dynamic routing remains planned |
 | G | No Agent identity or capability profile; only AgentTask exists | **High** | Cannot route tasks to best-fit Agent; "Capability is decision right" needs identity | Open |
@@ -353,13 +400,13 @@ Key observations:
 - **Still fully applicable**: "More Context, More Action, Zero Control", "bash is all you need", "Interface is existence", "Contract is structure"
 - **Partially resolved**: "Query is context" — T8 implemented: Agent declares needs via `context.requested_sources`, system resolves against readiness registry and reports satisfied/missing. Full Agent-driven demand (P1+) remains planned.
 - **Needs refinement**: "Ladder is boundary" (static fences vs dynamic ladders)
-- **Resolved**: "Controllable Evolution" — Sandboxed Evolution P0 fully implemented with isolated workspaces, atomic steps, verification gates, and explicit promote/discard decisions
+- **Resolved**: "Controllable Evolution" — Staged Evolution P0 fully implemented with isolated workspaces, atomic steps, verification gates, and explicit promote/discard decisions
 - **M4 validated**: "Competence earns autonomy" — T24 retry, T25 truncation, T26 logging, T27 cost tracking all demonstrate system-level competence improvement without user control increase. T23 `axis provider test` embodies "bash is all you need" diagnostic philosophy.
-- **Fundamental challenge**: Autonomy-reliability tension requires graduated autonomy (P0 high-control, P1 partial, P2 full-in-sandbox)
+- **Fundamental challenge**: Autonomy-reliability tension requires graduated autonomy (P0 high-control, P1 partial, P2 full-in-staged-workspace)
 
 ### Recommended Next Priority Order
 
-1. ~~**Sandboxed Evolution P0 implementation**~~ — **COMPLETED** (2026-05-11)
+1. ~~**Staged Evolution P0 implementation**~~ — **COMPLETED** (2026-05-11)
 2. **Cross-process state persistence**: Make ReadinessRegistry local-control-plane-aware
 3. **Agent identity & capability profile**: Introduce Agent registry and behavioral scoring
 4. **Event log structured query**: Add `axis audit` or equivalent for log consumption

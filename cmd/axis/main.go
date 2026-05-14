@@ -15,6 +15,7 @@ import (
 	"github.com/axis-cli/axis/internal/contextpack"
 	"github.com/axis-cli/axis/internal/control"
 	"github.com/axis-cli/axis/internal/kernel/orchestrator"
+	"github.com/axis-cli/axis/internal/memory/horizon"
 	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/model/providerconfig"
 	"github.com/axis-cli/axis/internal/project"
@@ -241,12 +242,26 @@ func (app *App) initOrchestrator() {
 			p = provider.NewMockModelProvider()
 		}
 
+		if providerName == "mock" {
+			fmt.Fprintf(os.Stderr, "Warning: using mock provider. Configure a real provider with: axis provider add\n")
+		}
+
+		// Wrap with FallbackProvider if fallback_profile is configured
+		p = app.wrapWithFallback(p)
+
 		// Create LLM Agent Executor with the resolved provider
+		eventLog := control.NewTaskEventLog(app.resolvedRoot())
+		emitter := &eventLogEmitter{log: eventLog}
+		memStore := horizon.NewStore(project.MemoryDir(app.resolvedRoot()))
+		_ = memStore.Init()
 		agentExec := agent.NewLLMAgentExecutor(p, nil,
 			agent.WithAgentID("axis-coding-agent"),
-			agent.WithSystemPrompt("You are Axis Coding Agent. Execute tasks by using available tools. When done, respond with your final output without tool calls."),
+			agent.WithSystemPrompt("You are Axis Coding Agent. Use available tools to complete tasks. Be concise and direct. Do not over-analyze simple questions — if the user asks what tools you have, just list them briefly. When done, respond with your final output without tool calls.\n\nEnvironment: Windows with WSL bash. Tools available in PATH: go, git, find, grep, wc, cat. For Windows-specific commands use cmd.exe /c \"...\". Do NOT retry the same command if it fails — try a different approach."),
 			agent.WithMaxIterations(20),
 			agent.WithMaxErrors(5),
+			agent.WithEventEmitter(emitter),
+			agent.WithPostJudge(&agent.ExecutionJudge{}),
+			agent.WithMemory(agent.NewHorizonMemory(memStore)),
 		)
 
 		app.orch = orchestrator.NewOrchestrator(
@@ -273,6 +288,24 @@ func (app *App) resolveProvider() (string, []provider.ProviderOption) {
 		return app.providerName, app.providerOptions()
 	}
 	return profile.Provider, profile.ProviderOptions()
+}
+
+func (app *App) wrapWithFallback(primary provider.ModelProvider) provider.ModelProvider {
+	cfg, err := providerconfig.NewStore(app.resolvedRoot()).Load()
+	if err != nil || cfg.FallbackProfile == "" {
+		return primary
+	}
+	fbProfile, ok := cfg.Profiles[cfg.FallbackProfile]
+	if !ok || fbProfile.Archived {
+		return primary
+	}
+	fb, err := provider.NewProvider(fbProfile.Provider, fbProfile.ProviderOptions()...)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to create fallback provider %q: %v\n", cfg.FallbackProfile, err)
+		return primary
+	}
+	fmt.Fprintf(os.Stderr, "Fallback provider: %s (model=%s)\n", cfg.FallbackProfile, fbProfile.Model)
+	return provider.NewFallbackProvider(120*time.Second, primary, fb)
 }
 
 func (app *App) providerOptions() []provider.ProviderOption {
@@ -365,4 +398,19 @@ func defaultContract() *types.AgentContract {
 			},
 		},
 	}
+}
+
+
+// eventLogEmitter adapts control.TaskEventLog to agent.EventEmitter.
+type eventLogEmitter struct {
+	log *control.TaskEventLog
+}
+
+func (e *eventLogEmitter) Emit(taskID, eventType, message string) {
+	_ = e.log.Append(control.TaskEvent{
+		TaskID:    taskID,
+		EventType: eventType,
+		Actor:     "axis-coding-agent",
+		Message:   message,
+	})
 }
