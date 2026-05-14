@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/axis-cli/axis/internal/project"
@@ -20,6 +21,7 @@ func newVigilCommand() *cobra.Command {
 		newVigilDoneCommand(),
 		newVigilShowCommand(),
 		newVigilTriageCommand(),
+		newVigilInstallHookCommand(),
 	)
 	return cmd
 }
@@ -39,25 +41,45 @@ func newVigilResumeCommand() *cobra.Command {
 				return err
 			}
 			now := time.Now()
+
+			// Auto-triage on resume (silent archive + stale marking)
+			result, active, toArchive := vigil.Triage(items, now)
+			if len(result.Archived) > 0 || len(result.Staled) > 0 || len(result.Upgraded) > 0 {
+				_ = store.Save(active)
+				if len(toArchive) > 0 {
+					_ = store.Archive(toArchive)
+				}
+				items = active
+			}
+
 			cutoff := now.Add(-24 * time.Hour)
 
-			var inProgress, recentDone, topPending []*vigil.Item
+			var inProgress, recentDone []*vigil.Item
+			var pending []*vigil.Item
 			for _, it := range items {
 				switch {
 				case it.Status == vigil.StatusInProgress:
 					inProgress = append(inProgress, it)
 				case it.Status == vigil.StatusCompleted && it.CompletedAt != nil && it.CompletedAt.After(cutoff):
 					recentDone = append(recentDone, it)
-				case it.Status == vigil.StatusPending:
-					if len(topPending) == 0 || it.Priority < topPending[0].Priority {
-						topPending = []*vigil.Item{it}
-					} else if it.Priority == topPending[0].Priority {
-						topPending = append(topPending, it)
-					}
+				case it.Status == vigil.StatusPending || it.Status == vigil.StatusStale:
+					pending = append(pending, it)
 				}
 			}
 
-			if len(inProgress) == 0 && len(recentDone) == 0 && len(topPending) == 0 {
+			// Sort pending by priority (P0 < P1 < P2 lexicographically)
+			for i := 0; i < len(pending); i++ {
+				for j := i + 1; j < len(pending); j++ {
+					if pending[j].Priority < pending[i].Priority {
+						pending[i], pending[j] = pending[j], pending[i]
+					}
+				}
+			}
+			if len(pending) > 10 {
+				pending = pending[:10]
+			}
+
+			if len(inProgress) == 0 && len(recentDone) == 0 && len(pending) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "No active work. Use: axis vigil add \"title\"")
 				return nil
 			}
@@ -75,9 +97,9 @@ func newVigilResumeCommand() *cobra.Command {
 					fmt.Fprintf(out, "  %s  %s\n", it.ID, it.Title)
 				}
 			}
-			if len(topPending) > 0 {
+			if len(pending) > 0 {
 				fmt.Fprintln(out, "## Top Pending")
-				for _, it := range topPending {
+				for _, it := range pending {
 					fmt.Fprintf(out, "  %s  %s  [%s]\n", it.ID, it.Title, it.Priority)
 				}
 			}
@@ -296,4 +318,37 @@ func containsTag(tags []string, tag string) bool {
 		}
 	}
 	return false
+}
+
+
+func newVigilInstallHookCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "install-hook",
+		Short: "Install git post-commit hook for auto-completion",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			root := project.MustResolveRoot()
+			hookDir := root + "/.git/hooks"
+			hookPath := hookDir + "/post-commit"
+
+			hookContent := `#!/bin/bash
+# Axis Vigil: auto-complete work items referenced in commit messages.
+msg=$(git log -1 --format=%B 2>/dev/null)
+[ -z "$msg" ] && exit 0
+ids=$(echo "$msg" | grep -oE 'vigil:[a-z0-9-]+' | sed 's/vigil://')
+[ -z "$ids" ] && exit 0
+commit=$(git rev-parse HEAD 2>/dev/null)
+for id in $ids; do
+    axis vigil done "$id" --commit "$commit" 2>/dev/null || true
+done
+`
+			if err := os.MkdirAll(hookDir, 0o755); err != nil {
+				return fmt.Errorf("failed to create hooks dir: %w", err)
+			}
+			if err := os.WriteFile(hookPath, []byte(hookContent), 0o755); err != nil {
+				return fmt.Errorf("failed to write hook: %w", err)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Installed post-commit hook at %s\n", hookPath)
+			return nil
+		},
+	}
 }
