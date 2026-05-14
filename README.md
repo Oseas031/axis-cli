@@ -36,15 +36,18 @@ M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Sandboxed Evolution ✅ | 
 ### Completed Capabilities
 
 - **Task Scheduling**: FIFO + DAG parallel scheduling, dependency management, 5-worker parallel orchestrator, contract admission, SLA timeout/retry/failure_class strategy engine
-- **LLM Integration**: Anthropic / OpenAI / DeepSeek / MiniMax providers, token accounting, circuit breaker, project-local provider profile management
-- **Tool System**: BashTool (observable execution records), FileReadTool, FileWriteTool, HTTPClientTool, tool permission scopes, multi-turn execution loop
+- **LLM Integration**: Anthropic / OpenAI / DeepSeek / MiniMax providers, token accounting, circuit breaker (configurable), project-local provider profile management, quality-gated model escalation, semantic layering (primary/utility routing)
+- **Tool System**: BashTool (observable execution records), FileReadTool, FileWriteTool, HTTPClientTool, tool permission scopes (enforced), multi-turn execution loop (configurable cap + graceful termination), syscall tools (compact/yield/checkpoint)
 - **Natural Language Scheduling**: `axis ask` compiles prompts into AgentTask, dry-run preview / explicit submit, never bypasses contracts
-- **Adaptive Context Assembly**: ContextBundle / ReadinessArtifact / ReadinessRegistry / preflight / strict gate, rule-based assembly + budget trimming, preview-first without execution intrusion
+- **Adaptive Context Assembly**: ContextBundle / ReadinessArtifact / ReadinessRegistry / preflight / strict gate, rule-based assembly + budget trimming, task-aware relevance scoring, preview-first without execution intrusion
 - **Execution-time Context Consumption**: ExecutionContextSummary / ExecutionContextConsumer, Agents declare `context.requested_sources`, dispatcher injects summary
-- **Local Control Plane**: `axis start` launches loopback HTTP control server, cross-process submit/query, `.axis/runtime.json` locator, append-only event log
+- **Local Control Plane**: `axis start` launches loopback HTTP control server, cross-process submit/query, `.axis/runtime.json` locator, append-only event log, orphaned task recovery on restart
 - **Sandboxed Evolution Protocol**: Isolated workspace + atomic steps + trace ledger + verification capture + explicit promote/discard gate, full audit trail
-- **Self-Judgement Engine**: SelfJudgementEngine + 5 validation strategies (Syntax/Semantic/Contract/Test/Coverage), self-judgement contract, BootstrapOrchestrator judgement integration
-- **Bootstrap Loop**: BootstrapOrchestrator + FollowUpTaskGenerator + AutonomyTransition rule engine + self-iteration contracts
+- **Self-Judgement Engine**: SelfJudgementEngine + 5 validation strategies (Syntax/Semantic/Contract/Test/Coverage), context isolation (Context Rot prevention), two-pass escalating judge (lightweight first), generalization scoring, self-judgement contract, BootstrapOrchestrator judgement integration
+- **Bootstrap Loop**: BootstrapOrchestrator + FollowUpTaskGenerator + AutonomyTransition rule engine (configurable thresholds) + self-iteration contracts
+- **Multi-Agent Infrastructure**: Subagent context isolation (IsolationPolicy), JSONL mailbox (send/receive/mark-read), multi-candidate differential testing (CandidatePool)
+- **Progressive Autonomy**: Feature gate (progressive unlock), dispatcher autonomy resolver (metadata-driven), capability registry
+- **Dispatcher**: Audit log (in-memory), configurable timeout, Set* fail-fast guards
 - **9+ structured error codes**, Agent Context Query Model, DAG visibility
 
 ## Quick Start
@@ -127,6 +130,7 @@ Profiles are stored in `.axis/providers.json` and do not modify shell environmen
 | Command | Purpose | Requires Runtime |
 |---------|---------|:---:|
 | `axis run <task-id>` | Execute a task synchronously (in-process) | No |
+| `axis run <task-id> --background` | Submit task to runtime, return immediately | **Yes** |
 | `axis start` | Start local runtime (loopback control server) | N/A (creates it) |
 | `axis status <task-id>` | Query task status (via local runtime) | **Yes** |
 | `axis ask <prompt>` | Natural language to AgentTask (dry-run by default) | No |
@@ -137,6 +141,7 @@ Profiles are stored in `.axis/providers.json` and do not modify shell environmen
 | `axis judge` | Run self-judgement diagnostic | No |
 | `axis evolve inspect/promote/discard` | Sandboxed evolution inspection and decisions | No |
 | `axis skills list/show/validate/create` | Manage on-demand knowledge skills | No |
+| `axis vigil resume/list/add/start/done/show/triage` | Cross-session work tracking | No |
 | `axis gui [--port 3000]` | Launch observation dashboard (Web UI) | No |
 
 ## External Tools
@@ -171,15 +176,19 @@ Both tools do not import Axis internal packages; they communicate via CLI and HT
 cmd/axis/          CLI entry and command definitions
 internal/
   types/           Core data types (AgentTask, AgentContract, ErrorCode...)
-  kernel/          Scheduler, orchestrator, dispatcher
-  contract/        Contract executor
-  model/           LLM provider + tool system
-  agent/           Agent executor + self-judgement engine
+  kernel/          Scheduler, orchestrator, dispatcher, feature gate, capability registry
+  contract/        Contract executor (permission scopes, circuit breaker, compaction)
+  model/           LLM provider (escalation, layering) + tool system
+  agent/           Agent executor + self-judgement engine + candidates + relevance scoring
   intent/          Natural language intent parsing
   contextpack/     Adaptive context assembly
   control/         Local control plane (server/client/locator/events)
   evolution/       Sandboxed evolution protocol
+  comm/            Multi-agent communication (JSONL mailbox)
+  skills/          On-demand knowledge skills (loader + metadata)
+  memory/          Memory subsystems (horizon/immediate/immunity/kv/longterm/working)
   human/           Human executor
+  vigil/           Cross-session work tracking
 docs/              Documentation index, architecture reference, specs, status
 tools/
   axis-gui/        Local Web GUI

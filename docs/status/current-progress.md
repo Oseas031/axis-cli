@@ -2,12 +2,53 @@
 
 **[Chinese version / 中文版](../zh/status/current-progress.md)**
 
-**Updated**: 2026-05-12
-**Current Milestones**: M1 ✅ | M2 ✅ | M3 (Phase 1-3) ✅ | M4 ✅ (Original T1-T18 + Gap Fix T19-T22 + Hardening T23-T28) | M5 ✅ | M6 ✅
+**Updated**: 2026-05-14
+**Current Milestones**: M1 ✅ | M2 ✅ | M3 (Phase 1-3) ✅ | M4 ✅ (Original T1-T18 + Gap Fix T19-T22 + Hardening T23-T28) | M5 ✅ | M6 ✅ | Coding Agent P0 ✅ | Hardening A8 ✅
 
 ## Current Design Positioning
 
 Axis is no longer defined as a generic Agent scheduling platform, but as the early execution substrate for Agent autogenesis.
+
+## Hardening A8 (2026-05-14) — All P0/P1/P2 vigil items cleared
+
+### Judge System
+- Context isolation: IsolateContext strips transcript, preserves final artifacts + ExecSummary
+- Two-pass escalation: lightweight (Syntax/Test/Coverage) first, Semantic only on failure
+- Generalization scoring: per-task-type pass rate tracking (diagnostic)
+
+### Execution Infrastructure
+- Permission scopes enforced (AllowedScopes in ExecutorConfig)
+- Circuit breaker + maxTurns configurable
+- Multi-turn graceful termination (final-turn prompt + preserved output)
+- Orchestrator split into 3 files (orchestrator/task_loop/registry)
+- Orphaned task recovery on startup
+
+### Provider System
+- Quality-gated model escalation (EscalationProvider)
+- Semantic layering (LayeredProvider: primary vs utility routing)
+- Mock provider warning on first use
+
+### Agent Capabilities
+- Multi-candidate differential testing (CandidatePool + Partition)
+- Subagent context isolation (IsolationPolicy in SpawnTool)
+- Task-aware relevance scoring (KeywordRelevanceScorer)
+
+### Progressive Autonomy
+- Feature gate (progressive unlock)
+- Dispatcher autonomy resolver (metadata-driven)
+- Autonomy transition rules configurable (RuleConfig)
+- Set* fail-fast guards (panic after execution started)
+
+### Multi-Agent
+- JSONL mailbox (send/receive/mark-read)
+- Unified capability registry (tool/skill/memory)
+
+### Skills
+- Composable metadata (frontmatter parsing with DependsOn/ConflictsWith)
+
+### Dispatcher
+- Audit log (in-memory AuditEntry per dispatch)
+- Background task submission via Local Control Plane (`--background` flag)
 
 Key observations:
 
@@ -226,7 +267,44 @@ Key observations:
 - [x] checkpoint tool: intermediate state persistence
 - [x] spawn tool: isolated subtask creation (full/shared isolation)
 
-### Architecture Decisions
+### Coding Agent P0 (2026-05-14)
+
+### Strategy & Design
+- [x] Front-end strategic positioning: Observatory (CLAUDE.md §14)
+- [x] Agent Design First Principles document (`docs/architecture/agent-design-first-principles.md`)
+- [x] LLM deficiency classification: 2 architectural + 3 current-form constraints
+- [x] Harness borrowing analysis: concluded no concrete mechanisms to borrow, only methodology
+
+### Implementation
+- [x] `LLMAgentExecutor` — multi-turn LLM ↔ Tool loop (`internal/agent/llm_executor.go`, 258 lines)
+- [x] 7 unit tests covering: single-turn, multi-turn, circuit breaker, budget, custom termination, tool error, context cancellation
+- [x] Wired into orchestrator via `WithAgentExecutor` + `SetToolRegistry`
+- [x] Registered in `cmd/axis/main.go` `initOrchestrator()`
+- [x] Coding Agent Spec-RDT (`docs/specs/coding-agent/`)
+
+### Security & Tech Debt
+- [x] FileWriteTool path validation hardening (use cleaned absolute path for execution)
+- [x] BashTool Permission Ladder L0/L1/Unrestricted (`NewBashToolWithLevel`)
+- [x] `agent_id` + `quality_signal` fields added to TaskEvent and AgentExecutionResult (止血)
+
+### Refactoring
+- [x] `ExecutorConfig` struct replaces Set* method chain (`internal/contract/executor/config.go`)
+- [x] Orchestrator uses `NewContractExecutorWithConfig`
+
+### New Modules
+- [x] Guarantee Registry (`internal/guarantee/`) — verifiable system promises with Hard/Soft levels
+
+### Front-end
+- [x] axis-gui frontend rewrite: Dashboard/Tasks/Providers/Events/Chat (5 full pages)
+- [x] Events page data handling fix (object array vs string array)
+
+### Infrastructure
+- [x] Project copied to WSL (`/home/asus/projects/axis-cli/`)
+- [x] Kiro CLI installed in WSL (v2.3.0)
+- [x] WSL WARP routing fix documented
+- [x] MindMagnifier skill registered (`.axis/skills/mind-magnifier/SKILL.md` + CLAUDE.md §15)
+
+## Architecture Decisions
 - [x] Homogeneous Actor model chosen (人机同构)
 - [x] Actor-Comm spec triplet created (docs/specs/actor-comm/)
 - [x] Unified Actor Model & Communication Layer planned (P0-P3 phases)

@@ -90,6 +90,8 @@ internal/kernel/dispatcher
 internal/kernel/lifecycle
 internal/kernel/sharedlayer
 internal/kernel/budget
+internal/kernel/featuregate
+internal/kernel/capability
 ```
 
 Rules:
