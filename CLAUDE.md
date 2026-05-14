@@ -112,6 +112,7 @@ Read the neighboring `BOUNDARY.md` before editing files in these directories:
 | `internal/contextpack/` | Never push context into provider prompts; never change scheduler semantics |
 | `internal/agent/` | Never bypass contract layer; never inject context metadata into provider input |
 | `internal/memory/` | Never push into provider prompts; never physical-delete; no external deps; no background tasks; LF-only line terminators |
+| `internal/skills/` | Never push skill content into provider prompts automatically; never modify scheduler/contract semantics; no network access; no background work |
 
 ## 5. Spec-First Protocol
 

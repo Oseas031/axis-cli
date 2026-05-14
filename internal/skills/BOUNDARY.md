@@ -1,29 +1,19 @@
-# Skills System Boundary
+# Skills Package Boundary
 
-## Must NOT
+> Referenced by CLAUDE.md §4
 
-- Push skill content into provider prompts automatically (must go through Agent calling `load_skill`)
-- Import or be imported by `internal/kernel/scheduler/`
-- Modify scheduler behavior, execution paths, or contract semantics
-- Spawn goroutines or background watchers
-- Access network or remote resources
-- Introduce external dependencies (pure stdlib)
+## Owns
 
-## Must
+- On-demand knowledge skill discovery from `.axis/skills/`
+- Skill loading (frontmatter parsing + content retrieval)
+- Skill validation (directory structure, naming, frontmatter completeness)
+- Layer 1 metadata injection (skill name/description list for System Prompt)
+- `load_skill` tool (Agent-initiated Layer 2 full content retrieval)
 
-- All file access confined to `.axis/skills/` via `safeSkillPath()`
-- Skill content only loaded when Agent explicitly calls `load_skill`
-- Layer 1 injection limited to metadata only (name + description, max 20 skills)
-- All paths use `path/filepath` for cross-platform safety
-- Validate skill names match `^[a-z][a-z0-9-]*[a-z0-9]$`
+## Must NOT Do
 
-## Allowed Dependents
-
-- `internal/model/tool/` — registers `load_skill` tool
-- `internal/kernel/orchestrator/` — wires Loader to executor and tool registry
-- `internal/contract/executor/` — calls `BuildSkillsPromptSection()` for Layer 1
-- `cmd/axis/` — CLI surface
-
-## Enforced By
-
-- `boundary_test.go` — verifies scheduler isolation, opt-in loading, path safety, name format
+- **Never push skill content into provider prompts automatically** — Layer 1 injects metadata only; full content requires explicit Agent `load_skill` call
+- **Never modify scheduler or contract semantics** — skills are informational, not behavioral
+- **Never perform network access** — skills are local files only, no remote fetching
+- **Never run background work** — discovery and loading are synchronous, on-demand operations
+- **Never bypass path safety** — all skill paths must be validated within `.axis/skills/` boundary

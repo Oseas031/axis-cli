@@ -89,6 +89,7 @@ internal/kernel/scheduler
 internal/kernel/dispatcher
 internal/kernel/lifecycle
 internal/kernel/sharedlayer
+internal/kernel/budget
 ```
 
 Rules:
@@ -161,6 +162,17 @@ Rules:
 - Intent parsing ends at structured output such as `AgentTask`.
 - It must not execute tasks directly except through CLI/orchestrator integration.
 - It must preserve provenance metadata.
+
+### `internal/skills`
+
+On-demand knowledge skill discovery, loading, and validation.
+
+Rules:
+
+- Skills are local `.axis/skills/<name>/SKILL.md` files only.
+- Never push skill content into provider prompts automatically (Layer 1 injects metadata only; Layer 2 is Agent-initiated `load_skill`).
+- Never modify scheduler or contract semantics.
+- No network access, no background work.
 
 ### `internal/contextpack`
 
