@@ -10,13 +10,15 @@ import (
 )
 
 type TaskEvent struct {
-	EventID   string    `json:"event_id"`
-	TaskID    string    `json:"task_id"`
-	EventType string    `json:"event_type"`
-	CreatedAt time.Time `json:"created_at"`
-	Actor     string    `json:"actor,omitempty"`
-	Status    string    `json:"status,omitempty"`
-	Message   string    `json:"message,omitempty"`
+	EventID       string    `json:"event_id"`
+	TaskID        string    `json:"task_id"`
+	EventType     string    `json:"event_type"`
+	CreatedAt     time.Time `json:"created_at"`
+	Actor         string    `json:"actor,omitempty"`
+	Status        string    `json:"status,omitempty"`
+	Message       string    `json:"message,omitempty"`
+	AgentID       string    `json:"agent_id,omitempty"`       // v1: always "default". TODO: populate from Agent identity registry when available.
+	QualitySignal string    `json:"quality_signal,omitempty"` // v1: unused. TODO: populate from execution feedback loop (Gap H).
 }
 
 type TaskEventLog struct {

@@ -43,7 +43,7 @@ Axis responds not by locking Agents down, but by requiring **verification before
 
 | Constraint | Reason | Axis Alternative |
 |---|---|---|
-| No self-modification | Violates Sandboxed Evolution | Self-modify in sandbox, promote only after verification |
+| No self-modification | Violates Staged Evolution | Self-modify in staged workspace, promote only after verification |
 | Forced JSON every step | Too rigid | Contract already constrains output format |
 | Permanent ban on pipes/redirects | Violates "bash is all you need" | Progressive unlock via Permission Ladder |
 
@@ -105,7 +105,7 @@ Upgrade requires ALL of:
 | Axis Feature | Level 0 (Current) | Level 1 | Level 2 (Target) |
 |---|---|---|---|
 | BashTool | Whitelisted commands | Whitelist + limited pipes | Full bash |
-| Sandboxed Evolution | Modify specified files only | Any file in sandbox | Propose architectural changes |
+| Staged Evolution | Modify specified files only | Any file in staged workspace | Propose architectural changes |
 | Tool permissions | Read + execute | Read-write (Contract-authorized) | Full tool access |
 | Task generation | Sub-tasks only | Sibling tasks | Follow-up chains |
 | Contract customization | Predefined Contracts only | Propose Contract modifications | Create new Contracts |
@@ -132,4 +132,4 @@ Level N → Level N+1 requires:
 | Bash is all you need | Atomic command whitelist | Permission Ladder progressively unlocks full bash |
 | Competence earns autonomy | Separation of concerns | Single Agent earns all permissions through verification |
 | Contract is Structure | Forced JSON per step | Contract defines output constraints, not global enforcement |
-| Controllable Evolution | No self-modification | Sandboxed Evolution allows self-modification with verification gate |
+| Controllable Evolution | No self-modification | Staged Evolution allows self-modification with verification gate |

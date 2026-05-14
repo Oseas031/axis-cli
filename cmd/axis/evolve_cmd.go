@@ -11,7 +11,7 @@ import (
 func newEvolveCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "evolve",
-		Short: "Sandboxed evolution protocol for Axis self-modification",
+		Short: "Staged evolution protocol for Axis self-modification",
 	}
 	cmd.AddCommand(newEvolveInspectCommand(), newEvolvePromoteCommand(), newEvolveDiscardCommand())
 	return cmd

@@ -235,7 +235,7 @@ func DeriveRecoveryTasks(
 |---|------------|---------|
 | 12 | MCP 集成 | Scope creep，本阶段主矛盾未解 |
 | 13 | LSP as tool | 依赖外部 LSP server，本阶段非必需 |
-| 14 | git worktree as evolution backend | Sandboxed Evolution P0 已交付，Plan B（手工 worktree）已验证 |
+| 14 | git worktree as evolution backend | Staged Evolution P0 已交付，Plan B（手工 worktree）已验证 |
 | 15 | Task Classifier（TaskClass/RiskLevel） | `intent/` 模块增强候选，但非本阶段关键 |
 | 16 | Cost Budget USD 微分累计 | Partial：T27 已做 `CostEstimateUSD`，预算约束延后 |
 | 17 | 4 层 state 模型（含 decision ledger） | M8+ 讨论，本阶段不触碰 |

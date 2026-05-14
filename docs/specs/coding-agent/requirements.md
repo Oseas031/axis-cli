@@ -1,63 +1,55 @@
-# CodingAgent: Requirements
+# Coding Agent — Requirements
 
-> 展开自 CLAUDE.md §0（辩证开发方法论 — Phase II Determinateness）
-> 实现 first-principles.md
+> 实现 `docs/architecture/agent-design-first-principles.md` 全文
 
-**Date**: 2026-05-14
-**Status**: Draft
-
----
+**Status**: In Progress
+**Spec-RDT ID**: coding-agent
 
 ## Problem Statement
 
-当前 LLM 编码存在三个结构性缺陷：
+Axis has complete task scheduling infrastructure (M1-M6) but no LLM-driven executor that can autonomously perform coding tasks. The `MockAgentExecutor` and `SimulationAgentExecutor` validate the pipeline but cannot do real work.
 
-1. **暴力试错**：拥有执行权后跳过思考，反复修改直到测试通过，不理解根因。
-2. **跳过验证**：生成代码后直接宣称成功，不运行测试，不检查副作用。
-3. **全知假设**：假装已读过全部代码，在不完整上下文下做出错误推断。
+## Requirements
 
-这三个问题的共同根源：LLM 缺乏**认识论纪律**——不区分"猜想"和"知识"。
+### R1: Multi-turn LLM ↔ Tool execution loop
 
----
+The executor MUST implement a loop where:
+- LLM receives task + history → emits tool calls or final output
+- Tools execute deterministically → results append to history
+- Loop continues until termination condition met or budget exhausted
 
-## Functional Requirements
+### R2: Pluggable termination condition
 
-### FR1: Explore-Think-Act 工具调用顺序约束
+Termination MUST NOT be solely determined by LLM (LLM doesn't know when code is correct). The system MUST support external termination functions that can inspect history and decide: Continue / Complete / Failed / NeedHuman.
 
-Agent 的工具调用必须遵循默认路径：Explore → Think → Act → Verify。系统在 multi-turn loop 中追踪当前 phase，若 Agent 跳过某阶段，必须在输出中声明 `skip_phase` + `reason`。未声明的跳过视为违约。
+### R3: Circuit breaker
 
-### FR2: 结构化输出
+Consecutive tool errors MUST trigger automatic abort to prevent infinite retry loops and token waste. Threshold MUST be configurable.
 
-每次代码变更必须附带结构化产物，包含：`hypothesis`（假说）、`prediction`（可证伪预测）、`exploration`（已读取的上下文）、`code_changes`（变更清单）、`verification`（验证结果）。Contract OutputSchema 强制校验这些字段。
+### R4: History compaction interface
 
-### FR3: Phase 4 (Verify) 不可跳过
+The executor MUST support a compaction hook to manage context window growth during long-running tasks. V1 may be no-op but the interface MUST exist.
 
-Verify 是唯一的硬约束。Agent 不得在未执行验证的情况下产出最终结果。验证手段包括 `verify_bash`、`bash(go test)`、或等价的机器可检查操作。跳过 Verify 的输出将被 ContractExecutor 拒绝。
+### R5: Tool registry injection
 
-### FR4: 未知问题必须分解再执行
+Tools MUST be injected via `*tool.Registry`, not hardcoded. Different agents may have different tool sets.
 
-当 Agent 遇到无法直接映射到已知解题路径的问题时，必须先分解为子问题。分解产物为显式的子任务列表，每个子任务独立验证。禁止对未知问题直接套模板。
+### R6: Provider injection
 
-### FR5: 失败记录进入 long-horizon memory
+The LLM provider MUST be injected, not self-selected. Future dynamic routing depends on this.
 
-每次验证失败必须调用 `store_memory` 记录失败信息（失败路径 + 根因 + 排除的假设）。这些记录以 `patterns` 类别存储，供后续 `recall_memory` 检索，避免重复踩坑。
+### R7: Iteration budget externalization
 
----
+Max iterations MUST be passed in from outside, not hardcoded internally. Future autonomy system will dynamically adjust budgets.
 
-## Non-Goals
+### R8: Complete execution trace
 
-- **不自主修改 system prompt**：CodingAgent 不得修改自身的行为指令层。
-- **不绕过 contract**：所有输出必须通过 ContractExecutor 的 schema 校验，无例外。
-- **不自评质量**：Judge 是外部机制（SelfJudgementEngine / 人类），Agent 不做"我的代码质量如何"的判断。
+Every tool invocation MUST be recorded with: tool name, input, output/error, duration. AgentID MUST be populated in results.
 
----
+### R9: System prompt injection point
 
-## Acceptance Criteria
+The executor MUST accept a system prompt that defines its role. Different agent types (coding, review, ops) are differentiated by system prompt.
 
-| # | 条件 | 验证方式 |
-|---|------|----------|
-| AC1 | Agent 在未执行 Explore 工具的情况下直接 Act，输出包含 `skip_phase` 声明 | 单元测试：mock provider 返回无 explore 的 tool_calls，检查输出格式 |
-| AC2 | 最终输出缺少 `verification` 字段时，ContractExecutor 返回 validation error | 单元测试：OutputSchema 校验 |
-| AC3 | Agent 跳过 Verify phase 时，执行循环拒绝产出 | 集成测试：multi-turn loop 中无 verify_bash/go test 调用时不接受 final output |
-| AC4 | 验证失败后 `store_memory` 被调用 | 集成测试：mock memory store 检查写入 |
-| AC5 | 结构化输出 JSON 符合 OutputSchema 定义 | Contract schema 校验测试 |
+### R10: Backward compatibility
+
+`NewBashTool()` and existing orchestrator wiring MUST continue to work unchanged. New functionality is additive.

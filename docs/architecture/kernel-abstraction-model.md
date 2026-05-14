@@ -99,11 +99,11 @@ Maps to: `internal/model/tool/`, `internal/skills/`, `internal/agent/` (autonomy
 Ensures one Agent's failure or misbehavior does not affect others.
 
 - **Task isolation**: each task has independent history, context, tool scope
-- **Agent isolation**: sub-agents execute in sandbox, return summary to parent
+- **Agent isolation**: sub-agents execute in staged workspace, return summary to parent
 - **Evolution isolation**: system modification proposals verified in branch before promotion
 - **Failure isolation**: one task's panic does not affect other tasks' scheduling
 
-Maps to: `internal/evolution/`, Sandboxed Evolution Protocol, dispatcher routing
+Maps to: `internal/evolution/`, Staged Evolution Protocol, dispatcher routing
 
 > // aspirational: WAL, Snapshot, and semantic index described below have no current implementation. Activation condition: when event replay or point-in-time recovery becomes a requirement.
 
@@ -140,7 +140,7 @@ Maps to: `internal/contextpack/index*.go`, `internal/skills/discover.go`
 | More Context | Kernel provides query infrastructure (index, retrieval, skills); does not push |
 | More Action | Syscall table + capability registry define action space; Agent decides what to use |
 | Zero Control | Kernel schedules and isolates but never dictates Agent's next action |
-| Controllable Evolution | All mutations go through sandbox → verify → promote pipeline |
+| Controllable Evolution | All mutations go through staged → verify → promote pipeline |
 
 ## What This Model Is Not
 

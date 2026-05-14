@@ -15,6 +15,7 @@ import (
 type Runtime interface {
 	SubmitTask(task *types.AgentTask) error
 	GetTaskStatus(taskID string) (types.TaskStatus, error)
+	GetTaskResult(taskID string) (*types.TaskResult, error)
 }
 
 type Server struct {
@@ -112,7 +113,14 @@ func (s *Server) handleTaskStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.appendEvent(TaskEvent{TaskID: taskID, EventType: "status_requested", Actor: "local-control", Status: string(status), Message: "task status requested"})
-	writeJSON(w, http.StatusOK, StatusResponse{TaskID: taskID, Status: status})
+	resp := StatusResponse{TaskID: taskID, Status: status}
+	if status == types.TaskStatusCompleted || status == types.TaskStatusFailed {
+		if result, err := s.runtime.GetTaskResult(taskID); err == nil && result != nil {
+			resp.Output = result.Output
+			resp.Error = result.Error
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (s *Server) appendEvent(event TaskEvent) {

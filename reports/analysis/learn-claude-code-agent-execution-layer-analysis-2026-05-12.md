@@ -632,7 +632,7 @@ class EventBus:
 | **扩展方式** | Skills (SKILL.md) | Spec-RDT + Evolution Protocol |
 | **任务系统** | JSON 文件持久化 + 依赖图 | AgentTask + Scheduler |
 | **多 Agent** | Thread + JSONL 邮箱 | 无（单 Agent） |
-| **隔离机制** | Git worktree | Sandboxed Evolution |
+| **隔离机制** | Git worktree | Staged Evolution |
 | **事件追踪** | EventBus (append-only JSONL) | .axis/events/tasks.jsonl |
 
 ### 4.2 Axis 可借鉴的设计点
@@ -650,7 +650,7 @@ class EventBus:
 | s10 | request_id 关联模式 | 可用于分布式事务 |
 | s11 | Identity re-injection | 压缩后身份恢复 |
 | s11 | 自动认领 unclaimed tasks | Agent 自主性增强 |
-| s12 | worktree 隔离 | 与 Sandboxed Evolution 结合 |
+| s12 | worktree 隔离 | 与 Staged Evolution 结合 |
 
 ---
 
@@ -672,7 +672,7 @@ class EventBus:
 
 1. **多 Agent 协作**: JSONL 邮箱协议 + TeammateManager
 2. **自动认领**: Agent 自主扫描任务看板
-3. **Worktree 隔离**: 与 Sandboxed Evolution 深度集成
+3. **Worktree 隔离**: 与 Staged Evolution 深度集成
 
 ---
 

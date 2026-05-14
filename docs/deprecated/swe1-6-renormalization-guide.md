@@ -40,7 +40,7 @@ Do not implement:
 - broad UX redesigns
 - large rewrites without tests
 - automatic promotion, discard, or verification of evolution work
-- control-logic rewriting outside the Sandboxed Evolution Protocol
+- control-logic rewriting outside the Staged Evolution Protocol
 
 ## Core Rule
 
@@ -94,7 +94,7 @@ Use one of these categories:
 | `secret` | secret handling risk |
 | `test-gap` | behavior is not protected before migration |
 | `doc-drift` | docs and code disagree |
-| `evolution-boundary` | change modifies system structure and should use Sandboxed Evolution Protocol |
+| `evolution-boundary` | change modifies system structure and should use Staged Evolution Protocol |
 
 If an issue is classified as `evolution-boundary`, SWE1.6 should stop ordinary renormalization and create or update the relevant spec/task instead of directly changing core behavior.
 
@@ -112,7 +112,7 @@ High-risk behavior includes:
 - `axis ask` dry-run and submit behavior
 - scheduler claim semantics
 - tool execution metadata
-- sandboxed evolution promotion/discard boundaries
+- staged evolution promotion/discard boundaries
 
 ### Step 4: Apply the smallest change
 
@@ -140,7 +140,7 @@ For docs-only changes, state that Go tests were not required.
 
 If paths, semantics, metadata keys, output contracts, or lifecycle states changed, update the relevant convention/spec docs.
 
-If the change touches high-impact evolution surfaces, update or reference the Sandboxed Evolution Protocol rather than normalizing the behavior directly.
+If the change touches high-impact evolution surfaces, update or reference the Staged Evolution Protocol rather than normalizing the behavior directly.
 
 ## Priority Audit Targets
 

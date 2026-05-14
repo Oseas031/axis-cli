@@ -87,7 +87,7 @@ M1 Basic Sched → M2 Parallel Sched → M3 Exec Ecosystem → M4 Real LLM → M
 - AutonomyTransition (5-level autonomy hierarchy)
 - RuleEngine (competence evidence-based rule engine)
 
-**Sandboxed Evolution Protocol**
+**Staged Evolution Protocol**
 - Isolated workspace (`.axis/evolution/<run-id>/`)
 - Atomic evolution steps + append-only trace ledger
 - Explicit verify / promote / discard gates

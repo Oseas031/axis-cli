@@ -58,7 +58,7 @@ Documents are organized by purpose. Start with the entry points, then navigate t
 - [Natural Language Scheduling](specs/natural-language-scheduling/)
 - [Adaptive Context Assembly](specs/adaptive-context-assembly/)
 - [Execution-time Context Consumption](specs/execution-context-consumption/)
-- [Sandboxed Evolution Protocol](specs/sandboxed-evolution/)
+- [Staged Evolution Protocol](specs/sandboxed-evolution/)
 - [Local Control Plane](specs/local-control-plane/)
 
 ## 6. Status & Acceptance

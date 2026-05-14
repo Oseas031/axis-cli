@@ -38,7 +38,7 @@ Legacy un-namespaced keys may exist, but new keys should use namespaces.
 |---|---|
 | `intent.*` | natural language and intent parser provenance |
 | `context.*` | context assembly bundle and trace metadata |
-| `evolution.*` | sandboxed evolution run, step, verification, and decision provenance |
+| `evolution.*` | staged evolution run, step, verification, and decision provenance |
 | `tool.*` | task-local tool boundaries and audit hints |
 | `sla.*` | timeout, retry, and service-level hints |
 | `provider.*` | provider profile and model selection provenance |

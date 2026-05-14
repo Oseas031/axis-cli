@@ -4,7 +4,7 @@
 **Inspired by**: Jelly Crystal Commons Architecture — Encoding & Crystallization layer (语义元素 → 答案程序 → 闭合证明 → 数据结晶)
 **Related**: `docs/specs/closure-ledger/`, `docs/specs/immunity-memory/`, `docs/specs/sandboxed-evolution/`, `docs/architecture/agent-native-first-principles.md`
 
-> This is the most structurally significant of the three Jelly-Crystal-inspired specs. It introduces a new **typed reuse unit** and therefore touches the boundary between `internal/types/`, `internal/memory/`, and the sandboxed-evolution protocol. Read `docs/architecture/semantic-boundaries.md` and `docs/architecture/refactor-migration-conventions.md` before approving.
+> This is the most structurally significant of the three Jelly-Crystal-inspired specs. It introduces a new **typed reuse unit** and therefore touches the boundary between `internal/types/`, `internal/memory/`, and the staged-evolution protocol. Read `docs/architecture/semantic-boundaries.md` and `docs/architecture/refactor-migration-conventions.md` before approving.
 
 ## Summary
 
@@ -17,7 +17,7 @@ A **Crystal** is the minimum reusable unit of "a problem that was solved well". 
 
 A Crystal is created by **explicit promotion** of a completed task that has a positive Closure Ledger entry. It lives in a new Verified Memory layer and can be retrieved by future tasks via contextpack preview as a "this problem class has a known solution shape" hint — never as automatic execution.
 
-This spec is the Axis equivalent of Jelly Crystal's "data crystal", deliberately stripped of: (a) auto-graduation to public commons, (b) cross-project sharing, (c) automatic re-execution. Those belong to future Spec-RDTs under the sandboxed-evolution protocol if and when they are justified.
+This spec is the Axis equivalent of Jelly Crystal's "data crystal", deliberately stripped of: (a) auto-graduation to public commons, (b) cross-project sharing, (c) automatic re-execution. Those belong to future Spec-RDTs under the staged-evolution protocol if and when they are justified.
 
 ## Design Philosophy
 
@@ -25,9 +25,9 @@ This spec is the Axis equivalent of Jelly Crystal's "data crystal", deliberately
 
 A Crystal stores the **path** (signature + program + proof), not the answer. Re-running the answer program on new inputs is allowed; copy-pasting the old answer is not what Crystals are for. This matches the Jelly Crystal subtitle: *"not caching answers, caching verifiable closure paths."*
 
-### Promotion Is a Sandboxed-Evolution Event
+### Promotion Is a Staged-Evolution Event
 
-Creating a Crystal is a structural change to the project's verified-memory layer. It MUST follow the existing sandboxed-evolution protocol: experiment (the task ran) → verify (the closure proof) → explicit promote (`axis crystal promote`). No auto-promotion. The promoter may be human or Agent per `CLAUDE.md §5`; what matters is that the closure proof is machine-checkable, not who triggers the command. This preserves First Principle 4 (Layered Isolation) and §5 Spec-First.
+Creating a Crystal is a structural change to the project's verified-memory layer. It MUST follow the existing staged-evolution protocol: experiment (the task ran) → verify (the closure proof) → explicit promote (`axis crystal promote`). No auto-promotion. The promoter may be human or Agent per `CLAUDE.md §5`; what matters is that the closure proof is machine-checkable, not who triggers the command. This preserves First Principle 4 (Layered Isolation) and §5 Spec-First.
 
 ### Crystals Are Per-Project Authoritative
 
@@ -124,7 +124,7 @@ Output follows `cli-output-conventions.md`.
 
 ### FR9: Re-execution of answer programs is out of scope
 
-This spec does NOT add "axis crystal apply <crystal-id> --to <new-task>" semantics. The answer program is data the Agent can read. Whether to mechanically replay it is a separate Spec-RDT under sandboxed-evolution (because it touches execution policy).
+This spec does NOT add "axis crystal apply <crystal-id> --to <new-task>" semantics. The answer program is data the Agent can read. Whether to mechanically replay it is a separate Spec-RDT under staged-evolution (because it touches execution policy).
 
 ### FR10: Cross-platform safety and secrets
 

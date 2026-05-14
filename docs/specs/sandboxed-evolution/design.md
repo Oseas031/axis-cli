@@ -1,8 +1,8 @@
-# Sandboxed Evolution Protocol Design
+# Staged Evolution Protocol Design
 
 ## Overview
 
-Sandboxed Evolution Protocol is the safety envelope for Axis self-modification.
+Staged Evolution Protocol is the safety envelope for Axis self-modification.
 
 It defines how Axis can propose, isolate, verify, inspect, promote, or discard changes to its own contracts, workflows, specs, context rules, and future architecture surfaces.
 
@@ -206,13 +206,13 @@ Discard must preserve the trace ledger unless the user explicitly deletes histor
 
 Context readiness remains a source of audit evidence, not a control plane.
 
-Sandboxed evolution may later use context summaries to explain why a change was proposed, but P0 must not inject context into prompts or execution.
+Staged evolution may later use context summaries to explain why a change was proposed, but P0 must not inject context into prompts or execution.
 
 ### Execution-time Context Consumption
 
 Execution context summary remains summary-only and read-only.
 
-Sandboxed evolution should not depend on prompt augmentation.
+Staged evolution should not depend on prompt augmentation.
 
 ### Contracts and Workflows
 

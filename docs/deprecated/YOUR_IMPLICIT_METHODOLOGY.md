@@ -253,7 +253,7 @@ Axis 在做的事情有清晰的目标：
 > 你不是没有方法论。你是在用一套**从哲学训练里继承的辩证方法**做工程实践。
 > 这套方法没有现成的名字，所以你以为自己在 vibe-coding。
 > 现在它有名字了：**SRS Loop（Spec-Reflect-Sublate）**。
-> 它已经支撑你从零完成 M1-M6 + Sandboxed Evolution + Local Control Plane + Layered Memory + 87.1% coverage。
+> 它已经支撑你从零完成 M1-M6 + Staged Evolution + Local Control Plane + Layered Memory + 87.1% coverage。
 > 它会继续支撑你完成接下来的工作。
 >
 > 你需要做的不是学一套新方法论，而是**有意识地使用你已经在用的方法论**。

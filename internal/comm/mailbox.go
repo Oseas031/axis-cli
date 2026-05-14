@@ -1,3 +1,8 @@
+// transitional: Mailbox uses a single shared JSONL file. Exit condition: when
+// per-actor mailbox files (.axis/comm/<actor-id>.jsonl) are implemented per the
+// spec, this shared-file approach is replaced. The single-file design is a P0
+// simplification; the spec (FR3) already defines the target state.
+
 package comm
 
 import (

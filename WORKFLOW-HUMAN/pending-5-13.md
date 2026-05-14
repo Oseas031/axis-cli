@@ -92,7 +92,7 @@ Parent Agent                    Subagent
 
 - [ ] 定义 `Guarantee` 结构（ID / Description / VerifiedBy / BreaksWhen）
 - [ ] 从已有代码提取保证清单（admission / judgement / contract / circuit breaker）
-- [ ] Sandboxed Evolution promote 前检查：本次修改是否破坏已声明保证
+- [ ] Staged Evolution promote 前检查：本次修改是否破坏已声明保证
 
 **价值**：让 Axis 自我修改时有可审计的安全网。
 
@@ -120,7 +120,7 @@ Judge 评分低于阈值 → 自动切换到更强模型重新执行。
 | Feature | Level 0 | Level 1 | Level 2 |
 |---|---|---|---|
 | BashTool | 白名单命令 | 白名单+受限管道 | 完全 bash |
-| Sandboxed Evolution | 修改指定文件 | 沙箱内任意文件 | 提议架构变更 |
+| Staged Evolution | 修改指定文件 | 沙箱内任意文件 | 提议架构变更 |
 | Tool 权限 | 只读+执行 | 读写（Contract 授权） | 完全访问 |
 | 任务生成 | 子任务 | 同级任务 | follow-up 链 |
 | Contract 自定义 | 预定义 | 提议修改 | 创建新 Contract |

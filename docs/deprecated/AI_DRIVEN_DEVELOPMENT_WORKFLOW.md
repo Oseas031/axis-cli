@@ -29,7 +29,7 @@ Your advantage: **Design capability** over **coding experience**. Axis is your e
 - **M4** ✅ - Real LLM Integration (4 providers, extended tools)
 - **M5** ✅ - Bootstrap Loop (self-iteration contracts, autonomy)
 - **M6** ✅ - Self-Judgement (5 validation strategies)
-- **Sandboxed Evolution** ✅ - Isolated workspace, verification gates
+- **Staged Evolution** ✅ - Isolated workspace, verification gates
 - **Local Control Plane** ✅ - Cross-process submit/query
 - **Layered Memory Model** ✅ - Three-layer memory system
 

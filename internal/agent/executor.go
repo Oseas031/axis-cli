@@ -39,6 +39,8 @@ type AgentExecutionResult struct {
 	JudgementResult  *judgement.JudgementResult
 	AutonomyDelta    AutonomyDelta
 	Error            string
+	AgentID          string // v1: always "default". TODO: populate from Agent identity registry (Gap G).
+	QualitySignal    string // v1: unused. TODO: populate from execution feedback loop (Gap H).
 }
 
 // AutonomyDelta represents a change in autonomy level.

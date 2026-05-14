@@ -57,7 +57,7 @@ Before implementation:
 
 Changes that modify Axis's system structure should be treated as evolution work, not ordinary edits.
 
-Use the [Sandboxed Evolution Protocol](../specs/sandboxed-evolution/) for high-impact changes to:
+Use the [Staged Evolution Protocol](../specs/sandboxed-evolution/) for high-impact changes to:
 
 - specs that redefine execution or permission semantics
 - contracts that affect task admission or validation

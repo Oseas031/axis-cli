@@ -55,32 +55,46 @@ func (r *JudgementResult) recalculate() {
 		return
 	}
 
-	// Calculate score as average of passed items
-	passedCount := 0
+	// Score = average of ALL items (not just passed ones)
 	totalScore := 0.0
+	allPassed := true
+	for _, j := range r.Judgements {
+		totalScore += j.Score
+		if !j.Passed {
+			allPassed = false
+		}
+	}
+	r.Score = totalScore / float64(len(r.Judgements))
+
+	// Confidence = proportion of items that passed
+	passedCount := 0
 	for _, j := range r.Judgements {
 		if j.Passed {
 			passedCount++
-			totalScore += j.Score
 		}
 	}
-
-	if passedCount > 0 {
-		r.Score = totalScore / float64(passedCount)
-	} else {
-		r.Score = 0
-	}
-
-	// Calculate confidence based on agreement between strategies
 	r.Confidence = float64(passedCount) / float64(len(r.Judgements))
 
-	// Passed if score meets threshold
-	r.Passed = r.Score >= DefaultJudgementThresholds.PassingScore
+	// Passed requires ALL criteria to pass (strict mode)
+	r.Passed = allPassed
 }
 
 // AddSuggestedFix adds a suggested fix to the result.
 func (r *JudgementResult) AddSuggestedFix(fix string) {
 	r.SuggestedFixes = append(r.SuggestedFixes, fix)
+}
+
+// Summary returns a brief text summary of the judgement result.
+func (r *JudgementResult) Summary() string {
+	if r.Passed {
+		return "all criteria passed"
+	}
+	for _, j := range r.Judgements {
+		if !j.Passed {
+			return j.CriteriaName + ": " + j.Details
+		}
+	}
+	return "judgement failed"
 }
 
 // SetMetadata sets a metadata value.

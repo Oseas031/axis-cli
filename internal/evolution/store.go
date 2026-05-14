@@ -1,4 +1,4 @@
-// Package evolution provides data models and storage for the Sandboxed Evolution Protocol.
+// Package evolution provides data models and storage for the Staged Evolution Protocol.
 package evolution
 
 import (

@@ -16,6 +16,7 @@ import (
 type fakeRuntime struct {
 	submitted []*types.AgentTask
 	statuses  map[string]types.TaskStatus
+	results   map[string]*types.TaskResult
 }
 
 func (f *fakeRuntime) SubmitTask(task *types.AgentTask) error {
@@ -29,6 +30,13 @@ func (f *fakeRuntime) GetTaskStatus(taskID string) (types.TaskStatus, error) {
 		return "", errors.New("task not found")
 	}
 	return status, nil
+}
+
+func (f *fakeRuntime) GetTaskResult(taskID string) (*types.TaskResult, error) {
+	if f.results == nil {
+		return nil, nil
+	}
+	return f.results[taskID], nil
 }
 
 func TestControlServerSubmitTask(t *testing.T) {
@@ -94,6 +102,31 @@ func TestControlServerStatus(t *testing.T) {
 	}
 	if resp.TaskID != "task-1" || resp.Status != types.TaskStatusCompleted {
 		t.Fatalf("unexpected status response: %#v", resp)
+	}
+}
+
+func TestControlServerStatusWithResult(t *testing.T) {
+	rt := &fakeRuntime{
+		statuses: map[string]types.TaskStatus{"task-1": types.TaskStatusCompleted},
+		results: map[string]*types.TaskResult{
+			"task-1": {TaskID: "task-1", Output: map[string]any{"summary": "done"}, Status: types.TaskStatusCompleted},
+		},
+	}
+	server := NewServer(rt, RuntimeRecord{})
+	req := httptest.NewRequest(http.MethodGet, "/v1/tasks/task-1/status", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var resp StatusResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal status response: %v", err)
+	}
+	if resp.Output["summary"] != "done" {
+		t.Fatalf("expected output with summary=done, got %#v", resp.Output)
 	}
 }
 

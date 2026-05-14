@@ -41,6 +41,8 @@ type DispatcherImpl struct {
 	autonomyResolver func(task *types.AgentTask) agent.AutonomyLevel
 	auditLog         []AuditEntry
 	auditMu          sync.RWMutex
+	auditFn          func(taskID, event, detail string)
+	followUpFn       func(tasks []*types.AgentTask)
 }
 
 // NewDispatcher creates a new dispatcher
@@ -54,9 +56,14 @@ func NewDispatcher(contractExec contractexec.ContractExecutor, humanExec humanex
 }
 
 // DefaultAutonomyResolver returns AutonomyLevelLow unless task metadata specifies otherwise.
+// Checks "agent.autonomy_level" first, then falls back to "autonomy_level".
 func DefaultAutonomyResolver(task *types.AgentTask) agent.AutonomyLevel {
 	if task.Metadata != nil {
-		if val, ok := task.Metadata["autonomy_level"]; ok {
+		val, ok := task.Metadata["agent.autonomy_level"]
+		if !ok {
+			val, ok = task.Metadata["autonomy_level"]
+		}
+		if ok {
 			switch val {
 			case "none":
 				return agent.AutonomyLevelNone
@@ -92,6 +99,22 @@ func (d *DispatcherImpl) SetAgentExecutor(e agent.AgentExecutor) {
 	d.agentExecutor = e
 }
 
+// SetAuditFunc sets an optional external audit callback.
+func (d *DispatcherImpl) SetAuditFunc(fn func(taskID, event, detail string)) {
+	d.auditFn = fn
+}
+
+// SetFollowUpHandler sets a callback for follow-up task submission.
+func (d *DispatcherImpl) SetFollowUpHandler(fn func(tasks []*types.AgentTask)) {
+	d.followUpFn = fn
+}
+
+func (d *DispatcherImpl) audit(taskID, event, detail string) {
+	if d.auditFn != nil {
+		d.auditFn(taskID, event, detail)
+	}
+}
+
 // AuditLog returns a copy of the current audit log entries.
 func (d *DispatcherImpl) AuditLog() []AuditEntry {
 	d.auditMu.RLock()
@@ -103,6 +126,14 @@ func (d *DispatcherImpl) AuditLog() []AuditEntry {
 
 // Dispatch dispatches a task to the appropriate executor
 func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
+	executorType := "contract"
+	if task.Metadata != nil {
+		if v, ok := task.Metadata[types.TaskMetadataKeyExecutor]; ok {
+			executorType = v
+		}
+	}
+	d.audit(task.TaskID, "dispatch_start", executorType)
+
 	start := time.Now()
 	timeoutCtx, cancel := context.WithTimeout(ctx, d.timeout)
 	defer cancel()
@@ -144,9 +175,11 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 			Completed: time.Now(),
 		}
 		d.recordAudit(start, task, result)
+		d.audit(task.TaskID, "dispatch_end", string(result.Status))
 		return result, timeoutErr
 	case result := <-resultChan:
 		d.recordAudit(start, task, result)
+		d.audit(task.TaskID, "dispatch_end", string(result.Status))
 		return result, nil
 	case err := <-errChan:
 		result := &types.TaskResult{
@@ -156,6 +189,7 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 			Completed: time.Now(),
 		}
 		d.recordAudit(start, task, result)
+		d.audit(task.TaskID, "dispatch_end", string(result.Status))
 		return result, err
 	}
 }
@@ -223,6 +257,8 @@ func (d *DispatcherImpl) executeTask(ctx context.Context, task *types.AgentTask)
 
 // executeAgentTask routes a task to the agent executor.
 func (d *DispatcherImpl) executeAgentTask(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
+	log.Printf("[dispatcher] scope_check task=%s: permission scopes not enforced (v1). TODO: check against autonomy level", task.TaskID)
+
 	if d.agentExecutor == nil {
 		return &types.TaskResult{
 			TaskID:    task.TaskID,
@@ -264,6 +300,12 @@ func (d *DispatcherImpl) executeAgentTask(ctx context.Context, task *types.Agent
 			Error:     agentResult.Error,
 			Completed: time.Now(),
 		}, fmt.Errorf("agent execution error: %s", agentResult.Error)
+	}
+
+	// Submit follow-up tasks if any were generated
+	if d.followUpFn != nil && len(agentResult.FollowUpTasks) > 0 {
+		d.followUpFn(agentResult.FollowUpTasks)
+		d.audit(task.TaskID, "followup_generated", fmt.Sprintf("%d tasks", len(agentResult.FollowUpTasks)))
 	}
 
 	return &types.TaskResult{

@@ -72,7 +72,7 @@
 1. **禁止 Web/TUI 框架**进入核心或 CLI（无 React、Vue、gin、echo、fiber）
 2. **禁止隐式守护进程或自动 spawn**（只允许显式 `axis start`）
 3. **禁止修改 scheduler/dispatcher/contract 语义**而不更新 Spec-RDT
-4. **禁止新增 Agent 自主权**而不经过 sandboxed-evolution protocol。Promotion 由机器可检验的验证标准门控，不由 promoter 身份门控。
+4. **禁止新增 Agent 自主权**而不经过 staged-evolution protocol。Promotion 由机器可检验的验证标准门控，不由 promoter 身份门控。
 5. **禁止 push-based context injection**（contextpack 只做 preview，opt-in，非侵入）
 6. **禁止无命名空间的 metadata key**（前缀：`context.*`、`tool.*`、`sla.*`、`evolution.*`、`intent.*`、`provider.*`、`axis.*`）
 7. **禁止输出 secrets**——永远不 log/输出 API key、bearer token、private key、credentials
@@ -129,7 +129,7 @@ Axis 是 spec-first 的。Spec 是实现契约，不是装饰性笔记。
 - 非平凡功能或结构性变更：编码前检查是否需要 Spec-RDT
 - 必需形态：`docs/specs/<feature>/requirements.md`、`design.md`、`tasks.md`
 - 结构性修改 = evolution work，不是普通编辑
-- 使用 Sandboxed Evolution Protocol 处理：permission 语义、contract 变更、workflow 变更、context 规则、autonomy surface
+- 使用 Staged Evolution Protocol 处理：permission 语义、contract 变更、workflow 变更、context 规则、autonomy surface
 - **Promotion gate 是验证质量，不是 promoter 身份**。变更在以下条件满足时被 promote：(a) 所有声明的验证标准通过，(b) `spec.promoted` event 追加到 event log，(c) spec 状态原子更新。验证标准必须是机器可检验且可复现的。
 
 ## 6. 语义边界

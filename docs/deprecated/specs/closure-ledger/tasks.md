@@ -223,7 +223,7 @@ In `boundary_test.go`:
 - Incremental aggregate cache (avoid full event scan for large logs)
 - Cross-project C/D comparison
 - C/D feeding into competence-profile updates (requires separate spec)
-- C/D as scheduler routing input (REJECTED at architecture level until evidence justifies a new sandboxed-evolution proposal)
+- C/D as scheduler routing input (REJECTED at architecture level until evidence justifies a new staged-evolution proposal)
 
 **Acceptance**: each P1 item is listed here so the next planner can pick it up without rediscovery.
 

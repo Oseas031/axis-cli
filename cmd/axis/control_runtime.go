@@ -22,7 +22,7 @@ func newLocalHTTPServer(handler http.Handler) *http.Server {
 	}
 }
 
-func runLocalRuntime(ctx context.Context, root string, out io.Writer) error {
+func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) error {
 	if err := contextpack.InitDefaultRegistry(root); err != nil {
 		return fmt.Errorf("failed to init readiness registry: %w", err)
 	}
@@ -36,7 +36,7 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer) error {
 		_ = runtimeOrch.Shutdown(context.Background())
 	}()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		return fmt.Errorf("failed to start local control server: %w", err)
 	}
@@ -59,7 +59,19 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer) error {
 		fmt.Fprintf(out, "Local Axis runtime started at %s\n", record.Address)
 	}
 
-	server := control.NewServerWithEventLog(runtimeOrch, record, control.NewTaskEventLog(root))
+	eventLog := control.NewTaskEventLog(root)
+
+	// Mark orphaned tasks from previous runtime as abandoned
+	if orphaned, err := control.MarkOrphanedTasks(eventLog); err != nil {
+		if out != nil {
+			fmt.Fprintf(out, "Warning: failed to mark orphaned tasks: %v\n", err)
+		}
+	} else if orphaned > 0 && out != nil {
+		fmt.Fprintf(out, "Marked %d orphaned task(s) as abandoned\n", orphaned)
+	}
+
+	server := control.NewServerWithEventLog(runtimeOrch, record, eventLog)
+
 	httpServer := newLocalHTTPServer(server.Handler())
 	serveErr := make(chan error, 1)
 	go func() {

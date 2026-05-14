@@ -55,7 +55,7 @@ See `docs/architecture/kernel-abstraction-model.md` for the structural expressio
 > Each task/Actor receives an isolated workspace; collaboration occurs through shared event logs and version control; isolation granularity adapts to task complexity and Agent capability.
 
 - Local control plane = the "town hall" of the Agent ecosystem, coordinating but not replacing autonomous execution
-- Sandboxed evolution = experiment in isolated space, promote to mainline only after verification
+- Staged evolution = experiment in isolated space, promote to mainline only after verification
 - Collaboration is not "shared memory" but "shared immutable history"
 
 ### 5. Contract is Structure
@@ -65,7 +65,7 @@ See `docs/architecture/kernel-abstraction-model.md` for the structural expressio
 - requirements/design/tasks under `docs/specs/` are functional contracts
 - `.axis/providers.json` is the model routing contract
 - `.axis/runtime.json` is the runtime locator contract
-- Contract changes must go through the sandboxed evolution protocol: experiment → verify → promote
+- Contract changes must go through the staged evolution protocol: experiment → verify → promote
 
 ### 6. Capability is Decision Right
 
@@ -84,7 +84,7 @@ See `docs/architecture/kernel-abstraction-model.md` for the structural expressio
 - **More Context**: The more context an Agent has, the better decisions it can make. The system's responsibility is to provide queryable, budgetable, auditable context, not to control Agent behavior.
 - **More Action**: As context increases and reliability is proven, Agents should gain a wider action radius (more tools, more permissions, fewer approvals).
 - **Zero Control**: The system does not control the Agent's "thinking process"; it only defines interface boundaries, records behavior, and enforces minimum permissions. Control is boundary, not intervention.
-- **Controllable Evolution**: Agent capabilities can evolve, but evolution must occur in sandboxes, must be verified, and humans retain the final promote/discard decision right.
+- **Controllable Evolution**: Agent capabilities can evolve, but evolution must occur in staged workspaces, must be verified, and humans retain the final promote/discard decision right.
 
 ---
 
@@ -119,7 +119,7 @@ See `docs/architecture/kernel-abstraction-model.md` for the structural expressio
 | Context | Platform-pushed or statically injected | Agent-initiated queries |
 | Action | Predefined limited operations | Composable, verifiable, self-generating |
 | Permissions | Static identity-based authorization | Competence ladder authorization |
-| Collaboration | Shared workspace or central control | Sandbox isolation + event log + version merge |
+| Collaboration | Shared workspace or central control | Staged isolation + event log + version merge |
 | Contract | Fixed rules | Verifiable, evolvable structures |
 | Decision rights | Humans default to final arbitration | Capability determines decision rights |
 | Evolution | Externally planned upgrades | Controllable bootstrapping and self-modification |

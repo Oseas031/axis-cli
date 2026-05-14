@@ -31,24 +31,37 @@ bash is all you need · Competence earns autonomy · Interface is existence
 
 ## Current Status
 
-M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Sandboxed Evolution ✅ | Local Control Plane ✅
+M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Staged Evolution ✅ | Local Control Plane ✅
 
 ### Completed Capabilities
 
 - **Task Scheduling**: FIFO + DAG parallel scheduling, dependency management, 5-worker parallel orchestrator, contract admission, SLA timeout/retry/failure_class strategy engine
 - **LLM Integration**: Anthropic / OpenAI / DeepSeek / MiniMax providers, token accounting, circuit breaker (configurable), project-local provider profile management, quality-gated model escalation, semantic layering (primary/utility routing)
-- **Tool System**: BashTool (observable execution records), FileReadTool, FileWriteTool, HTTPClientTool, tool permission scopes (enforced), multi-turn execution loop (configurable cap + graceful termination), syscall tools (compact/yield/checkpoint)
+- **Tool System**: BashTool (observable execution records), SandboxedBashTool (Docker-based process/network/filesystem isolation), FileReadTool, FileWriteTool, HTTPClientTool, tool permission scopes, multi-turn execution loop (shared `multiturn.Run` with configurable cap + graceful termination), syscall tools (compact/yield/checkpoint)
+- **Agent Executor**: LLMAgentExecutor with multi-turn tool loop, circuit breaker, pluggable TerminationFn, HistoryCompactor, EventEmitter, per-turn timeout, AgentID tracking
 - **Natural Language Scheduling**: `axis ask` compiles prompts into AgentTask, dry-run preview / explicit submit, never bypasses contracts
 - **Adaptive Context Assembly**: ContextBundle / ReadinessArtifact / ReadinessRegistry / preflight / strict gate, rule-based assembly + budget trimming, task-aware relevance scoring, preview-first without execution intrusion
 - **Execution-time Context Consumption**: ExecutionContextSummary / ExecutionContextConsumer, Agents declare `context.requested_sources`, dispatcher injects summary
 - **Local Control Plane**: `axis start` launches loopback HTTP control server, cross-process submit/query, `.axis/runtime.json` locator, append-only event log, orphaned task recovery on restart
-- **Sandboxed Evolution Protocol**: Isolated workspace + atomic steps + trace ledger + verification capture + explicit promote/discard gate, full audit trail
+- **Staged Evolution Protocol**: Isolated workspace + atomic steps + trace ledger + verification capture + explicit promote/discard gate, full audit trail
 - **Self-Judgement Engine**: SelfJudgementEngine + 5 validation strategies (Syntax/Semantic/Contract/Test/Coverage), context isolation (Context Rot prevention), two-pass escalating judge (lightweight first), generalization scoring, self-judgement contract, BootstrapOrchestrator judgement integration
 - **Bootstrap Loop**: BootstrapOrchestrator + FollowUpTaskGenerator + AutonomyTransition rule engine (configurable thresholds) + self-iteration contracts
 - **Multi-Agent Infrastructure**: Subagent context isolation (IsolationPolicy), JSONL mailbox (send/receive/mark-read), multi-candidate differential testing (CandidatePool)
-- **Progressive Autonomy**: Feature gate (progressive unlock), dispatcher autonomy resolver (metadata-driven), capability registry
-- **Dispatcher**: Audit log (in-memory), configurable timeout, Set* fail-fast guards
+- **Progressive Autonomy**: Feature gate (progressive unlock), dispatcher autonomy resolver (metadata-driven, reads `agent.autonomy_level` from task metadata), capability registry, negative feedback downgrade (planned)
+- **Dispatcher**: Audit log (in-memory + external audit callback), configurable timeout, tool filter per agent profile
+- **Security**: BashTool Permission Ladder (L0/L1/Unrestricted), SandboxedBashTool (Docker container isolation), FileWriteTool path validation hardened
+- **Guarantee Registry**: Hard/Soft level system promises, Register/Verify/List
 - **9+ structured error codes**, Agent Context Query Model, DAG visibility
+
+### Current Limitations
+
+> Honesty over aspiration. These are known architectural boundaries, not bugs.
+
+- **Single-machine only**: All state is in-memory, control plane is loopback HTTP. No distributed scheduling, no leader election, no horizontal scaling.
+- **No multi-tenant support**: Single-user, single-project design. No user isolation, no priority preemption.
+- **Docker sandbox requires Docker**: SandboxedBashTool falls back to direct execution (with warning) if Docker is unavailable. Without Docker, there is no OS-level isolation.
+- **Self-Judgement is advisory**: LLM judging LLM has unresolvable same-source bias. Only compiler/test results are authoritative verification.
+- **No production validation**: All parameters (iteration caps, circuit breaker thresholds, context budgets) are theoretical values pending real-world calibration.
 
 ## Quick Start
 
@@ -107,7 +120,7 @@ Profiles are stored in `.axis/providers.json` and do not modify shell environmen
 .\axis-dev.exe context preflight <task-id> --strict
 ```
 
-### Sandboxed Evolution
+### Staged Evolution
 
 ```powershell
 # Inspect evolution run details
@@ -139,14 +152,14 @@ Profiles are stored in `.axis/providers.json` and do not modify shell environmen
 | `axis provider add/use/status/list/remove/archive` | Manage project-local LLM provider profiles | No |
 | `axis context preview/inspect/preflight` | Context assembly preview and readiness check | No |
 | `axis judge` | Run self-judgement diagnostic | No |
-| `axis evolve inspect/promote/discard` | Sandboxed evolution inspection and decisions | No |
+| `axis evolve inspect/promote/discard` | Staged evolution inspection and decisions | No |
 | `axis skills list/show/validate/create` | Manage on-demand knowledge skills | No |
 | `axis vigil resume/list/add/start/done/show/triage` | Cross-session work tracking | No |
 | `axis gui [--port 3000]` | Launch observation dashboard (Web UI) | No |
 
 ## External Tools
 
-- **[axis-gui](tools/axis-gui/)**: Local Web GUI connecting to the Local Control Plane, providing Dashboard / Tasks / Providers / Events views (WebSocket real-time updates)
+- **[axis-gui](tools/axis-gui/)**: Local Web GUI connecting to the Local Control Plane, providing Dashboard / Tasks / Providers / Events / Chat views (WebSocket real-time updates)
 - **[axis-up](tools/axis-up/)**: Guided onboarding tool for environment detection / build / configuration / demo
 
 Both tools do not import Axis internal packages; they communicate via CLI and HTTP API.
@@ -178,28 +191,30 @@ internal/
   types/           Core data types (AgentTask, AgentContract, ErrorCode...)
   kernel/          Scheduler, orchestrator, dispatcher, feature gate, capability registry
   contract/        Contract executor (permission scopes, circuit breaker, compaction)
-  model/           LLM provider (escalation, layering) + tool system
+  model/           LLM provider (escalation, layering) + tool system + multiturn loop
   agent/           Agent executor + self-judgement engine + candidates + relevance scoring
   intent/          Natural language intent parsing
   contextpack/     Adaptive context assembly
   control/         Local control plane (server/client/locator/events)
-  evolution/       Sandboxed evolution protocol
+  evolution/       Staged evolution protocol
   comm/            Multi-agent communication (JSONL mailbox)
   skills/          On-demand knowledge skills (loader + metadata)
   memory/          Memory subsystems (horizon/immediate/immunity/kv/longterm/working)
+  guarantee/       System guarantee registry (Hard/Soft promises)
   human/           Human executor
   vigil/           Cross-session work tracking
 docs/              Documentation index, architecture reference, specs, status
 tools/
-  axis-gui/        Local Web GUI
+  axis-gui/        Local Web GUI (Observatory)
   axis-up/         Guided onboarding tool
 ```
 
 ## Next Steps
 
+- **Autonomy negative feedback**: Auto-downgrade on consecutive failures, permission scope enforcement
+- **Runaway detection**: Semantic progress tracking (repeated tool output → abort)
+- **Real-world validation**: Run 10+ coding tasks end-to-end, calibrate all theoretical parameters
 - **Cross-process state persistence**: ReadinessRegistry integration with Local Control Plane
-- **Agent identity and competence profiles**: Agent registry + behavioral scoring
 - **Structured event log queries**: `axis audit` or equivalent capability
 - **Dynamic model routing**: Cost/latency-aware provider selection + degradation chain
-- **Execution feedback loop**: Result quality scoring fed back to intent/context assembly
 

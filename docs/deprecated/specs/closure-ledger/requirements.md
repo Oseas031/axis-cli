@@ -90,7 +90,7 @@ The view MUST be rebuildable from `tasks.jsonl` alone. No authoritative state.
 
 ### FR6: No scheduler/dispatcher influence
 
-`internal/kernel/` and `internal/contract/` MUST NOT read from the Closure Ledger. The dispatcher MUST NOT consult C/D when selecting providers. Adding any such read-path requires a new Spec-RDT under `sandboxed-evolution` protocol.
+`internal/kernel/` and `internal/contract/` MUST NOT read from the Closure Ledger. The dispatcher MUST NOT consult C/D when selecting providers. Adding any such read-path requires a new Spec-RDT under `staged-evolution` protocol.
 
 ### FR7: No auto-promotion of metrics to typed fields
 

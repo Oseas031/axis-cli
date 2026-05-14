@@ -1,4 +1,4 @@
-# Sandboxed Evolution Protocol Tasks
+# Staged Evolution Protocol Tasks
 
 ## Related Documents
 
@@ -12,7 +12,7 @@
 
 | Task | Status |
 |---|---|
-| T1: Create Sandboxed Evolution spec boundary | Completed |
+| T1: Create Staged Evolution spec boundary | Completed |
 | T2: Define evolution data models | Completed |
 | T3: Implement project-local evolution store | Completed |
 | T4: Implement isolated workspace creation | Completed |
@@ -25,7 +25,7 @@
 
 ---
 
-## T1: Create Sandboxed Evolution spec boundary
+## T1: Create Staged Evolution spec boundary
 
 **Goal**: Define the engineering safety envelope for Axis self-evolution.
 
@@ -248,7 +248,7 @@
 
 ## T10: Document operational workflow
 
-**Goal**: Document how humans and agents should use sandboxed evolution.
+**Goal**: Document how humans and agents should use staged evolution.
 
 **Files**:
 

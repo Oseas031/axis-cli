@@ -133,7 +133,7 @@ If `axis-dev.exe` is missing, `axis-up start` will explain why it needs to be bu
 go build -o axis-dev.exe ./cmd/axis
 ```
 
-> Note: Axis has completed all milestones M1-M6, including real LLM integration, sandboxed evolution, self-judgement, and more. This guide focuses on the first-time experience.
+> Note: Axis has completed all milestones M1-M6, including real LLM integration, staged evolution, self-judgement, and more. This guide focuses on the first-time experience.
 
 Using `axis-dev.exe` on Windows avoids overwriting an existing `axis.exe` in the project root.
 

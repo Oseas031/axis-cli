@@ -29,7 +29,7 @@ bash is all you need · Competence earns autonomy · Interface is existence
 
 ## 当前状态
 
-M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Sandboxed Evolution ✅ | Local Control Plane ✅
+M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Staged Evolution ✅ | Local Control Plane ✅
 
 ### 已完成能力
 

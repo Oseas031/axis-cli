@@ -92,7 +92,7 @@ Harness = Tools + Knowledge + Observation + Action Interfaces + Permissions
 | EventBus | ✅ .axis/events/tasks.jsonl |
 | TodoWrite | 🟡 部分实现 |
 | Context Compact | 🟡 部分实现 |
-| Worktree Isolation | 🟡 与 Sandboxed Evolution 结合 |
+| Worktree Isolation | 🟡 与 Staged Evolution 结合 |
 | Subagent | 🔴 待设计 |
 | Background Tasks | 🔴 待设计 |
 | Agent Teams | 🔴 P2 |
@@ -113,7 +113,7 @@ Harness = Tools + Knowledge + Observation + Action Interfaces + Permissions
 
 - Python → Go 实现映射
 - 与 Contract + Permission ladder 集成
-- 与 Sandboxed Evolution Protocol 对齐
+- 与 Staged Evolution Protocol 对齐
 
 ### 剔除
 

@@ -72,7 +72,7 @@ func TestGetTaskStatusUsesLocalRuntime(t *testing.T) {
 	defer cancel()
 	done := make(chan error, 1)
 	go func() {
-		done <- runLocalRuntime(ctx, rootDir, nil)
+		done <- runLocalRuntime(ctx, rootDir, nil, 0)
 	}()
 	locator := control.NewRuntimeLocator(rootDir)
 	for i := 0; i < 50; i++ {
@@ -135,7 +135,7 @@ func TestRunLocalRuntimeWritesLocatorAndServesHealth(t *testing.T) {
 	done := make(chan error, 1)
 
 	go func() {
-		done <- runLocalRuntime(ctx, root, io.Discard)
+		done <- runLocalRuntime(ctx, root, io.Discard, 0)
 	}()
 
 	locator := control.NewRuntimeLocator(root)
@@ -189,7 +189,7 @@ func TestRunLocalRuntimeWritesTaskEvents(t *testing.T) {
 	defer cancel()
 	done := make(chan error, 1)
 	go func() {
-		done <- runLocalRuntime(ctx, root, io.Discard)
+		done <- runLocalRuntime(ctx, root, io.Discard, 0)
 	}()
 	locator := control.NewRuntimeLocator(root)
 	for i := 0; i < 50; i++ {

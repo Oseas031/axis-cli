@@ -1,4 +1,4 @@
-﻿# Sandboxed Evolution Protocol Requirements
+﻿# Staged Evolution Protocol Requirements
 
 > 实现 agent-native-first-principles.md P4 + §11（演化原则）
 

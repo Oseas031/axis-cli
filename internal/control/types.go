@@ -14,6 +14,8 @@ type SubmitTaskResponse struct {
 type StatusResponse struct {
 	TaskID string           `json:"task_id"`
 	Status types.TaskStatus `json:"status"`
+	Output map[string]any   `json:"output,omitempty"`
+	Error  string           `json:"error,omitempty"`
 }
 
 type ErrorResponse struct {

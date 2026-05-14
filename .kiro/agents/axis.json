@@ -2,6 +2,7 @@
   "name": "axis",
   "description": "Axis project agent — CLAUDE.md is the constitutional authority",
   "resources": [
-    "file://CLAUDE.md"
+    "file://CLAUDE.md",
+    "file://.axis/skills/mind-magnifier/SKILL.md"
   ]
 }

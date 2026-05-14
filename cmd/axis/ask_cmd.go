@@ -51,6 +51,13 @@ func newAskCommand() *cobra.Command {
 				return fmt.Errorf("--submit and --dry-run cannot both be set")
 			}
 			if submit {
+				// Natural language tasks default to LLM Agent execution
+				if result.Task.Metadata == nil {
+					result.Task.Metadata = make(map[string]string)
+				}
+				if result.Task.Metadata[types.TaskMetadataKeyExecutor] == "" {
+					result.Task.Metadata[types.TaskMetadataKeyExecutor] = types.ExecutorTypeAgent
+				}
 				if withContext {
 					bundle, err := assembleContextForTask(result.Task)
 					if err != nil {

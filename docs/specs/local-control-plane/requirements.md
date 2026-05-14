@@ -149,7 +149,7 @@ It must not diverge semantically from CLI task submission.
 - No provider credential management changes.
 - No contract semantic changes.
 - No prompt injection or provider request mutation.
-- No sandboxed evolution promotion logic.
+- No staged evolution promotion logic.
 
 ## P0 Decisions
 

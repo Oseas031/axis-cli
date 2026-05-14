@@ -26,7 +26,7 @@ Three confirmed issues fixed; one issue discovered to be already handled by lowe
 - No new feature scope introduced.
 - No metadata key changes.
 - No permission or autonomy boundary changes.
-- No sandboxed evolution workspace needed.
+- No staged evolution workspace needed.
 
 All changes are pure normalization: fixing error propagation, adding defensive timeouts, and aligning shell output with existing Cobra contracts. User-visible output content is preserved exactly.
 

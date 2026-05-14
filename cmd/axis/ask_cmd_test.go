@@ -70,7 +70,7 @@ func TestAskCommand_SubmitUsesLocalRuntime(t *testing.T) {
 	defer cancel()
 	done := make(chan error, 1)
 	go func() {
-		done <- runLocalRuntime(ctx, rootDir, nil)
+		done <- runLocalRuntime(ctx, rootDir, nil, 0)
 	}()
 	locator := control.NewRuntimeLocator(rootDir)
 	for i := 0; i < 50; i++ {
@@ -144,6 +144,9 @@ func TestAskCommand_WithContextPreview(t *testing.T) {
 }
 
 func TestAskCommand_WithContextSubmitAttachesReadinessMetadata(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	resetCLIState()
 	rootDir := t.TempDir()
 	var submitted control.SubmitTaskRequest

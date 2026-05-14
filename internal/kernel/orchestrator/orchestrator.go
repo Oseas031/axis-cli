@@ -16,11 +16,9 @@ import (
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
 	"github.com/axis-cli/axis/internal/kernel/scheduler"
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
-	"github.com/axis-cli/axis/internal/memory/horizon"
 	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/model/tool"
 	"github.com/axis-cli/axis/internal/project"
-	"github.com/axis-cli/axis/internal/skills"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -100,16 +98,10 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	}
 
 	// Use default tool registry if none was provided via option
-	if orch.toolRegistry == nil {
-		orch.toolRegistry = defaultToolRegistry()
-	}
-
-	// Wire skills loader for Layer 1 prompt injection
 	root := project.MustResolveRoot()
-	skillsPromptLoader := skills.NewLoader(project.SkillsDir(root))
-
-	// Wire principles loader for Layer 1 prompt injection (derived from dream)
-	principlesStore := horizon.NewStore(project.MemoryDir(root))
+	if orch.toolRegistry == nil {
+		orch.toolRegistry = BuildToolRegistry(root, nil)
+	}
 
 	// Resolve model provider
 	resolvedProvider := provider.ModelProvider(provider.NewMockModelProvider())
@@ -117,16 +109,10 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 		resolvedProvider = orch.modelProvider
 	}
 
-	contractExec := contractexec.NewContractExecutorWithConfig(contractexec.ExecutorConfig{
+	contractExec := BuildContractExecutor(ContractExecutorDeps{
 		Provider:     resolvedProvider,
 		ToolRegistry: orch.toolRegistry,
-		SkillsLoader: skillsPromptLoader,
-		PrinciplesLoader: principlesStore,
-		CompactionPipeline: &contractexec.ThreeLayerCompaction{
-			Micro:  &contractexec.ToolResultCompaction{KeepRecent: 3},
-			Auto:   &contractexec.SummarizationCompaction{Provider: nil, KeepRecent: 4},
-			Budget: 32000,
-		},
+		Root:         root,
 	})
 	orch.contractExecutor = contractExec
 	orch.dispatcher = dispatcher.NewDispatcher(contractExec, humanExec)
@@ -140,6 +126,13 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 			llmExec.SetToolRegistry(orch.toolRegistry)
 		}
 	}
+
+	// Wire follow-up task handler: when agent generates follow-ups, submit them
+	orch.dispatcher.SetFollowUpHandler(func(tasks []*types.AgentTask) {
+		for _, t := range tasks {
+			_ = orch.SubmitTask(t)
+		}
+	})
 
 	return orch
 }

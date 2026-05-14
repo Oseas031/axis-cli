@@ -64,7 +64,7 @@ Agent Harness（包围模型的系统层：prompts + tools + memory + orchestrat
 
 | Axis 概念 | 论文无对应 | 原因 |
 |-----------|-----------|------|
-| Sandboxed Evolution | 无 | 论文是静态框架，不建模自我修改 |
+| Staged Evolution | 无 | 论文是静态框架，不建模自我修改 |
 | Autonomy Transition | 无 | 论文不讨论渐进信任 |
 | 辩证方法论（SRS Loop） | 无 | 论文用数学形式化，不用哲学方法 |
 | "绝不僭越"原则 | 无 | 论文的 harness 主动做决策（escalation） |

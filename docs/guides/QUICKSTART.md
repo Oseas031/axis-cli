@@ -23,7 +23,7 @@ bash is all you need · Competence earns autonomy · Interface is existence
 - **Natural Language Scheduling**: `axis ask` compiles prompts into AgentTask, dry-run preview / explicit submit
 - **Adaptive Context Assembly**: ContextBundle / ReadinessArtifact / preflight / strict gate
 - **Local Control Plane**: `axis start` launches loopback control server, cross-process submit/query
-- **Sandboxed Evolution Protocol**: Isolated workspace + atomic steps + explicit promote/discard gate
+- **Staged Evolution Protocol**: Isolated workspace + atomic steps + explicit promote/discard gate
 - **Self-Judgement Engine**: 5 validation strategies + BootstrapOrchestrator judgement integration
 - **Bootstrap Loop**: BootstrapOrchestrator + FollowUpTaskGenerator + AutonomyTransition
 

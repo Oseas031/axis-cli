@@ -85,7 +85,7 @@ M1 基础调度 → M2 并行调度 → M3 执行生态 → M4 真实 LLM → M5
 - AutonomyTransition（5 级自主层级）
 - RuleEngine（基于 competence evidence 的规则引擎）
 
-**Sandboxed Evolution Protocol**
+**Staged Evolution Protocol**
 - 隔离工作空间（`.axis/evolution/<run-id>/`）
 - 原子进化步骤 + append-only 追踪账本
 - 显式验证 / 晋升 / 丢弃门控

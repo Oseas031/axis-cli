@@ -9,7 +9,7 @@
 
 ## A0 Posture（本轮对象化边界）
 
-**目标**：产出 axis 本阶段（M1-M6 + Sandboxed Evolution + Local Control Plane 已交付）的下一个**最小可对象化单元**，要求：
+**目标**：产出 axis 本阶段（M1-M6 + Staged Evolution + Local Control Plane 已交付）的下一个**最小可对象化单元**，要求：
 
 - 打中 axis 当前主要矛盾（非 evolver 的主要矛盾）
 - 映射到 `docs/architecture/agent-native-first-principles.md` 的某条具体原则
@@ -389,7 +389,7 @@ func DeriveAntiPatternFromRun(
 | `src/adapters/{cursor,kiro,claude-code,codex,opencode}.js` hook 寄生模型 | axis 的哲学是"Agent 主动调 CLI"，不是反向钻进宿主 IDE 装 hook；方向相反 | Interface is Existence |
 | hook 事件流（promptSubmit / afterFileEdit / agentStop 被动触发） | 被动触发与 axis 的主动调用原则冲突 | Interface is Existence |
 | "Gene > Skill 文档"的论文强论断 | axis 对"知识表征方式"不立场，skill 与 Gene 是不同层 | 定位守护 |
-| `shield.js` 硬禁自改源码 + `EVOLVE_ALLOW_SELF_MODIFY=false` | axis 已有 sandboxed evolution + promote/discard 更优方案 | Controllable Evolution |
+| `shield.js` 硬禁自改源码 + `EVOLVE_ALLOW_SELF_MODIFY=false` | axis 已有 staged evolution + promote/discard 更优方案 | Controllable Evolution |
 | javascript-obfuscator 混淆核心模块（selector.js 135KB / solidify.js 418KB / a2aProtocol.js 389KB / prompt.js 256KB） | 代码组织反面教材；axis 用 Go 小模块 + 纯标准库 + 完全 GPL | module-and-naming-conventions |
 | "Harness as product" / 1.80+ 源码可见（非开源）定位 | 采纳即 axis 退化为闭源商品 | 定位守护 |
 | 进化圈（协作进化小组 + 上下文共享） | 依赖 Hub 生态 | 范畴外 |

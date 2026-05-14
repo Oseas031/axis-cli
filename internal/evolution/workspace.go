@@ -1,4 +1,4 @@
-// Package evolution provides data models and storage for the Sandboxed Evolution Protocol.
+// Package evolution provides data models and storage for the Staged Evolution Protocol.
 package evolution
 
 import (
@@ -36,7 +36,7 @@ func (w *Workspace) Path(rel string) string {
 // It preserves the relative directory structure.
 //
 // DESIGN NOTE: This is an internal API; path validation is the caller's
-// responsibility. The Sandboxed Evolution Protocol assumes the caller
+// responsibility. The Staged Evolution Protocol assumes the caller
 // (e.g. BootstrapOrchestrator) only copies from the legitimate project tree.
 func (w *Workspace) CopyFrom(srcPath string, relPath string) error {
 	dstPath := w.Path(relPath)

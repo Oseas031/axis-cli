@@ -28,7 +28,7 @@ Five confirmed issues fixed; all changes are defensive and non-invasive.
 - No new feature scope introduced.
 - No metadata key additions or schema changes.
 - No permission or autonomy boundary changes.
-- No sandboxed evolution workspace needed.
+- No staged evolution workspace needed.
 
 All changes are pure defensive hardening: URL escaping, bounds validation, timeout defaults, address enforcement, and request body cleanup. No user-visible behavior changes.
 

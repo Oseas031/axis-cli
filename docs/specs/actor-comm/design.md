@@ -90,6 +90,15 @@ Storage: `.axis/comm/<actor-id>.jsonl` (P0 local file, P2 network queue).
 
 ### Router
 
+> **transitional**: Router is a centralized message bus that all inter-actor communication must pass through. This is a P0 simplification, not a permanent architectural commitment.
+>
+> **Exit condition**: Router degrades from "required layer" to "convenience helper" when:
+> 1. Actors can deliver messages via direct mailbox writes with equivalent observability (CommEvent logged regardless of path)
+> 2. Agent-initiated direct-send success rate ≥ 95% over 2 consecutive weeks
+> 3. No communication is lost or unaudited when bypassing Router
+>
+> Until exit conditions are met, Router remains the single routing authority.
+
 Routes messages between Actors. Handles offline delivery (queue until Actor comes online).
 
 ```go

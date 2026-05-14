@@ -42,7 +42,7 @@ Axis 的回应：不是把 Agent 锁死，而是**Agent 必须通过验证才能
 
 | 约束 | 不实现原因 | Axis 的替代方案 |
 |------|------------|-----------------|
-| 禁止自修改 | 直接违背 Sandboxed Evolution | 可以自修改，但必须在沙箱里，通过验证才能 promote |
+| 禁止自修改 | 直接违背 Staged Evolution | 可以自修改，但必须在沙箱里，通过验证才能 promote |
 | 每步强制 JSON | 过于僵硬 | Contract 已可约束输出格式，不需要 FSM 级别强制 |
 | 绝对禁止管道符/重定向 | 违背 "bash is all you need" | 通过 Permission Ladder 渐进开放，而非永久禁止 |
 
@@ -114,7 +114,7 @@ Agent 升级必须同时满足：
 | Axis Feature | Level 0（当前） | Level 1 | Level 2（目标） |
 |---|---|---|---|
 | BashTool | 白名单命令 | 白名单 + 受限管道 | 完全 bash 能力 |
-| Sandboxed Evolution | 只能修改指定文件 | 可修改沙箱内任意文件 | 可提议架构变更 |
+| Staged Evolution | 只能修改指定文件 | 可修改沙箱内任意文件 | 可提议架构变更 |
 | Tool 权限 | 只读 + 执行 | 读写（需 Contract 授权） | 完全工具访问 |
 | 任务生成 | 只能生成子任务 | 可生成同级任务 | 可生成 follow-up 链 |
 | Contract 自定义 | 只能使用预定义 Contract | 可提议 Contract 修改 | 可创建新 Contract |
@@ -141,7 +141,7 @@ Level N → Level N+1 需要：
 | Bash is all you need | 原子命令白名单 | Permission Ladder 渐进开放至完全 bash |
 | Competence earns autonomy | 三权分立 | 单 Agent 通过验证后获得全部权限 |
 | Contract is Structure | 每步强制 JSON | Contract 定义输出约束，非全局强制 |
-| Controllable Evolution | 禁止自修改 | Sandboxed Evolution 允许自修改但需验证 |
+| Controllable Evolution | 禁止自修改 | Staged Evolution 允许自修改但需验证 |
 
 ---
 

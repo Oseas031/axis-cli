@@ -30,7 +30,7 @@ This yields five irreducible axioms:
 | Layer | Definition | Mapping to Axis Current Status |
 |-------|-----------|-------------------------------|
 | **General Foundation** | Single-point or small-scale, intent directly to execution, no cluster governance needed | ✅ Completed: NL scheduling, local control plane, context assembly, real LLM integration |
-| **Advanced Complex** | Multi-Agent collaboration, requires cluster governance, semantic routing, contract admission | ✅ Completed: DAG parallel scheduling, contract admission, SLA strategy engine, sandboxed evolution, self-judgement |
+| **Advanced Complex** | Multi-Agent collaboration, requires cluster governance, semantic routing, contract admission | ✅ Completed: DAG parallel scheduling, contract admission, SLA strategy engine, staged evolution, self-judgement |
 | **Future Vision** | Agents have organizational properties, human-machine boundaries dissolve, self-evolution | Planned: Agent identity and capability profiles, dynamic model routing, organizational Agents |
 
 ---
@@ -91,13 +91,13 @@ This yields five irreducible axioms:
 - **Core pain point**: Organizational knowledge sinks in static documents (PDF/Confluence/email), not in executable entities; human-machine collaboration boundaries are defined by "who uses tools," not "who has intent"
 - **Core value**: Agents in office scenarios **are not tools but digital colleagues with role cognition**. They have job descriptions, performance context, and shift handover mechanisms. Humans upgrade from "operating tools" to "managing digital colleagues"; organizations evolve from "headcount" to "capability count."
 
-*Axis native mapping*: Sandboxed Evolution Protocol provides complete lifecycle management for "digital colleague capability growth": isolated experiment → verify → promote → discard.
+*Axis native mapping*: Staged Evolution Protocol provides complete lifecycle management for "digital colleague capability growth": isolated experiment → verify → promote → discard.
 
 ### 5.2 Digital Workforce Cluster
 
 - **Target roles**: Future HR platforms, AI labor markets, enterprise CIO/CHRO
 - **Core pain point**: The "AI replaces humans" narrative creates adversarial anxiety; the root cause is lacking a management paradigm for "AI as workforce"; existing management frameworks are designed entirely around human employees
-- **Core value**: Agents have **resumes (capability profiles), performance records (historical execution traces), career paths (capability differentiation trees), succession mechanisms (knowledge distillation)**. Axis provides not just scheduling, but a **native operating system for digital workforce**—from recruitment (instantiation), training (sandboxed evolution), onboarding (contract admission), collaboration (context sharing), to retirement (archive succession).
+- **Core value**: Agents have **resumes (capability profiles), performance records (historical execution traces), career paths (capability differentiation trees), succession mechanisms (knowledge distillation)**. Axis provides not just scheduling, but a **native operating system for digital workforce**—from recruitment (instantiation), training (staged evolution), onboarding (contract admission), collaboration (context sharing), to retirement (archive succession).
 
 *Axis native mapping*: This is Axis's long-term ultimate form. Current P0's ReadinessRegistry is the prototype of digital employee "on-duty status"; Preflight is "attendance check"; Execution Context Summary is "work handover document."
 
@@ -121,7 +121,7 @@ This yields five irreducible axioms:
 
 | Stage | Scenario Support | Key Capabilities | Current Status |
 |-------|-----------------|-----------------|---------------|
-| **M1–M6** | Individual developers, AI startups, enterprise back-office | NL scheduling, local control plane, context assembly, DAG parallel, contract admission, SLA, real LLM, sandboxed evolution, self-judgement, bootstrap loop | ✅ Completed |
+| **M1–M6** | Individual developers, AI startups, enterprise back-office | NL scheduling, local control plane, context assembly, DAG parallel, contract admission, SLA, real LLM, staged evolution, self-judgement, bootstrap loop | ✅ Completed |
 | **Next Stage** | Multi-Agent clusters, industry verticals, Agent-Native Office | Agent identity & capability profiles, dynamic model routing, structured event log queries, execution feedback loop | Planned |
 
 ---
