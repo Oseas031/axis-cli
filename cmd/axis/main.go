@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/axis-cli/axis/internal/agent"
 	"github.com/axis-cli/axis/internal/contextpack"
 	"github.com/axis-cli/axis/internal/control"
 	"github.com/axis-cli/axis/internal/kernel/orchestrator"
@@ -108,7 +109,7 @@ func NewRootCommand(app *App) *cobra.Command {
 	}
 	shellCmd.Flags().Bool("no-prompt", false, "Suppress interactive shell prompt for pipe/automation drivers")
 
-	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand())
+	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand())
 
 	rootCmd.PersistentFlags().StringVar(&app.providerName, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
 	rootCmd.PersistentFlags().StringVar(&app.modelName, "model", "", "Model name for real providers")
@@ -205,7 +206,19 @@ func (app *App) initOrchestrator() {
 			fmt.Fprintf(os.Stderr, "Warning: failed to create provider %q: %v, using mock\n", providerName, err)
 			p = provider.NewMockModelProvider()
 		}
-		app.orch = orchestrator.NewOrchestrator(orchestrator.WithModelProvider(p))
+
+		// Create LLM Agent Executor with the resolved provider
+		agentExec := agent.NewLLMAgentExecutor(p, nil,
+			agent.WithAgentID("axis-coding-agent"),
+			agent.WithSystemPrompt("You are Axis Coding Agent. Execute tasks by using available tools. When done, respond with your final output without tool calls."),
+			agent.WithMaxIterations(20),
+			agent.WithMaxErrors(5),
+		)
+
+		app.orch = orchestrator.NewOrchestrator(
+			orchestrator.WithModelProvider(p),
+			orchestrator.WithAgentExecutor(agentExec),
+		)
 		if err := app.orch.RegisterContract(defaultContract()); err != nil {
 			fmt.Fprintf(os.Stderr, "Error registering default contract: %v\n", err)
 		}

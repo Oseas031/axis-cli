@@ -69,6 +69,7 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
     - 本次产出暴露了哪个 L1/L2 层面的结构性盲区？
 
     触发条件同 rule #10（双重确认）：Agent 觉得重大就提议自审，用户觉得重大就指示自审。自审结论走 §13.5 反馈闭环写回。
+13. **工作追踪用 vigil**。新会话开始时执行 `axis vigil resume` 作为工作起点。commit message 中用 `vigil:<id>` 标记关联的工作项。工作结束时无需手动标记完成——git hook 自动处理。
 
 ### 参考文档
 
@@ -130,6 +131,7 @@ Read the neighboring `BOUNDARY.md` before editing files in these directories:
 | `internal/agent/` | Never bypass contract layer; never inject context metadata into provider input |
 | `internal/memory/` | Never push into provider prompts; never physical-delete; no external deps; no background tasks; LF-only line terminators |
 | `internal/skills/` | Never push skill content into provider prompts automatically; never modify scheduler/contract semantics; no network access; no background work |
+| `internal/vigil/` | Never block git operations; never force execution order; never hide items from Agent |
 
 ## 5. Spec-First Protocol
 
@@ -350,3 +352,9 @@ staticcheck ./... && gosec ./...       # static analysis + security
 **校准机制**：每次前端功能性变更时必须回答——①超出 Observatory 定位？②产生 GUI-only 路径？③需要调整边界？任一答"是"则暂停，回退 Phase I。
 
 演化：Observatory → Live Observatory（本体支持 streaming 后）→ 废弃（Agent 自主后）。
+
+## 15. External Tools Reference
+
+| Tool | Path | When to use |
+|------|------|-------------|
+| MindMagnifier (amp) | `C:\Users\ASUS\Desktop\MindMagnifier\amp.exe` | Research/papers/AI news queries. See `.axis/skills/mind-magnifier/SKILL.md` for full usage. |

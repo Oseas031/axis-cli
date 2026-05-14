@@ -1,0 +1,26 @@
+#!/bin/bash
+# Axis Vigil: auto-complete work items referenced in commit messages.
+# Install: add `source scripts/post-commit-vigil` to .git/hooks/post-commit
+# Or: cp scripts/post-commit-vigil .git/hooks/post-commit && chmod +x .git/hooks/post-commit
+#
+# Commit message format: include "vigil:<id>" anywhere in the message.
+# Example: "fix(cli): unify root resolution vigil:vigil-a3f"
+# Multiple IDs supported: "vigil:vigil-a3f vigil:vigil-b7c"
+
+msg=$(git log -1 --format=%B 2>/dev/null)
+if [ -z "$msg" ]; then
+    exit 0
+fi
+
+# Extract all vigil:<id> references
+ids=$(echo "$msg" | grep -oE 'vigil:[a-z0-9-]+' | sed 's/vigil://')
+if [ -z "$ids" ]; then
+    exit 0
+fi
+
+commit=$(git rev-parse HEAD 2>/dev/null)
+
+for id in $ids; do
+    # Best-effort: never block commit
+    axis vigil done "$id" --commit "$commit" 2>/dev/null || true
+done
