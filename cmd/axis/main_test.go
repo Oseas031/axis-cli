@@ -259,7 +259,7 @@ func TestSubmitTask_Direct(t *testing.T) {
 	resetCLIState()
 	initOrchestrator()
 
-	err := submitTask("direct-task")
+	err := submitTask("direct-task", "", "")
 	if err != nil {
 		t.Fatalf("submitTask should succeed: %v", err)
 	}

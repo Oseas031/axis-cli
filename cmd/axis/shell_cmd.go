@@ -81,7 +81,7 @@ func runShell(cmd *cobra.Command, args []string) error {
 				fmt.Fprintln(out, "Usage: run <task-id>")
 				continue
 			}
-			if err := submitTask(commandArgs[0]); err != nil {
+			if err := submitTask(commandArgs[0], "", ""); err != nil {
 				fmt.Fprintf(out, "Could not submit task %s: %v\n", commandArgs[0], err)
 				continue
 			}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -84,6 +85,8 @@ func NewRootCommand(app *App) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runTask,
 	}
+	runCmd.Flags().String("prompt", "", "Natural language task input")
+	runCmd.Flags().String("input", "", "JSON task input (e.g. '{\"message\": \"hello\"}')")
 
 	statusCmd := &cobra.Command{
 		Use:   "status [task-id]",
@@ -116,6 +119,9 @@ func NewRootCommand(app *App) *cobra.Command {
 func runTask(cmd *cobra.Command, args []string) error {
 	initOrchestrator()
 
+	prompt, _ := cmd.Flags().GetString("prompt")
+	inputJSON, _ := cmd.Flags().GetString("input")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -124,7 +130,7 @@ func runTask(cmd *cobra.Command, args []string) error {
 	}
 	defer func() { _ = orch.Shutdown(context.Background()) }()
 
-	if err := submitTask(args[0]); err != nil {
+	if err := submitTask(args[0], prompt, inputJSON); err != nil {
 		return fmt.Errorf("failed to submit task: %w", err)
 	}
 
@@ -253,11 +259,23 @@ func defaultModelForProvider(providerName string) string {
 	}
 }
 
-func submitTask(taskID string) error {
+func submitTask(taskID, prompt, inputJSON string) error {
+	var input map[string]any
+	switch {
+	case inputJSON != "":
+		if err := json.Unmarshal([]byte(inputJSON), &input); err != nil {
+			return fmt.Errorf("invalid --input JSON: %w", err)
+		}
+	case prompt != "":
+		input = map[string]any{"message": prompt}
+	default:
+		input = map[string]any{"message": taskID}
+	}
+
 	task := &types.AgentTask{
 		TaskID:     taskID,
 		ContractID: "default",
-		Input:      map[string]any{"message": "test"},
+		Input:      input,
 		Status:     types.TaskStatusPending,
 	}
 
