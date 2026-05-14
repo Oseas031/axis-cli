@@ -9,8 +9,11 @@ tags: [workflow, tracking, automation]
 ## 核心用法
 
 ```bash
-# 新会话第一步（必做）
+# 新会话第一步（必做）— 同时自动执行 triage
 axis vigil resume
+
+# 首次使用：安装 git hook（之后 commit 自动标记完成）
+axis vigil install-hook
 
 # 创建工作项
 axis vigil add "title" --priority P1 --tag arch --origin manual
@@ -23,13 +26,14 @@ axis vigil done <id> --commit <hash>
 axis vigil list [--priority P0] [--tag arch] [--status in_progress] [--json]
 axis vigil show <id>
 
-# 自动维护（标记 stale、升级优先级、归档）
+# 手动维护（resume 时已自动执行）
 axis vigil triage
 ```
 
 ## 自动化行为
 
-- **git hook 自动完成**：commit message 中写 `vigil:<id>` → hook 自动调用 done
+- **git hook 自动完成**：commit message 中写 `vigil:<id>` → hook 自动调用 done（需先 `axis vigil install-hook`）
+- **resume 自动 triage**：每次 resume 静默执行归档/stale/升级，无需手动调用 triage
 - **triage 规则**：pending >7天 → stale；被 ≥3 项依赖 → 升为 P0；completed >48h → 归档
 - **无需手动标记完成**：正常路径由 git hook 处理
 
