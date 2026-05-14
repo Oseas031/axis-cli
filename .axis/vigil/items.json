@@ -103,7 +103,7 @@
     "id": "vigil-aa60a3",
     "title": "syscall tools are empty shells",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "tech-debt"
     ],
@@ -114,7 +114,15 @@
     "depends_on": null,
     "notes": "Needs scheduler integration interface",
     "created_at": "2026-05-14T11:33:50.193684+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:32:00.4617728+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:32:00.4617728+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-2655b5",
@@ -478,7 +486,7 @@
     "id": "vigil-a2abbc",
     "title": "Unified Capability registration interface",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "refactor"
     ],
@@ -489,13 +497,21 @@
     "depends_on": null,
     "notes": "Capability interface (tool + prompt injection + config), register in one line",
     "created_at": "2026-05-14T11:34:17.7554872+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:32:00.8954798+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:32:00.8954798+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-233b3b",
     "title": "Provider semantic layering (Execute vs Utility)",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture"
     ],
@@ -506,13 +522,21 @@
     "depends_on": null,
     "notes": "Independent quotas and model selection for dialogue vs summarization/judge/embedding",
     "created_at": "2026-05-14T11:34:18.209757+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:32:01.3325873+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:32:01.3325873+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-fd6153",
     "title": "Multi-Agent collaboration (JSONL mailbox)",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture"
     ],
@@ -523,7 +547,15 @@
     "depends_on": null,
     "notes": "JSONL mailbox protocol + auto-claim + worktree integration",
     "created_at": "2026-05-14T11:34:18.642982+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:32:01.7830621+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:32:01.7830621+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-fdb806",
@@ -761,7 +793,7 @@
     "id": "vigil-e91a00",
     "title": "Runtime startup: mark orphaned running/pending tasks as abandoned",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "reliability",
       "gap-a"
@@ -773,6 +805,14 @@
     "depends_on": null,
     "notes": "On axis start, scan event log for running/pending tasks from previous PID. Append abandoned event. Prevents zombie tasks in GUI/event stream.",
     "created_at": "2026-05-14T15:18:52+08:00",
-    "history": []
+    "completed_at": "2026-05-14T15:31:59.9570441+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:31:59.9570441+08:00"
+      }
+    ]
   }
 ]
