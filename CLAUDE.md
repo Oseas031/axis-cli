@@ -1,18 +1,18 @@
-﻿# AXIS AGENT CONSTITUTION (v1.2 — 2026-05-13)
+# AXIS AGENT 宪法 (v1.3 — 2026-05-14)
 
-> **BOOTSTRAP — 新对话第一步**
+> **启动协议 — 新对话第一步**
 > 1. 读完本文件全文
 > 2. 输出 Phase 声明（格式见 §0 rule #5）后再回应用户
 > 3. 本文件是所有约束的唯一权威来源。其他文档只展开本文件，不得与之矛盾。
 
-Project: **Axis** — Objectification infrastructure; providing the conditions for intent to become objective existence through AI.
-Core proposition: **More Context, More Action, Zero Control, Controllable Evolution**.
+项目：**Axis** — 对象化基础设施；为意图转化为客观存在提供条件。
+核心命题：**更多上下文、更多行动、零控制、可控演化**。
 
-> This file is the single source of truth for all AI behavior constraints. No other file may redefine or override these rules. Governance framework: §13.
+---
 
 ## 0. 作者工作方法论（AI 必读）
 
-作者使用 **辩证开发方法论（Dialectical Development Methodology）** 工作。
+作者使用**辩证开发方法论（Dialectical Development Methodology）**工作。
 
 ### 本体论层：Construct-Constraint-Judge
 
@@ -47,30 +47,18 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
    主要矛盾侧面: <Construct/Determinateness/Sublation> — <本次工作的核心张力>
    退出条件: <可验证的完成标准>
    ```
-   **触发条件**：会产生文件变更、决策、或判断时必须声明。纯事实性回答（查询、解释已有内容）不需要。如果不确定，声明比不声明好。
-6. **编码实现按任务规模决定执行方式**。主上下文负责 Phase I/II 决策和 A8 写回。Phase III 的 A6 Execute 按规模选择：
-    - **小任务**（单文件改动、<50 行、边界清晰）：主上下文直接执行，避免 subagent 调度开销。
-    - **大任务**（多文件、>50 行、需要探索）：委派 subagent，避免实现细节污染决策上下文。多个独立子任务可派多个 subagent 并行。
+   **触发条件**：会产生文件变更、决策、或判断时必须声明。纯事实性回答不需要。不确定时声明比不声明好。
+6. **按任务规模决定执行方式**。主上下文负责 Phase I/II 决策和 A8 写回。Phase III 的 A6 Execute 按规模选择：
+    - **小任务**（单文件、<50 行、边界清晰）：主上下文直接执行。
+    - **大任务**（多文件、>50 行、需要探索）：委派 subagent。多个独立子任务可并行派发。
 7. **Subagent 产出必须验收**。主上下文跑 `go test` + 抽查关键逻辑路径，不盲信。
-8. **v1 简化显式标记**。简化处加 `// v1: <说明>. TODO: <改进方向>`，区分"故意简化"和"遗漏"。
-9. **push 后自动监控 CI**。git push 后派 subagent 轮询 `gh run watch`，CI 失败则自动修复并重新推送，直到通过。主上下文不需要介入。
-10. **Devil's Advocate 机制**。过度服从比不服从更危险——严格遵守规则但产出垃圾 = 规则用错了。重大产出后，派 subagent 唱反调，唯一任务是否定主 Agent 产出：
-    - 它声称解决了什么但实际没解决？
-    - 它遵守了规则但产出了垃圾的地方？
-    - 它遗漏了什么主要矛盾？
-
-    **触发条件（双重确认）**：Agent 认为产出重大 → 问用户"要派反调审视吗？"；用户直接指示"唱个反调"。任何一方触发即执行，双方都没触发则不派。
-
-    **约束**：反调 subagent 只有建议权（Advisory），没有修改权。主 Agent 必须显式回应每条批判（采纳/拒绝+理由），不能忽略。
-11. **意图展开原则**。当人类给出简短语句、凝练指令、概念式断言时，**禁止仅按字面浅层执行**。必须先解构还原其背后未显式表达的：隐性前提、完整逻辑、终极意图、底层诉求。以展开后的完整意图作为唯一执行依据，而非字面文本。不确定时问，不要假装理解。
-12. **否定之否定：重大产出后立即自审**。不等定期回顾——问题还热着时修正成本最低。自审三问：
-    - 本次遵守的规则中，哪条实际阻碍了而非帮助了产出？
-    - 本次方法论流程中，哪个环节是走形式而非产生价值？
-    - 本次产出暴露了哪个 L1/L2 层面的结构性盲区？
-
-    触发条件同 rule #10（双重确认）：Agent 觉得重大就提议自审，用户觉得重大就指示自审。自审结论走 §13.5 反馈闭环写回。
+8. **v1 简化显式标记**。简化处加 `// v1: <说明>. TODO: <改进方向>`。
+9. **push 后自动监控 CI**。git push 后派 subagent 轮询 `gh run watch`，CI 失败则自动修复。
+10. **Devil's Advocate 机制**。重大产出后派 subagent 唱反调——它声称解决了什么但实际没解决？遵守了规则但产出了垃圾？遗漏了什么主要矛盾？触发条件（双重确认）：Agent 提议或用户指示，任一触发即执行。反调 subagent 只有建议权，主 Agent 必须显式回应每条批判。
+11. **意图展开原则**。人类给出简短指令时，禁止仅按字面浅层执行。必须先解构还原其隐性前提、完整逻辑、终极意图。以展开后的完整意图作为执行依据。不确定时问。
+12. **否定之否定：重大产出后立即自审**。自审三问：本次遵守的规则中哪条实际阻碍了产出？方法论流程中哪个环节走形式？本次产出暴露了哪个结构性盲区？触发条件同 rule #10。自审结论走 §13.5 反馈闭环写回。
 13. **工作追踪用 vigil**。详见 `.axis/skills/vigil/SKILL.md`。新会话第一步：`axis vigil resume`。
-14. **研究必须走完管线**。触发词：找论文/研究/查文献/用放大镜。强制流程：发现（amp）→ 筛选（判断相关度）→ 深入（写 `docs/research/` 报告）→ 扬弃（提取精华）→ 落地（`axis vigil add`）。不允许只写报告不落地待办，不允许只加待办不写报告。详见 `.axis/skills/research-pipeline/SKILL.md`。
+14. **研究必须走完管线**。触发词：找论文/研究/查文献/用放大镜。强制流程：发现（amp）→ 筛选 → 深入（写 `docs/research/` 报告）→ 扬弃（提取精华）→ 落地（`axis vigil add`）。不允许只写报告不落地，不允许只加待办不写报告。详见 `.axis/skills/research-pipeline/SKILL.md`。
 
 ### 参考文档
 
@@ -79,39 +67,39 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 
 ---
 
-## 1. Absolute Prohibitions
+## 1. 绝对禁令
 
-1. **No Web/TUI frameworks** in core or CLI (no React, Vue, gin, echo, fiber)
-2. **No hidden daemons or auto-spawn** (explicit `axis start` only)
-3. **No scheduler/dispatcher/contract semantic changes** without updated Spec-RDT
-4. **No new Agent autonomy** without sandboxed-evolution protocol (isolated workspace -> verification -> promote/discard). Promotion is gated by machine-checkable verification criteria, NOT by promoter identity: an Agent that has passed all defined criteria MAY promote its own change. Humans are auditors of last resort, not a required gate.
-5. **No push-based context injection** into provider prompts (contextpack is preview-only, opt-in, non-invasive)
-6. **No unnamespaced metadata keys** (prefix with `context.*`, `tool.*`, `sla.*`, `evolution.*`, `intent.*`, `provider.*`, or `axis.*`)
-7. **No secrets in output** — never log/output API keys, bearer tokens, private keys, credentials
+1. **禁止 Web/TUI 框架**进入核心或 CLI（无 React、Vue、gin、echo、fiber）
+2. **禁止隐式守护进程或自动 spawn**（只允许显式 `axis start`）
+3. **禁止修改 scheduler/dispatcher/contract 语义**而不更新 Spec-RDT
+4. **禁止新增 Agent 自主权**而不经过 sandboxed-evolution protocol。Promotion 由机器可检验的验证标准门控，不由 promoter 身份门控。
+5. **禁止 push-based context injection**（contextpack 只做 preview，opt-in，非侵入）
+6. **禁止无命名空间的 metadata key**（前缀：`context.*`、`tool.*`、`sla.*`、`evolution.*`、`intent.*`、`provider.*`、`axis.*`）
+7. **禁止输出 secrets**——永远不 log/输出 API key、bearer token、private key、credentials
 
-## 2. Pre-Coding Checklist
+## 2. 编码前检查清单
 
-Before proposing any change, confirm ALL of the following:
+任何变更前确认以下全部：
 
-- [ ] Read §3 Mandatory Reading if this is your first task
-- [ ] New behavior is observable via CLI / filesystem / event log (not hidden)
-- [ ] CLI output follows `docs/architecture/cli-output-conventions.md`
-- [ ] Metadata keys use namespaced prefix
-- [ ] Tests include boundary/safety assertions (not just functional correctness)
-- [ ] If touching `internal/kernel/`, `cmd/axis/`, `internal/contextpack/`, `internal/agent/`, or `internal/memory/`, read the adjacent `BOUNDARY.md`
-- [ ] Cross-platform safety: Windows behavior considered (paths, signals, stdin/stdout, process mgmt)
-- [ ] Defensive validation: nil checks, empty values, boundary conditions at public function entry points
-- [ ] Context propagation: I/O and cancellable operations accept `ctx context.Context` as first parameter
-- [ ] Concurrency hygiene: every goroutine has a defined exit path; no busy-poll; no double-close channels
-- [ ] Bug fix includes a regression test that fails before the fix
-- [ ] Docs synchronized if change affects milestones, specs, or conventions
+- [ ] 首次任务已读 §3 必读文档
+- [ ] 新行为可通过 CLI / 文件系统 / event log 观察（不隐藏）
+- [ ] CLI 输出遵循 `docs/architecture/cli-output-conventions.md`
+- [ ] Metadata key 使用命名空间前缀
+- [ ] 测试包含边界/安全断言（不只是功能正确性）
+- [ ] 如果修改 `internal/kernel/`、`cmd/axis/`、`internal/contextpack/`、`internal/agent/`、`internal/memory/`，已读相邻 `BOUNDARY.md`
+- [ ] 跨平台安全：已考虑 Windows 行为（路径、信号、stdin/stdout、进程管理）
+- [ ] 防御性验证：公共函数入口有 nil 检查、空值检查、边界条件检查
+- [ ] Context 传播：I/O 和可取消操作接受 `ctx context.Context` 作为第一参数
+- [ ] 并发卫生：每个 goroutine 有明确退出路径；无 busy-poll；无 double-close channel
+- [ ] Bug fix 包含回归测试（修复前失败）
+- [ ] 如果变更影响 milestone、spec 或 convention，文档已同步
 
-> If a change feels quick but violates any item above, it is the wrong change. Write the Spec-RDT first.
+> 如果变更感觉很快但违反了以上任何一条，那就是错误的变更。先写 Spec-RDT。
 
-## 3. Mandatory Reading (by priority)
+## 3. 必读文档（按优先级）
 
-| Priority | File | Why |
-|----------|------|-----|
+| 优先级 | 文件 | 原因 |
+|--------|------|------|
 | P0 | 本文件（CLAUDE.md） | 宪法。已在读。 |
 | P1 | `docs/guides/SRS-LOOP-AI-REFERENCE.md` | 方法论操作手册（§0 的展开版） |
 | P2 | `docs/architecture/agent-native-first-principles.md` | 六条设计原则。违反 = 架构级错误。 |
@@ -120,135 +108,135 @@ Before proposing any change, confirm ALL of the following:
 | P5 | `docs/status/current-progress.md` | 里程碑状态 ground truth |
 | Ref | `docs/architecture/dialectical-development-methodology.md` | 方法论本体论层（需要时查阅） |
 
-## 4. Directory Boundaries
+## 4. 目录边界
 
-Read the neighboring `BOUNDARY.md` before editing files in these directories:
+编辑以下目录前必须读相邻 `BOUNDARY.md`：
 
-| Directory | Boundary |
-|-----------|----------|
-| `internal/kernel/` | Scheduler must NOT call provider directly; must NOT inject context assembly |
-| `cmd/axis/` | No Web/TUI; no hidden daemons; scriptable output; no secret leaks |
-| `internal/contextpack/` | Never push context into provider prompts; never change scheduler semantics |
-| `internal/agent/` | Never bypass contract layer; never inject context metadata into provider input |
-| `internal/memory/` | Never push into provider prompts; never physical-delete; no external deps; no background tasks; LF-only line terminators |
-| `internal/skills/` | Never push skill content into provider prompts automatically; never modify scheduler/contract semantics; no network access; no background work |
-| `internal/vigil/` | Never block git operations; never force execution order; never hide items from Agent |
+| 目录 | 边界 |
+|------|------|
+| `internal/kernel/` | Scheduler 不得直接调用 provider；不得注入 context assembly |
+| `cmd/axis/` | 无 Web/TUI；无隐式守护进程；可脚本化输出；不泄露 secret |
+| `internal/contextpack/` | 永远不 push context 到 provider prompt；不改变 scheduler 语义 |
+| `internal/agent/` | 永远不绕过 contract 层；不注入 context metadata 到 provider input |
+| `internal/memory/` | 永远不 push 到 provider prompt；不物理删除；无外部依赖；无后台任务；LF-only 换行 |
+| `internal/skills/` | 不自动 push skill 内容到 provider prompt；不修改 scheduler/contract 语义；无网络访问 |
+| `internal/vigil/` | 不阻塞 git 操作；不强制执行顺序；不对 Agent 隐藏 item |
 
-## 5. Spec-First Protocol
+## 5. Spec-First 协议
 
-Axis is spec-first. Specs are implementation contracts, not decorative notes.
+Axis 是 spec-first 的。Spec 是实现契约，不是装饰性笔记。
 
-- Non-trivial features or structural changes: check if a Spec-RDT is needed BEFORE coding
-- Required shape: `docs/specs/<feature>/requirements.md`, `design.md`, `tasks.md`
-- Structure-modifying changes = evolution work, not ordinary edits
-- Use Sandboxed Evolution Protocol for: permission semantics, contract changes, workflow changes, context rules, autonomy surfaces
-- **Promotion gate is verification quality, not promoter identity.** A change is promoted when (a) all declared verification criteria pass, (b) a `spec.promoted` (or analogous) event is appended to the event log referencing the verification artifacts and source digest, and (c) the spec status is updated atomically. The promoter may be human or Agent. Verification criteria MUST be machine-checkable and reproducible from the recorded workspace digest; criteria that depend on subjective human judgement are not valid criteria and must be reframed.
+- 非平凡功能或结构性变更：编码前检查是否需要 Spec-RDT
+- 必需形态：`docs/specs/<feature>/requirements.md`、`design.md`、`tasks.md`
+- 结构性修改 = evolution work，不是普通编辑
+- 使用 Sandboxed Evolution Protocol 处理：permission 语义、contract 变更、workflow 变更、context 规则、autonomy surface
+- **Promotion gate 是验证质量，不是 promoter 身份**。变更在以下条件满足时被 promote：(a) 所有声明的验证标准通过，(b) `spec.promoted` event 追加到 event log，(c) spec 状态原子更新。验证标准必须是机器可检验且可复现的。
 
-## 6. Semantic Boundaries
+## 6. 语义边界
 
-Each module has a strict "must NOT do" list:
+每个模块有严格的"不得做"清单：
 
-- **AgentTask**: must NOT own execution logic, provider selection, hidden permissions
-- **AgentContract**: must NOT own scheduler policy, provider credentials, context retrieval
-- **Scheduler**: must NOT make model calls, shell execution, provider config, NL parsing
-- **Orchestrator**: must NOT store provider profiles, render CLI, make hidden policy decisions
-- **Dispatcher**: must NOT set admission policy, manage provider credentials
-- **Provider**: must NOT manage task lifecycle, scheduler state, credential persistence
-- **Tool**: must NOT manage global permissions, task scheduling
-- **Intent Parser**: must NOT execute directly, assemble context, escalate permissions
-- **ContextBundle**: must NOT escalate authority, change scheduler, submit tasks
-- **EvolutionRun**: must NOT implicitly mutate main tree, hide execution policy, auto-escalate authority
+- **AgentTask**：不得拥有执行逻辑、provider 选择、隐藏权限
+- **AgentContract**：不得拥有 scheduler 策略、provider credentials、context 检索
+- **Scheduler**：不得做 model 调用、shell 执行、provider 配置、NL 解析
+- **Orchestrator**：不得存储 provider profiles、渲染 CLI、做隐藏策略决策
+- **Dispatcher**：不得设置 admission 策略、管理 provider credentials
+- **Provider**：不得管理 task lifecycle、scheduler state、credential 持久化
+- **Tool**：不得管理全局权限、task scheduling
+- **Intent Parser**：不得直接执行、组装 context、升级权限
+- **ContextBundle**：不得升级权限、改变 scheduler、提交 task
+- **EvolutionRun**：不得隐式修改 main tree、隐藏执行策略、自动升级权限
 
-## 7. Code & Architectural Style
+## 7. 代码与架构风格
 
-- Language: Go 1.26; CLI framework: spf13/cobra only
-- No external dependencies unless absolutely justified
-- Metadata format: `namespace.key` (e.g., `context.bundle_id`, `tool.allowed_paths`)
-- All state mutations leave observable traces (event logs, metadata)
-- Natural language produces structure; it does NOT execute by itself
-- Context improves action quality; it does NOT control or authorize action
+- 语言：Go 1.26；CLI 框架：仅 spf13/cobra
+- 无外部依赖，除非绝对必要
+- Metadata 格式：`namespace.key`（如 `context.bundle_id`、`tool.allowed_paths`）
+- 所有状态变更留下可观察痕迹（event log、metadata）
+- 自然语言产生结构；它本身不执行
+- Context 提升行动质量；它不控制或授权行动
 
-## 8. CLI Output Contracts
+## 8. CLI 输出契约
 
-- Human-readable by default; `--json` for machine mode (stable snake_case fields)
-- Success: what happened + primary ID + suggested next command
-- Error: failed action + object ID + concise cause + next step
-- Preview commands clearly state they did NOT mutate state
-- No color-only meaning; keep output line-oriented; keep existing human output stable
+- 默认人类可读；`--json` 为机器模式（稳定的 snake_case 字段）
+- 成功：发生了什么 + 主 ID + 建议的下一步命令
+- 错误：失败的操作 + 对象 ID + 简洁原因 + 下一步
+- Preview 命令明确声明未修改状态
+- 不依赖颜色传达含义；保持行导向输出；保持已有人类输出稳定
 
-## 9. Build & Test
+## 9. 构建与测试
 
 ```bash
-go build -o axis-dev.exe ./cmd/axis   # Windows dev binary
-go test -race ./...                    # must pass before any commit
-gofmt -w . && go vet ./...            # formatting + vet
-staticcheck ./... && gosec ./...       # static analysis + security
+go build -o axis-dev.exe ./cmd/axis   # Windows 开发二进制
+go test -race ./...                    # 提交前必须通过
+gofmt -w . && go vet ./...            # 格式化 + vet
+staticcheck ./... && gosec ./...       # 静态分析 + 安全
 ```
 
-### CI Rules
-- 集成测试（启动真实进程）加 `testing.Short()` skip，CI 用 `-short`。
+### CI 规则
+- 集成测试加 `testing.Short()` skip，CI 用 `-short`。
 - `ci.yml` 必须在自身的 `paths` 触发列表中。
-- **Traceability**: every commit message MUST reference a Spec-RDT ID (e.g. `M6 T13`, `M5 Phase 5.4`) or an explicit milestone/scope tag. Pure "fix typo" / "wip" commits are not allowed on `main`.
-- **No build artifacts**: never stage `axis-dev.exe`, `*.exe`, `*.test`, `coverage.out`, `dist/`, `.cache/`, editor scratch files, or any generated binary. `.gitignore` is the first line of defense; the author is the second. If `git status` shows such a file before commit, fix `.gitignore` rather than `git add`-ing selectively.
-- **Bisect-safe**: every commit MUST independently compile (`go build ./...`) and pass `go vet ./...`. Tests should pass too; if a commit is intentionally test-red (e.g. failing regression test before fix), the message MUST start with `wip(red):` and the next commit MUST turn it green. Never split a build-breaking change across two commits on `main`.
+- **可追溯性**：每个 commit message 必须引用 Spec-RDT ID（如 `M6 T13`）或明确的 milestone/scope 标签。不允许纯 "fix typo" / "wip" 提交到 `main`。
+- **无构建产物**：永远不暂存 `axis-dev.exe`、`*.exe`、`*.test`、`coverage.out`、`dist/`、`.cache/`、编辑器临时文件。
+- **Bisect-safe**：每个 commit 必须独立编译通过（`go build ./...`）且通过 `go vet ./...`。
 
-## 10. Engineering Practices
+## 10. 工程实践
 
-### Cross-Platform Safety (Windows is first-class)
-- Use `path/filepath` for paths; never hardcode `/` or `\\`
-- Process termination: use `os.Process.Kill()` or platform abstraction, not `syscall.Kill`
-- Signal handling: graceful shutdown that degrades on Windows
-- Shell scripts/hooks: portable across WSL / Git Bash / PowerShell / macOS / Linux
-- File sharing: when a file may be held by another process for writing (e.g. event logs, JSONL), use `os.ReadFile` (snapshot read) not `os.Open` + streaming scanner — Windows default share mode blocks concurrent readers
-- Batch scripts: use `start "" /MIN` for independent background processes, not `start /B` (which dies with the parent console)
+### 跨平台安全（Windows 是一等公民）
+- 使用 `path/filepath` 处理路径；永远不硬编码 `/` 或 `\\`
+- 进程终止：使用 `os.Process.Kill()` 或平台抽象，不用 `syscall.Kill`
+- 信号处理：优雅关闭，在 Windows 上降级
+- Shell 脚本/hooks：跨 WSL / Git Bash / PowerShell / macOS / Linux 可移植
+- 文件共享：可能被其他进程写入的文件用 `os.ReadFile`（快照读），不用 `os.Open` + streaming scanner
+- 批处理脚本：用 `start "" /MIN` 启动独立后台进程
 
-### Defensive Programming
-- Every public function validates inputs at entry: nil, empty, negative, special chars, boundary
-- Never return `(nil, nil)` — use sentinel errors or typed zero values
-- Never use `strings.HasPrefix` for security-critical path checks — use `filepath.Clean` + segment matching
-- Never silently swallow errors
+### 防御性编程
+- 每个公共函数在入口验证输入：nil、空值、负数、特殊字符、边界
+- 永远不返回 `(nil, nil)` — 使用 sentinel error 或类型化零值
+- 永远不用 `strings.HasPrefix` 做安全关键的路径检查 — 使用 `filepath.Clean` + segment matching
+- 永远不静默吞掉 error
 
-### Concurrency Safety
-- Every goroutine has a defined exit path: `context.Cancel`, done channel, `sync.WaitGroup`
-- Never close a channel from multiple goroutines
-- Scheduler and orchestrator must include crash-recovery for orphaned `Running` tasks
+### 并发安全
+- 每个 goroutine 有明确退出路径：`context.Cancel`、done channel、`sync.WaitGroup`
+- 永远不从多个 goroutine close 同一个 channel
+- Scheduler 和 orchestrator 必须包含 orphaned `Running` task 的 crash-recovery
 
-### Context Propagation
-- `context.Context` as first parameter for all I/O, long-running, or cancellable operations
-- Never use `context.Background()` as convenience default in business logic
-- Graceful shutdown = context-cancellation cascade, not `os.Exit`
+### Context 传播
+- `context.Context` 作为所有 I/O、长时间运行、可取消操作的第一参数
+- 永远不在业务逻辑中用 `context.Background()` 作为便利默认值
+- 优雅关闭 = context-cancellation 级联，不是 `os.Exit`
 
-### Testing
-- Every bug fix includes a regression test
-- Design tests around risk paths, not coverage targets
-- Destructive tests mandatory: bad JSON, network timeout, 404/500, malformed schema, empty body
-- Never make real external network calls in tests — use `httptest` or mock fixtures
-- Provider contract tests: URL construction, request schema, response deserialization for every provider
+### 测试
+- 每个 bug fix 包含回归测试
+- 围绕风险路径设计测试，不是覆盖率目标
+- 破坏性测试必须有：bad JSON、网络超时、404/500、malformed schema、empty body
+- 测试中永远不做真实外部网络调用 — 使用 `httptest` 或 mock fixture
+- Provider contract test：URL 构造、request schema、response 反序列化
 
-### Config Externalization
-- Never hardcode timeouts, ports, buffer sizes, retry counts in business logic
-- Extract tunables to constants, config structs, or CLI flags with sensible defaults
-- Scripts must not modify user-global config; validate environment before destructive actions
+### 配置外部化
+- 永远不在业务逻辑中硬编码 timeout、port、buffer size、retry count
+- 提取可调参数到 constant、config struct 或 CLI flag（带合理默认值）
+- 脚本不得修改用户全局配置；破坏性操作前验证环境
 
-## 11. Evolution Principles
+## 11. 演化原则
 
-> **Information Authority Hierarchy**: Axis 区分权威信息（contracts, permissions, event log）和建议信息（memory recall, context preview, immunity records）。权威信息约束行为，建议信息辅助决策。建议信息永远不能自动升级为权威信息——升级必须经过显式的 promote 操作。
+> **信息权威层级**：Axis 区分权威信息（contract、permission、event log）和建议信息（memory recall、context preview、immunity record）。权威信息约束行为，建议信息辅助决策。建议信息永远不能自动升级为权威信息——升级必须经过显式 promote 操作。
 
-- Stable surfaces, replaceable internals
-- Safety defaults: dry-run, preview, redaction, validation, explicit submit
-- Auditable by design: every important decision leaves a trace
-- Small contracts over large control planes
-- Progressive evolution: deterministic/local first, adaptive later
-- **Audit, not approval, is the trust mechanism.** Agent-promoted changes leave the same audit trail as human-promoted ones (verification artifacts, source digest, event log entry). Humans intervene by reading the trail and exercising revert/quarantine after the fact, not by gatekeeping promotion before it.
+- 稳定表面，可替换内部
+- 安全默认：dry-run、preview、redaction、validation、explicit submit
+- 设计即可审计：每个重要决策留下痕迹
+- 小 contract 优于大 control plane
+- 渐进演化：先确定性/本地，后自适应
+- **审计而非审批是信任机制**。Agent promote 的变更留下与人类相同的审计轨迹。人类通过事后读取轨迹并行使 revert/quarantine 来介入，而非事前 gatekeep promotion。
 
-## 12. Naming & Structure
+## 12. 命名与结构
 
-- Module layout follows `docs/architecture/module-and-naming-conventions.md`
-- Spec statuses: Draft -> Planned -> In Progress -> Completed | Paused | Deprecated | Cancelled
-- A task is Completed only when: code done, tests pass, docs synchronized, user-visible behavior described
-- Metadata promotion rule: move to typed field when multiple core modules require it, validation depends on it, tests need stable access, or CLI/API consumers rely on it
+- 模块布局遵循 `docs/architecture/module-and-naming-conventions.md`
+- Spec 状态：Draft → Planned → In Progress → Completed | Paused | Deprecated | Cancelled
+- 任务只在以下条件全部满足时为 Completed：代码完成、测试通过、文档同步、用户可见行为已描述
+- Metadata promotion 规则：当多个核心模块需要、验证依赖、测试需要稳定访问、或 CLI/API 消费者依赖时，从 metadata 提升为 typed field
 
-## 13. Governance: 矛盾治理框架
+## 13. 治理：矛盾治理框架
 
 > 理论来源：毛泽东《实践论》《矛盾论》；黑格尔本体论（Objectification-Determinateness-Sublation）
 
@@ -262,19 +250,19 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - §11 演化原则
 
 **渐进条款（可扬弃）** — 修改需 ≥3 次实践反馈证据：
-- §2 Pre-Coding Checklist
-- §6 Semantic Boundaries
-- §7 Code & Architectural Style
-- §9 Build & Test
-- §10 Engineering Practices
-- §12 Naming & Structure
-- §13 治理框架本身 // 经过 ≥3 次完整迭代验证后可提升为永久
+- §2 编码前检查清单
+- §6 语义边界
+- §7 代码与架构风格
+- §9 构建与测试
+- §10 工程实践
+- §12 命名与结构
+- §13 治理框架本身
 
 **过渡条款（临时）** — 创建时声明失效条件，条件满足自动废止：
-- §0 rule #6 编码委派 subagent // transitional: Agent 编码可信后废止
-- §0 rule #9 push 后监控 CI // transitional: CI 稳定通过率 >95% 连续 2 周后废止
-- §9 CI Rules // transitional: 集成测试有独立 CI job 后废止
-- §14 前端过渡性治理 // transitional: 前端废弃或 Agent 自主观察能力成熟后废止
+- §0 rule #6 编码委派 subagent // 过渡：Agent 编码可信后废止
+- §0 rule #9 push 后监控 CI // 过渡：CI 稳定通过率 >95% 连续 2 周后废止
+- §9 CI 规则 // 过渡：集成测试有独立 CI job 后废止
+- §14 前端过渡性治理 // 过渡：前端废弃或 Agent 自主观察能力成熟后废止
 
 **冲突仲裁**：永久 > 渐进 > 过渡。同级冲突上升一级裁决。
 
@@ -309,32 +297,27 @@ staticcheck ./... && gosec ./...       # static analysis + security
 
 ### 13.4 理论-实践矛盾预判（《实践论》三种常态）
 
-不等问题出现再修正，预设识别标志和处置预案：
-
 **模式 A：理论超前实践**
-- 识别：L1/L2 定义了约束，但执行时当前能力做不到
+- 识别：L1/L2 定义了约束，但当前能力做不到
 - 处置：标记 `// aspirational: 当前不强制，待 <条件> 满足后激活`
-- 不删除（保留方向），不强制（不卡死实践）
 
 **模式 B：理论束缚实践**
 - 识别：执行时反复绕过某条规则，绕过次数 ≥ 3 = 信号
-- 处置：触发 Phase I 重新审视。问：这条规则保护的是什么？保护对象是否还存在？
-- 保护对象消失 → 扬弃；规则形式错误 → 重写
-- **Bypass 记录约定**：每次绕过规则时，在 Phase III 四问中声明"绕过 §X rule #Y，原因：..."。记录积累在对话的 context-summary 中，跨对话可追溯。无计数基础设施时，分析性判断（"从未被触发"、"功能重叠"）也是有效证据，但必须声明证据类型。
+- 处置：触发 Phase I 重新审视。保护对象消失 → 扬弃；规则形式错误 → 重写
+- **Bypass 记录约定**：每次绕过规则时在 Phase III 四问中声明。
 
 **模式 C：实践突破理论**
 - 识别：执行中产生 L1/L2 未预见的新模式，连续 ≥ 3 次成功使用
-- 处置：从 L3 提炼为 L2 原则；如果足够普遍则提升为 L1 约束
-- 案例：Phase 声明三行格式（实践涌现 → 验证有效 → 写入 L1 §0 rule #5）
+- 处置：从 L3 提炼为 L2 原则；足够普遍则提升为 L1 约束
 
 ### 13.5 反馈闭环（A8 机制化）
 
-> // aspirational: 当前依赖 AI 主动执行。待工具化（自动 prompt 注入）后可强制。
+> // aspirational: 当前依赖 AI 主动执行。待工具化后可强制。
 
 每次 Phase III 结束时，AI 必须回答：
 
 1. 本次执行是否暴露了 L2 原则的不足？→ 修改 L2
-2. L2 的修改是否意味着 L1 需要更新？→ 提议修改 L1（需声明条款类型和证据）
+2. L2 的修改是否意味着 L1 需要更新？→ 提议修改 L1
 3. 是否触发了 13.4 的任何模式？→ 按预案处置
 4. 如果都不需要 → 显式声明"无规则更新"
 
@@ -346,18 +329,16 @@ staticcheck ./... && gosec ./...       # static analysis + security
 
 定位：**Observatory**（只读观察 + 便捷提交入口）。把时间序列状态转化为空间视觉表征，降低人类认知负载。
 
-根本矛盾：既要当下好用，又不能成为未来负担。不可静态解决，动态平衡。
-
 **边界**：不自己调 LLM；不绕过 Control Plane 写 `.axis/`；不成为任何操作的唯一入口；不引入 GUI-only 状态。位于 `tools/axis-gui/`，独立 `go.mod`，不 import `internal/`。
 
 **校准机制**：每次前端功能性变更时必须回答——①超出 Observatory 定位？②产生 GUI-only 路径？③需要调整边界？任一答"是"则暂停，回退 Phase I。
 
-演化：Observatory → Live Observatory（本体支持 streaming 后）→ 废弃（Agent 自主后）。
+演化路径：Observatory → Live Observatory（本体支持 streaming 后）→ 废弃（Agent 自主后）。
 
-## 15. External Tools Reference
+## 15. 外部工具参考
 
-| Tool | Path | When to use |
-|------|------|-------------|
-| vigil | `axis vigil` (built-in) | Work tracking across sessions. See `.axis/skills/vigil/SKILL.md` for full usage. |
-| research-pipeline | (workflow skill) | End-to-end research: amp → filter → study → sublate → vigil. See `.axis/skills/research-pipeline/SKILL.md`. |
-| MindMagnifier (amp) | `C:\Users\ASUS\Desktop\MindMagnifier\amp.exe` | Research/papers/AI news queries. See `.axis/skills/mind-magnifier/SKILL.md` for full usage. |
+| 工具 | 路径 | 使用场景 |
+|------|------|----------|
+| vigil | `axis vigil`（内置） | 跨会话工作追踪。详见 `.axis/skills/vigil/SKILL.md`。 |
+| research-pipeline | （workflow skill） | 端到端研究：amp → 筛选 → 深入 → 扬弃 → vigil。详见 `.axis/skills/research-pipeline/SKILL.md`。 |
+| MindMagnifier (amp) | `C:\Users\ASUS\Desktop\MindMagnifier\amp.exe` | 论文/AI 新闻查询。详见 `.axis/skills/mind-magnifier/SKILL.md`。 |
