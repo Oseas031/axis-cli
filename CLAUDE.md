@@ -52,6 +52,14 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
 7. **Subagent 产出必须验收**。主上下文跑 `go test` + 抽查关键逻辑路径，不盲信。
 8. **v1 简化显式标记**。简化处加 `// v1: <说明>. TODO: <改进方向>`，区分"故意简化"和"遗漏"。
 9. **push 后自动监控 CI**。git push 后派 subagent 轮询 `gh run watch`，CI 失败则自动修复并重新推送，直到通过。主上下文不需要介入。
+10. **Devil's Advocate 机制**。过度服从比不服从更危险——严格遵守规则但产出垃圾 = 规则用错了。重大产出后，派 subagent 唱反调，唯一任务是否定主 Agent 产出：
+    - 它声称解决了什么但实际没解决？
+    - 它遵守了规则但产出了垃圾的地方？
+    - 它遗漏了什么主要矛盾？
+
+    **触发条件（双重确认）**：Agent 认为产出重大 → 问用户"要派反调审视吗？"；用户直接指示"唱个反调"。任何一方触发即执行，双方都没触发则不派。
+
+    **约束**：反调 subagent 只有建议权（Advisory），没有修改权。主 Agent 必须显式回应每条批判（采纳/拒绝+理由），不能忽略。
 
 ### 参考文档
 
