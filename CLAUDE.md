@@ -48,7 +48,9 @@ Core proposition: **More Context, More Action, Zero Control, Controllable Evolut
    退出条件: <可验证的完成标准>
    ```
    **触发条件**：会产生文件变更、决策、或判断时必须声明。纯事实性回答（查询、解释已有内容）不需要。如果不确定，声明比不声明好。
-6. **编码实现委派 subagent**。主上下文负责 Phase I/II 决策和 A8 写回，Phase III 的 A6 Execute 交给 subagent，避免实现细节污染决策上下文。
+6. **编码实现按任务规模决定执行方式**。主上下文负责 Phase I/II 决策和 A8 写回。Phase III 的 A6 Execute 按规模选择：
+    - **小任务**（单文件改动、<50 行、边界清晰）：主上下文直接执行，避免 subagent 调度开销。
+    - **大任务**（多文件、>50 行、需要探索）：委派 subagent，避免实现细节污染决策上下文。多个独立子任务可派多个 subagent 并行。
 7. **Subagent 产出必须验收**。主上下文跑 `go test` + 抽查关键逻辑路径，不盲信。
 8. **v1 简化显式标记**。简化处加 `// v1: <说明>. TODO: <改进方向>`，区分"故意简化"和"遗漏"。
 9. **push 后自动监控 CI**。git push 后派 subagent 轮询 `gh run watch`，CI 失败则自动修复并重新推送，直到通过。主上下文不需要介入。
@@ -269,6 +271,7 @@ staticcheck ./... && gosec ./...       # static analysis + security
 - §0 rule #6 编码委派 subagent // transitional: Agent 编码可信后废止
 - §0 rule #9 push 后监控 CI // transitional: CI 稳定通过率 >95% 连续 2 周后废止
 - §9 CI Rules // transitional: 集成测试有独立 CI job 后废止
+- §14 前端过渡性治理 // transitional: 前端废弃或 Agent 自主观察能力成熟后废止
 
 **冲突仲裁**：永久 > 渐进 > 过渡。同级冲突上升一级裁决。
 
@@ -333,3 +336,17 @@ staticcheck ./... && gosec ./...       # static analysis + security
 4. 如果都不需要 → 显式声明"无规则更新"
 
 这不是可选步骤，是 Phase III 的退出门禁。
+
+## 14. 前端过渡性治理（过渡条款）
+
+> 失效条件：前端废弃，或 Agent 自主能力使人类不再需要视觉观察。
+
+定位：**Observatory**（只读观察 + 便捷提交入口）。把时间序列状态转化为空间视觉表征，降低人类认知负载。
+
+根本矛盾：既要当下好用，又不能成为未来负担。不可静态解决，动态平衡。
+
+**边界**：不自己调 LLM；不绕过 Control Plane 写 `.axis/`；不成为任何操作的唯一入口；不引入 GUI-only 状态。位于 `tools/axis-gui/`，独立 `go.mod`，不 import `internal/`。
+
+**校准机制**：每次前端功能性变更时必须回答——①超出 Observatory 定位？②产生 GUI-only 路径？③需要调整边界？任一答"是"则暂停，回退 Phase I。
+
+演化：Observatory → Live Observatory（本体支持 streaming 后）→ 废弃（Agent 自主后）。
