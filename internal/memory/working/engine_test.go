@@ -180,3 +180,166 @@ func TestGetBundle_NotFound(t *testing.T) {
 func timeNow() time.Time {
 	return time.Now().UTC()
 }
+
+
+func TestRecall_BM25Ranking(t *testing.T) {
+	dir := t.TempDir()
+	eng, err := Open(dir)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer eng.Close()
+	ctx := context.Background()
+
+	// Bundle 1: highly relevant to "provider config"
+	b1 := &WorkingBundle{
+		BundleID: "ctx-provider",
+		Goal:     "fix provider configuration loading",
+		Packets: []ContextPacket{
+			{ID: "p1", Type: "spec", Source: "docs/specs/provider/config.md", Summary: "Provider config spec with validation rules"},
+			{ID: "p2", Type: "code", Source: "internal/model/provider/registry.go", Summary: "Provider registry manages config profiles"},
+		},
+		RetainedAt:  timeNow(),
+		AccessCount: 1,
+	}
+	eng.UpdateBundle(ctx, "ctx-provider", b1)
+
+	// Bundle 2: somewhat relevant (mentions "config" but not "provider")
+	b2 := &WorkingBundle{
+		BundleID: "ctx-scheduler",
+		Goal:     "scheduler config timeout tuning",
+		Packets: []ContextPacket{
+			{ID: "p3", Type: "code", Source: "internal/kernel/scheduler.go", Summary: "Scheduler with configurable timeout"},
+		},
+		RetainedAt:  timeNow(),
+		AccessCount: 1,
+	}
+	eng.UpdateBundle(ctx, "ctx-scheduler", b2)
+
+	// Bundle 3: irrelevant
+	b3 := &WorkingBundle{
+		BundleID: "ctx-tool",
+		Goal:     "implement bash tool execution",
+		Packets: []ContextPacket{
+			{ID: "p4", Type: "code", Source: "internal/model/tool/bash.go", Summary: "Bash tool runs shell commands"},
+		},
+		RetainedAt:  timeNow(),
+		AccessCount: 1,
+	}
+	eng.UpdateBundle(ctx, "ctx-tool", b3)
+
+	// Query: "provider config" should rank ctx-provider first
+	hits, err := eng.Recall(ctx, "provider config", 10)
+	if err != nil {
+		t.Fatalf("Recall: %v", err)
+	}
+
+	if len(hits) == 0 {
+		t.Fatal("expected hits for 'provider config'")
+	}
+
+	// First hit should be from ctx-provider (most relevant)
+	if hits[0].BundleID != "ctx-provider" {
+		t.Fatalf("expected first hit from ctx-provider, got %s", hits[0].BundleID)
+	}
+
+	// Relevance scores should be descending
+	for i := 1; i < len(hits); i++ {
+		if hits[i].Relevance > hits[i-1].Relevance {
+			t.Fatalf("hits not sorted by relevance: [%d]=%f > [%d]=%f",
+				i, hits[i].Relevance, i-1, hits[i-1].Relevance)
+		}
+	}
+
+	// ctx-tool (irrelevant) should not appear
+	for _, h := range hits {
+		if h.BundleID == "ctx-tool" {
+			t.Fatal("irrelevant bundle ctx-tool should not appear in results")
+		}
+	}
+}
+
+func TestRecall_EmptyQuery(t *testing.T) {
+	dir := t.TempDir()
+	eng, _ := Open(dir)
+	defer eng.Close()
+	ctx := context.Background()
+
+	eng.UpdateBundle(ctx, "b1", &WorkingBundle{
+		BundleID: "b1", Goal: "something",
+		Packets:    []ContextPacket{{ID: "p1", Summary: "test"}},
+		RetainedAt: timeNow(),
+	})
+
+	hits, err := eng.Recall(ctx, "", 10)
+	if err != nil {
+		t.Fatalf("Recall: %v", err)
+	}
+	if hits != nil {
+		t.Fatalf("expected nil for empty query, got %d hits", len(hits))
+	}
+}
+
+func TestRecall_CJKQuery(t *testing.T) {
+	dir := t.TempDir()
+	eng, _ := Open(dir)
+	defer eng.Close()
+	ctx := context.Background()
+
+	eng.UpdateBundle(ctx, "b-cn", &WorkingBundle{
+		BundleID: "b-cn", Goal: "修复调度器配置",
+		Packets: []ContextPacket{
+			{ID: "p1", Type: "spec", Source: "docs/scheduler.md", Summary: "调度器超时配置文档"},
+		},
+		RetainedAt: timeNow(),
+	})
+
+	hits, err := eng.Recall(ctx, "调度器", 10)
+	if err != nil {
+		t.Fatalf("Recall: %v", err)
+	}
+	if len(hits) == 0 {
+		t.Fatal("expected hits for CJK query '调度器'")
+	}
+	if hits[0].BundleID != "b-cn" {
+		t.Fatalf("expected b-cn, got %s", hits[0].BundleID)
+	}
+}
+
+
+func TestRecall_BM25BigramPrecision(t *testing.T) {
+	// Verify bigram matching is more precise than unigram-only:
+	// "记忆" should match "记忆管理" better than "记录" (which only shares unigram "记")
+	dir := t.TempDir()
+	eng, _ := Open(dir)
+	defer eng.Close()
+	ctx := context.Background()
+
+	eng.UpdateBundle(ctx, "b-memory", &WorkingBundle{
+		BundleID: "b-memory", Goal: "记忆管理系统设计",
+		Packets: []ContextPacket{
+			{ID: "p1", Type: "spec", Source: "memory.md", Summary: "长期记忆存储方案"},
+		},
+		RetainedAt: timeNow(),
+	})
+	eng.UpdateBundle(ctx, "b-record", &WorkingBundle{
+		BundleID: "b-record", Goal: "记录日志系统",
+		Packets: []ContextPacket{
+			{ID: "p2", Type: "code", Source: "logger.go", Summary: "日志记录模块"},
+		},
+		RetainedAt: timeNow(),
+	})
+
+	hits, err := eng.Recall(ctx, "记忆", 10)
+	if err != nil {
+		t.Fatalf("Recall: %v", err)
+	}
+	if len(hits) == 0 {
+		t.Fatal("expected hits for '记忆'")
+	}
+	// "记忆管理" bundle should rank first (bigram "记忆" exact match)
+	if hits[0].BundleID != "b-memory" {
+		t.Fatalf("expected b-memory first (bigram precision), got %s (score=%f)",
+			hits[0].BundleID, hits[0].Relevance)
+	}
+}

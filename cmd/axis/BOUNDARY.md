@@ -14,6 +14,22 @@
 - [ ] Confirm: new command is scriptable (parsable output, stdin-friendly)
 - [ ] Confirm: no secrets in output (grep for "api_key", "token", "secret" in proposed output)
 
+## Executable Verification
+
+```bash
+# No web/TUI framework imports
+grep -rn '"github.com/gin-gonic\|"github.com/labstack/echo\|"github.com/gofiber\|"net/http"' cmd/axis/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines (cmd/axis is CLI only; HTTP is in internal/control/)
+
+# No secrets in string literals
+grep -rn "api_key\|api-key\|apiKey\|bearer\|secret" cmd/axis/ --include="*.go" | grep -v "_test.go" | grep -v "flag\|Flag\|Usage\|help\|redact\|mask"
+# Expected: 0 lines (or only references to redaction logic)
+
+# No hidden daemon spawn (no "go func" without explicit start command context)
+grep -rn "go func\|go .*(" cmd/axis/ --include="*.go" | grep -v "_test.go" | grep -v "start\.go"
+# Expected: 0 lines outside start.go
+```
+
 ## Common Traps
 
 | Trap | Why It Is Wrong |

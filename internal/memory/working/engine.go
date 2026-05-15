@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/axis-cli/axis/internal/memory/kv"
@@ -70,70 +69,89 @@ func (e *Engine) Release(_ context.Context, bundleID string) error {
 	return e.kv.Delete(context.Background(), key)
 }
 
-// Recall performs a basic keyword match over retained bundle summaries.
-// P0: simple case-insensitive strings.Contains on goal + packet summaries.
+// Recall retrieves relevant packets from retained bundles using BM25 ranking.
+// Builds an in-memory BM25 index over bundle goals and packet summaries,
+// then returns the top-scoring packets up to limit.
 func (e *Engine) Recall(ctx context.Context, query string, limit int) ([]PacketHit, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	query = strings.ToLower(query)
-	var hits []PacketHit
+	if query == "" {
+		return nil, nil
+	}
 
+	// Collect all bundles
 	it, err := e.kv.ScanPrefix(ctx, bundleKeyPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("working: scan: %w", err)
 	}
 	defer it.Close()
 
+	type packetRef struct {
+		bundle WorkingBundle
+		pktIdx int
+	}
+
+	// Build document corpus: each packet is a document
+	documents := make(map[string]string)   // docID → text
+	packetMap := make(map[string]packetRef) // docID → packet reference
+
 	for it.Next() {
-		if len(hits) >= limit {
-			break
-		}
 		val := it.Value()
 		var bundle WorkingBundle
 		if err := json.Unmarshal(val, &bundle); err != nil {
-			continue // skip malformed
-		}
-
-		// Match against goal.
-		if strings.Contains(strings.ToLower(bundle.Goal), query) {
-			for _, pkt := range bundle.Packets {
-				hits = append(hits, PacketHit{
-					BundleID:  bundle.BundleID,
-					PacketID:  pkt.ID,
-					Type:      pkt.Type,
-					Source:    pkt.Source,
-					Summary:   pkt.Summary,
-					Relevance: pkt.Relevance,
-				})
-				if len(hits) >= limit {
-					break
-				}
-			}
 			continue
 		}
-
-		// Match against packet summaries.
-		for _, pkt := range bundle.Packets {
-			if strings.Contains(strings.ToLower(pkt.Summary), query) ||
-				strings.Contains(strings.ToLower(pkt.Source), query) {
-				hits = append(hits, PacketHit{
-					BundleID:  bundle.BundleID,
-					PacketID:  pkt.ID,
-					Type:      pkt.Type,
-					Source:    pkt.Source,
-					Summary:   pkt.Summary,
-					Relevance: pkt.Relevance,
-				})
-				if len(hits) >= limit {
-					break
-				}
-			}
+		for i, pkt := range bundle.Packets {
+			docID := bundle.BundleID + ":" + pkt.ID
+			// Combine goal + summary + source for richer matching
+			text := bundle.Goal + " " + pkt.Summary + " " + pkt.Source
+			documents[docID] = text
+			packetMap[docID] = packetRef{bundle: bundle, pktIdx: i}
+		}
+		// Also index the bundle goal itself (for bundles with no packets)
+		if len(bundle.Packets) == 0 {
+			docID := bundle.BundleID + ":goal"
+			documents[docID] = bundle.Goal
+			packetMap[docID] = packetRef{bundle: bundle, pktIdx: -1}
 		}
 	}
 
 	if err := it.Err(); err != nil {
 		return nil, fmt.Errorf("working: iterate: %w", err)
+	}
+
+	if len(documents) == 0 {
+		return nil, nil
+	}
+
+	// BM25 rank
+	idx := newBM25Index(documents)
+	results := idx.score(query)
+
+	// Convert to PacketHits
+	var hits []PacketHit
+	for _, r := range results {
+		if len(hits) >= limit {
+			break
+		}
+		ref, ok := packetMap[r.id]
+		if !ok {
+			continue
+		}
+		if ref.pktIdx < 0 {
+			// Goal-only match, no packet to return
+			continue
+		}
+		pkt := ref.bundle.Packets[ref.pktIdx]
+		hits = append(hits, PacketHit{
+			BundleID:  ref.bundle.BundleID,
+			PacketID:  pkt.ID,
+			Type:      pkt.Type,
+			Source:    pkt.Source,
+			Summary:   pkt.Summary,
+			Relevance: r.score,
+		})
 	}
 	return hits, nil
 }
