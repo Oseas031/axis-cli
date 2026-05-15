@@ -74,6 +74,23 @@ At least one of `vigil:` or `Refs:` is required for non-RDM commits.
 - Never accumulate >10 unpushed commits
 - New branches: `git push -u origin <branch>`
 
+## Never Commit (Private / Sensitive)
+
+The following must never be tracked in git — enforced by `.gitignore`:
+
+| Pattern | Reason |
+|---------|--------|
+| `.env`, `.env.*` | Environment secrets (API keys, tokens) |
+| `.claude/`, `.devin/`, `.swarm/` | Internal AI tooling state |
+| `WORKFLOW-HUMAN/` | Personal workflow notes |
+| `workflow/`, `workflows/` | Internal process docs |
+| `configs/` | Local configuration (may contain credentials) |
+| `*.pem`, `*.key`, `*.p12` | Private keys / certificates |
+| `.axis/providers.json` | Contains API keys |
+| Any file with hardcoded secrets | Use environment variables instead |
+
+**Pre-commit check**: before every commit, verify `git diff --cached --name-only` contains no sensitive paths.
+
 ## Prohibited
 
 | Action | Reason |
