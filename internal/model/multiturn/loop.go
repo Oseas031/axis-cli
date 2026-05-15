@@ -26,6 +26,7 @@ type LoopConfig struct {
 	Compactor      Compactor
 	TurnTimeout    time.Duration
 	OnToolExecuted func(toolName string, result map[string]any, err error) // optional hook
+	OnTokenUsage   func(inputTokens, outputTokens int)                     // optional: called after each provider response
 }
 
 // LoopResult is the outcome of a multi-turn loop execution.
@@ -69,6 +70,10 @@ func Run(ctx context.Context, cfg LoopConfig, req *provider.ModelRequest) (*Loop
 		if err != nil {
 			history = closePendingToolCalls(history)
 			return &LoopResult{History: history, Error: fmt.Sprintf("provider error: %v", err)}, err
+		}
+
+		if cfg.OnTokenUsage != nil && (resp.InputTokens > 0 || resp.OutputTokens > 0) {
+			cfg.OnTokenUsage(resp.InputTokens, resp.OutputTokens)
 		}
 
 		// No tool calls — return output

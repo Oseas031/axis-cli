@@ -83,6 +83,7 @@ type LLMAgentExecutor struct {
 	memory       ExecutionMemory
 	workingMem   *WorkingMemoryRecaller
 	immediateMem *ImmediateMemoryAdapter
+	tokenUsageFn func(taskID string, inputTokens, outputTokens int) // v1: cost tracking hook
 }
 
 // LLMAgentOption configures an LLMAgentExecutor.
@@ -106,6 +107,11 @@ func WithTerminationFn(fn TerminationFn) LLMAgentOption {
 // WithHistoryCompactor sets the history compaction strategy.
 func WithHistoryCompactor(c HistoryCompactor) LLMAgentOption {
 	return func(e *LLMAgentExecutor) { e.compactor = c }
+}
+
+// WithTokenUsageFn sets a callback invoked after each LLM call with token counts.
+func WithTokenUsageFn(fn func(taskID string, inputTokens, outputTokens int)) LLMAgentOption {
+	return func(e *LLMAgentExecutor) { e.tokenUsageFn = fn }
 }
 
 // WithMaxErrors sets the circuit breaker threshold.
@@ -338,6 +344,11 @@ func (e *LLMAgentExecutor) executeOnce(ctx context.Context, req *AgentExecutionR
 				e.emit(req.Task.TaskID, "tool_executed", fmt.Sprintf("[%s] 完成", toolName))
 			}
 			traces = append(traces, trace)
+		},
+		OnTokenUsage: func(inputTokens, outputTokens int) {
+			if e.tokenUsageFn != nil {
+				e.tokenUsageFn(req.Task.TaskID, inputTokens, outputTokens)
+			}
 		},
 	}
 
