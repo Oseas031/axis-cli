@@ -16,6 +16,7 @@ import (
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
 	"github.com/axis-cli/axis/internal/kernel/capability"
 	"github.com/axis-cli/axis/internal/kernel/featuregate"
+	"github.com/axis-cli/axis/internal/kernel/swarm"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -51,6 +52,8 @@ type DispatcherImpl struct {
 	auditFn              func(taskID, event, detail string)
 	followUpFn           func(tasks []*types.AgentTask)
 	candidatePoolEnabled bool
+	providerNames        []string
+	swarmEventFn         func(SwarmEvent)
 }
 
 // NewDispatcher creates a new dispatcher
@@ -125,6 +128,11 @@ func (d *DispatcherImpl) SetFollowUpHandler(fn func(tasks []*types.AgentTask)) {
 // SetCandidatePoolEnabled enables candidate pool evaluation for high-risk tasks.
 func (d *DispatcherImpl) SetCandidatePoolEnabled(enabled bool) {
 	d.candidatePoolEnabled = enabled
+}
+
+// SetProviderNames sets available provider names for swarm dispatch.
+func (d *DispatcherImpl) SetProviderNames(names []string) {
+	d.providerNames = names
 }
 
 // SetFeatureGate sets the feature gate for pre-execution checks.
@@ -272,6 +280,137 @@ func (d *DispatcherImpl) recordAudit(start time.Time, task *types.AgentTask, res
 	d.auditMu.Unlock()
 }
 
+// dispatchSwarm handles multi-agent parallel execution via swarm topology.
+func (d *DispatcherImpl) dispatchSwarm(ctx context.Context, task *types.AgentTask, cfg *swarm.SwarmConfig) (*types.TaskResult, error) {
+	if err := cfg.Validate(); err != nil {
+		return &types.TaskResult{
+			TaskID:    task.TaskID,
+			Status:    types.TaskStatusFailed,
+			Error:     fmt.Sprintf("swarm config invalid: %v", err),
+			Completed: time.Now(),
+		}, err
+	}
+
+	// v1: available providers from providerconfig (injected as list)
+	available := d.getAvailableProviders()
+	agents, err := swarm.SelectAgents(available, cfg)
+	if err != nil {
+		return &types.TaskResult{
+			TaskID:    task.TaskID,
+			Status:    types.TaskStatusFailed,
+			Error:     err.Error(),
+			Completed: time.Now(),
+		}, err
+	}
+
+	d.audit(task.TaskID, "swarm_dispatch_start", fmt.Sprintf("pattern=%s agents=%d", cfg.Pattern, len(agents)))
+
+	// DispatchFn wraps single-agent execution
+	fn := func(ctx context.Context, t *types.AgentTask, provider string) (map[string]any, error) {
+		// Clone task metadata with provider override
+		cloned := *t
+		cloned.Metadata = make(map[string]string, len(t.Metadata))
+		for k, v := range t.Metadata {
+			cloned.Metadata[k] = v
+		}
+		cloned.Metadata["provider.override"] = provider
+		cloned.Metadata[types.TaskMetadataKeyExecutor] = types.ExecutorTypeAgent
+		// Remove swarm keys to prevent recursion
+		delete(cloned.Metadata, "swarm.pattern")
+
+		result, err := d.executeTask(ctx, &cloned)
+		if err != nil {
+			return nil, err
+		}
+		return result.Output, nil
+	}
+
+	sr, err := swarm.Dispatch(ctx, task, cfg, agents, fn)
+	if err != nil {
+		return &types.TaskResult{
+			TaskID:    task.TaskID,
+			Status:    types.TaskStatusFailed,
+			Error:     fmt.Sprintf("swarm execution failed: %v", err),
+			Completed: time.Now(),
+		}, err
+	}
+
+	d.audit(task.TaskID, "swarm_dispatch_end", fmt.Sprintf("confidence=%.2f unanimous=%v", sr.Confidence, sr.Unanimous))
+
+	// T6: emit swarm.executed event
+	d.emitSwarmEvent(task.TaskID, cfg, sr)
+
+	var output map[string]any
+	if sr.Winner != nil {
+		output = sr.Winner.Output
+	}
+	return &types.TaskResult{
+		TaskID:    task.TaskID,
+		Output:    output,
+		Status:    types.TaskStatusCompleted,
+		Completed: time.Now(),
+	}, nil
+}
+
+// SwarmEvent represents a swarm.executed event for the event log.
+type SwarmEvent struct {
+	Type      string            `json:"type"`
+	TaskID    string            `json:"task_id"`
+	Topology  SwarmTopologyInfo `json:"topology"`
+	Agents    []SwarmAgentInfo  `json:"agents"`
+	Confidence float64          `json:"confidence"`
+	Unanimous bool              `json:"unanimous"`
+}
+
+// SwarmTopologyInfo describes the topology used.
+type SwarmTopologyInfo struct {
+	Pattern   string `json:"pattern"`
+	Size      int    `json:"size"`
+	Diversity string `json:"diversity"`
+}
+
+// SwarmAgentInfo describes one participant.
+type SwarmAgentInfo struct {
+	AgentID  string `json:"agent_id"`
+	Provider string `json:"provider"`
+}
+
+// SetSwarmEventFn sets the callback for swarm.executed events.
+func (d *DispatcherImpl) SetSwarmEventFn(fn func(SwarmEvent)) {
+	d.swarmEventFn = fn
+}
+
+func (d *DispatcherImpl) emitSwarmEvent(taskID string, cfg *swarm.SwarmConfig, sr *swarm.SwarmResult) {
+	if d.swarmEventFn == nil {
+		return
+	}
+	agents := make([]SwarmAgentInfo, len(sr.Agents))
+	for i, a := range sr.Agents {
+		agents[i] = SwarmAgentInfo{AgentID: a.AgentID, Provider: a.Provider}
+	}
+	d.swarmEventFn(SwarmEvent{
+		Type:   "swarm.executed",
+		TaskID: taskID,
+		Topology: SwarmTopologyInfo{
+			Pattern:   cfg.Pattern,
+			Size:      len(sr.Agents),
+			Diversity: cfg.Diversity,
+		},
+		Agents:     agents,
+		Confidence: sr.Confidence,
+		Unanimous:  sr.Unanimous,
+	})
+}
+
+// getAvailableProviders returns configured provider profile names.
+// v1: reads from providerNames field. TODO: integrate with providerconfig.
+func (d *DispatcherImpl) getAvailableProviders() []string {
+	if d.providerNames != nil {
+		return d.providerNames
+	}
+	return nil
+}
+
 // executeTask executes a task by routing to the appropriate executor.
 func (d *DispatcherImpl) executeTask(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
 	if err := d.checkFeatureGate(task); err != nil {
@@ -281,6 +420,11 @@ func (d *DispatcherImpl) executeTask(ctx context.Context, task *types.AgentTask)
 			Error:     err.Error(),
 			Completed: time.Now(),
 		}, err
+	}
+
+	// Swarm topology detection
+	if cfg := swarm.ParseFromMetadata(task.Metadata); cfg != nil {
+		return d.dispatchSwarm(ctx, task, cfg)
 	}
 
 	if d.isEvolutionRequired(task) {
