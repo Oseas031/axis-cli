@@ -1,0 +1,30 @@
+#!/bin/sh
+# Validates commit message follows Conventional Commits format.
+# Install: scripts/git-hooks/install.ps1
+
+HEADER=$(head -1 "$1")
+
+# Allow merge commits
+if echo "$HEADER" | grep -qE '^Merge '; then
+  exit 0
+fi
+
+# Validate format: type(scope): description OR type: description
+if ! echo "$HEADER" | grep -qE '^(feat|fix|docs|refactor|test|chore|perf|research|rdm)(\(.+\))?: .{1,70}$'; then
+  echo "" >&2
+  echo "ERROR: Commit message does not match Conventional Commits format." >&2
+  echo "" >&2
+  echo "Expected: <type>(<scope>): <description>" >&2
+  echo "Types: feat|fix|docs|refactor|test|chore|perf|research|rdm" >&2
+  echo "Scopes: agent|kernel|contextpack|model|vigil|gui|methodology" >&2
+  echo "" >&2
+  echo "Your message: $HEADER" >&2
+  exit 1
+fi
+
+# Validate header length
+LEN=$(echo "$HEADER" | wc -c)
+if [ "$LEN" -gt 71 ]; then
+  echo "ERROR: Commit header exceeds 70 characters ($LEN chars)." >&2
+  exit 1
+fi

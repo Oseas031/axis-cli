@@ -54,4 +54,5 @@ EXTERNAL/
 # Tool-local state
 .kiro/*
 !.kiro/agents/
+!.kiro/skills/
 .context-summary.md

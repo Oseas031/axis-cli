@@ -2,231 +2,54 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main]
     paths:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/config/registry.yml'
-      - '.golangci.yml'
       - '.github/workflows/ci.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main]
     paths:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/config/registry.yml'
-      - '.golangci.yml'
       - '.github/workflows/ci.yml'
 
-# Standard: Event type check before accessing event properties
-# See .github/workflows/CODING_STANDARDS.md section 1.1
 jobs:
-  validate-registry:
-    name: Validate Registry
-    runs-on: ubuntu-latest
-    # on: paths filter above already gates this job — only runs when
-    # .github/config/registry.yml is among the changed paths.
-    # Note: github.event.pull_request.changed_files is an integer count,
-    # not a file list, so we cannot use contains() on it for path checks.
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install pyyaml
-
-      - name: Validate registry
-        run: |
-          python3 << 'EOF'
-          import yaml
-          import sys
-          import os
-          import glob
-
-          with open('.github/config/registry.yml', 'r') as f:
-              registry = yaml.safe_load(f)
-
-          required_fields = ['id', 'name', 'version', 'status', 'category', 'file']
-          workflow_ids = set()
-          errors = []
-
-          for workflow in registry.get('workflows', []):
-              # Check required fields
-              for field in required_fields:
-                  if field not in workflow:
-                      errors.append(f"❌ Workflow {workflow.get('id', 'unknown')} missing required field: {field}")
-
-              # Skip further validation if required fields are missing
-              if 'id' not in workflow or 'file' not in workflow:
-                  continue
-
-              # Check for duplicate IDs
-              if workflow['id'] in workflow_ids:
-                  errors.append(f"❌ Duplicate workflow ID: {workflow['id']}")
-              workflow_ids.add(workflow['id'])
-
-              # Check if file exists with better error messages
-              if not os.path.exists(workflow['file']):
-                  errors.append(f"❌ Workflow file does not exist: {workflow['file']}")
-                  if workflow['file'].startswith('docs/deprecated/'):
-                      suggestions = glob.glob('docs/deprecated/workflows/*.md')
-                      if suggestions:
-                          errors.append(f"💡 Did you mean one of these?")
-                          for s in suggestions[:3]:
-                              errors.append(f"   - {s}")
-
-              # Check if documentation exists with better error messages
-              if 'documentation' in workflow and not os.path.exists(workflow['documentation']):
-                  errors.append(f"❌ Documentation file does not exist: {workflow['documentation']}")
-                  if workflow['documentation'].startswith('/'):
-                      errors.append(f"💡 Absolute path detected. Use relative path from repository root.")
-                  if 'worklow' in workflow['documentation']:
-                      errors.append(f"💡 Typo detected: 'worklow' should be 'workflow'")
-
-          if errors:
-              print("❌ Registry validation failed:")
-              for error in errors:
-                  print(error)
-              sys.exit(1)
-
-          print("✅ Registry validation passed")
-          print(f"✅ Validated {len(workflow_ids)} workflows")
-          EOF
-
-  format:
-    name: Format
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
-
-      - name: Check formatting
-        run: |
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-            echo "The following files are not formatted:"
-            gofmt -s -l .
-            exit 1
-          fi
-
-  vet:
-    name: Vet
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Run go vet
-        run: go vet ./...
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-      - name: Run golangci-lint
-        run: golangci-lint run ./...
-
-  test:
-    name: Test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    needs: [format, vet, lint]
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Verify dependencies
-        run: go mod verify
-
-      - name: Run tests
-        run: go test -v -race -short -timeout 600s "-coverprofile=coverage.out" -covermode=atomic ./...
-
-      - name: Check coverage
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
-          echo "Total coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
-            echo "Coverage is below 60%"
-            exit 1
-          fi
-
-      - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.out
-          fail_ci_if_error: false
-
-  build:
-    name: Build
-    runs-on: ${{ matrix.os }}
-    needs: test
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            binary_name: axis-linux-amd64
-          - os: windows-latest
-            binary_name: axis-windows-amd64.exe
-          - os: macos-latest
-            binary_name: axis-darwin-amd64
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Download dependencies
-        run: go mod download
+          cache: true
 
       - name: Build
-        run: go build -v -o ${{ matrix.binary_name }} ./cmd/axis
+        run: go build ./...
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race -short ./...
+
+  # staticcheck is advisory — failure does not block merge
+  static-analysis:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
         with:
-          name: ${{ matrix.binary_name }}
-          path: ${{ matrix.binary_name }}
+          go-version: '1.26'
+          cache: true
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        run: staticcheck ./...

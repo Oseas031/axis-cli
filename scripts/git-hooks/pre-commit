@@ -1,0 +1,29 @@
+#!/bin/sh
+# Pre-commit checks for Axis project.
+# Install: scripts/git-hooks/install.ps1
+
+# Check no binary/build artifacts staged
+if git diff --cached --name-only | grep -qE '\.(exe|test|out)$'; then
+  echo "ERROR: Binary/build artifacts staged. Remove them before committing." >&2
+  git diff --cached --name-only | grep -E '\.(exe|test|out)$' >&2
+  exit 1
+fi
+
+# Check no secrets (basic pattern — constructed to avoid self-match)
+PREFIX1="sk-"
+PREFIX2="ant-"
+PREFIX3="AKIA"
+SECRET_PAT="${PREFIX1}${PREFIX2}|${PREFIX1}[a-zA-Z0-9]{48,}|${PREFIX3}[A-Z0-9]{16}"
+if git diff --cached --diff-filter=ACM -p | grep -qE "$SECRET_PAT"; then
+  echo "ERROR: Possible secret/API key detected in staged changes." >&2
+  exit 1
+fi
+
+# Run go vet on staged .go files
+STAGED_GO=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$')
+if [ -n "$STAGED_GO" ]; then
+  if ! go vet ./... 2>/dev/null; then
+    echo "ERROR: go vet failed. Fix issues before committing." >&2
+    exit 1
+  fi
+fi
