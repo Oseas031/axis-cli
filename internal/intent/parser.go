@@ -2,6 +2,8 @@ package intent
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -49,7 +51,9 @@ func (p *DeterministicParser) Parse(ctx context.Context, req Request) (*Result, 
 	}
 	taskID := strings.TrimSpace(req.TaskID)
 	if taskID == "" {
-		taskID = "ask-" + time.Now().Format("20060102-150405")
+		var rnd [2]byte
+		_, _ = rand.Read(rnd[:])
+		taskID = "ask-" + time.Now().Format("20060102-150405") + "-" + hex.EncodeToString(rnd[:])
 	}
 	task := &types.AgentTask{
 		TaskID:     taskID,

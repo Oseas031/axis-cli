@@ -23,6 +23,10 @@ func newProviderAddCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			profile.Name = args[0]
+			validTypes := map[string]bool{"mock": true, "echo": true, "anthropic": true, "openai": true, "deepseek": true, "minimax": true}
+			if !validTypes[profile.Provider] {
+				return fmt.Errorf("invalid provider type %q; valid types: mock, echo, anthropic, openai, deepseek, minimax", profile.Provider)
+			}
 			if err := providerconfig.NewStore(defaultApp.resolvedRoot()).AddProfile(profile); err != nil {
 				return err
 			}
@@ -30,7 +34,7 @@ func newProviderAddCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&profile.Provider, "type", "", "Provider type: mock, echo, anthropic, openai")
+	cmd.Flags().StringVar(&profile.Provider, "type", "", "Provider type: mock, echo, anthropic, openai, deepseek, minimax")
 	cmd.Flags().StringVar(&profile.APIKey, "api-key", "", "Provider API key stored in .axis/providers.json")
 	cmd.Flags().StringVar(&profile.BaseURL, "base-url", "", "Provider API base URL")
 	cmd.Flags().StringVar(&profile.Model, "model", "", "Default model")
