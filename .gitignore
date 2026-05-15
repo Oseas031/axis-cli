@@ -1,5 +1,14 @@
 .claude/settings.local.json
 
+# Private / internal tooling state (never publish)
+.claude/
+.devin/
+.swarm/
+WORKFLOW-HUMAN/
+workflow/
+workflows/
+configs/
+
 # Build artifacts
 *.exe
 *.exe~
