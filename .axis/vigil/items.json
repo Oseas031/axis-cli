@@ -2344,5 +2344,22 @@
     "depends_on": null,
     "created_at": "2026-05-15T15:27:14.42651+08:00",
     "history": []
+  },
+  {
+    "id": "vigil-c33f28",
+    "title": "Swarm前置验证被阻塞: MiniMax思考模型每次调用60-70s，20次串行=24min不可行。已尝试: (1)mm-highspeed余额耗尽 (2)mm-official超时/rate-limit (3)timeout从60s→300s仍太慢。待解决: 充值mm-highspeed 或 找到禁用/降低思考的API参数 或 换非思考模型",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "swarm",
+      "blocked"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T19:16:51.9942352+08:00",
+    "history": []
   }
 ]
