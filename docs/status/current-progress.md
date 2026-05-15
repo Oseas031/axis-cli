@@ -5,29 +5,42 @@
 
 ## Vigil Status
 
-Total: 49 | Completed: 37 | Pending: 12 (0 P0, 8 P1, ~12 P2, 3 P3)
+Total: 53 | Completed: 49 | Pending: 25 (3 P1, 17 P2, 4 P3)
 
 ## This Week (2026-05-15)
 
-### Knowledge Base Infrastructure
-- Docs wiki optimized: 196→145 files, 1128→776 KB (-31%), index token -86%
-- `docs/lessons/` created: 5 structured lessons with executable verification
-- BOUNDARY.md executable assertions added (kernel/agent/cmd/memory/contextpack)
-- Hierarchical index: top-level router + sub-directory READMEs
+### GitHub Governance Overhaul
+- Milestone tags m1-m6 + Release v0.1.0
+- Branch protection (require CI, block force push)
+- Issue templates (bug/feature/task)
+- 250 private files removed from tracking (.claude/.devin/.swarm/)
+- git-conventions.md: "Never Commit" section
 
-### Harness Engineering Research
-- 9 principles extracted from Claude Code/Codex harness analysis
-- 4 P1 architecture gaps identified (prompt layering, permission ask semantics, compact recovery, interrupt ledger)
+### Swarm Topology (T1-T6)
+- `internal/kernel/swarm/` — config, dispatch, aggregate (6 files)
+- Parallel multi-agent execution with majority vote
+- Dispatcher integration: swarm.* metadata → multi-agent path
+- SwarmEvent emission for observability
 
-### Real-World Validation (2026-05-14)
-- 25+ tasks executed, multi-turn loop verified (avg 3.08 tool calls, max 20)
-- ExecutionJudge replaces rubber-stamp ToolTraceJudge
-- FallbackProvider: 429 rate-limit → auto-switch, 60s cooldown
+### Agent Infrastructure (5 P1 tasks)
+- FollowUpTask population (parse _next_steps from output)
+- Interrupt ledger closure (synthetic tool_result on abort)
+- Compact semantic recovery (RecoveryContext)
+- Prompt layering (PromptAssembler, priority-based chain)
+- Permission tri-state (ask/allow/deny + AutonomyLevel mapping)
 
-### Architecture Critique Fix (2026-05-14)
-- Docker SandboxedBashTool (true process/network/fs isolation)
-- 8 P0→P2 tech debt items cleared (circuit breaker, multi-turn cap, dispatcher audit, etc.)
-- Orchestrator split into factory/task_loop/registry
+### Cost Budget
+- `AgentTask.CostBudget` field (float64, USD, 0=unlimited)
+- `CostTracker` — per-task accumulation, 80% downgrade threshold
+- Token usage callback wired: multiturn → executor → tracker
+- Dispatcher enforcement: pre-execution budget check
+
+### CI & Quality
+- staticcheck 7 errors fixed
+- Sandbox tests: testing.Short() skip for CI
+- Vigil lock: Linux process detection fix (syscall.Kill)
+- Provider type validation + task ID collision fix
+- Blind testing: 11M fuzz executions, 0 crashes; race detector clean
 
 ## Capability Summary
 

@@ -46,8 +46,8 @@ M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Staged Evolution ✅ | Loc
 - **Staged Evolution Protocol**: Isolated workspace + atomic steps + trace ledger + verification capture + explicit promote/discard gate, full audit trail
 - **Self-Judgement Engine**: SelfJudgementEngine + 5 validation strategies (Syntax/Semantic/Contract/Test/Coverage), context isolation (Context Rot prevention), two-pass escalating judge (lightweight first), generalization scoring, self-judgement contract, BootstrapOrchestrator judgement integration
 - **Bootstrap Loop**: BootstrapOrchestrator + FollowUpTaskGenerator + AutonomyTransition rule engine (configurable thresholds) + self-iteration contracts
-- **Multi-Agent Infrastructure**: Subagent context isolation (IsolationPolicy), JSONL mailbox (send/receive/mark-read), multi-candidate differential testing (CandidatePool)
-- **Progressive Autonomy**: Feature gate (progressive unlock), dispatcher autonomy resolver (metadata-driven, reads `agent.autonomy_level` from task metadata), capability registry, negative feedback downgrade (planned)
+- **Multi-Agent Infrastructure**: Subagent context isolation (IsolationPolicy), JSONL mailbox (send/receive/mark-read), multi-candidate differential testing (CandidatePool), Swarm Topology (parallel_vote pattern, heterogeneous diversity, majority vote aggregation)
+- **Progressive Autonomy**: Feature gate (progressive unlock), dispatcher autonomy resolver (metadata-driven, reads `agent.autonomy_level` from task metadata), capability registry, permission tri-state (ask/allow/deny), cost budget enforcement (per-task USD limit + auto-downgrade)
 - **Dispatcher**: Audit log (in-memory + external audit callback), configurable timeout, tool filter per agent profile
 - **Security**: BashTool Permission Ladder (L0/L1/Unrestricted), SandboxedBashTool (Docker container isolation), FileWriteTool path validation hardened
 - **Guarantee Registry**: Hard/Soft level system promises, Register/Verify/List
