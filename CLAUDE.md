@@ -96,6 +96,62 @@
 
 > 如果变更感觉很快但违反了以上任何一条，那就是错误的变更。先写 Spec-RDT。
 
+## 2.1 常规文档维护豁免（RDM — Routine Documentation Maintenance）
+
+> 渐进条款。修改需 ≥3 次实践反馈证据。
+
+文档知识库的日常维护不应被完整 SRS Loop 流程阻塞。满足以下**全部条件**的操作视为 RDM，享受流程豁免：
+
+### RDM 资格判定（机器可解析）
+
+```yaml
+rdm_predicate:  # 全部为 true 时操作为 RDM
+  - scope: docs_only          # 只修改 docs/ 下的文件
+  - no_new_constraint: true   # 不引入新的约束规则
+  - no_code_change: true      # 不涉及 Go 代码变更
+  - file_count: "<=5"         # 单次操作涉及 ≤5 个文件
+  - line_delta: "<=100"       # 总变更行数 ≤100
+  - operation_type:           # 操作类型在白名单内
+      - append_to_readme
+      - append_to_changelog
+      - update_frontmatter
+      - create_research_note
+      - create_lesson
+      - update_status
+      - fix_dead_link
+      - add_cross_reference
+```
+
+### 豁免矩阵
+
+| 正常流程要求 | RDM 替代 |
+|---|---|
+| §0 #5 Phase 声明（三行格式） | 单行：`RDM: <操作描述>` |
+| §0 #1 "不跳过 Phase II" | 豁免。RDM 是已界定的操作，无需重新界定。 |
+| §0 #6 大任务委派 subagent | 仅当 file_count >5 时触发 |
+| §5 Spec-First Protocol | 豁免。文档维护不是"非平凡功能"。 |
+| §9 commit message 引用 Spec-RDT ID | 替代前缀：`rdm: <描述>` |
+| §13.5 反馈闭环四问 | 替代：`RDM 完成，无规则更新。` （如有发现则正常回答） |
+| §2 编码前检查清单 | 仅检查：输出可观察 + metadata 前缀 + 文档同步（3/11 项） |
+
+### 绝不豁免（硬约束）
+
+以下规则即使在 RDM 中也**永远生效**：
+- §1 绝对禁令（全部）
+- §4 目录边界（修改前读 BOUNDARY.md）
+- §7 无外部依赖
+- §10 跨平台安全
+- WIKI-SCHEMA.md 的 forbidden_operations 和 hard_block
+
+### 自动升级信号
+
+出现以下任一情况时，操作**自动失去 RDM 资格**，必须回退到完整流程：
+
+1. 涉及 architecture/ 文件的 H1 标题修改
+2. 任何文件删除（deprecate 除外）
+3. `axis docs lint` 报告新增 error
+4. 操作规模超出 predicate（>5 文件或 >100 行）
+
 ## 3. 必读文档（按优先级）
 
 | 优先级 | 文件 | 原因 |

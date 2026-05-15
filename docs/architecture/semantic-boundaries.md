@@ -1,3 +1,13 @@
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-05-14
+related:
+  - agent-native-first-principles.md
+  - module-and-naming-conventions.md
+---
+
 # Semantic Boundaries
 
 > 展开自 CLAUDE.md §4（目录边界）+ §6（语义边界）

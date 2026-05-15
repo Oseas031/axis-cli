@@ -63,3 +63,37 @@ func TestParseSkillMetadata_EmptyFields(t *testing.T) {
 		t.Errorf("Body = %q", body)
 	}
 }
+
+
+func TestParseSkillMetadata_WithSource(t *testing.T) {
+	input := "---\nname: tdd\ndescription: Test-driven development\nsource: mattpocock/skills\nsource_version: 2026-05-15\n---\n# TDD\n\nBody."
+
+	meta, body := ParseSkillMetadata(input)
+	if meta == nil {
+		t.Fatal("expected metadata, got nil")
+	}
+	if meta.Source != "mattpocock/skills" {
+		t.Errorf("Source = %q, want %q", meta.Source, "mattpocock/skills")
+	}
+	if meta.SourceVersion != "2026-05-15" {
+		t.Errorf("SourceVersion = %q, want %q", meta.SourceVersion, "2026-05-15")
+	}
+	if body != "# TDD\n\nBody." {
+		t.Errorf("Body = %q", body)
+	}
+}
+
+func TestParseSkillMetadata_WithoutSource(t *testing.T) {
+	input := "---\nname: custom\ndescription: A custom skill\nversion: 1.0.0\n---\nBody."
+
+	meta, _ := ParseSkillMetadata(input)
+	if meta == nil {
+		t.Fatal("expected metadata, got nil")
+	}
+	if meta.Source != "" {
+		t.Errorf("Source should be empty, got %q", meta.Source)
+	}
+	if meta.SourceVersion != "" {
+		t.Errorf("SourceVersion should be empty, got %q", meta.SourceVersion)
+	}
+}

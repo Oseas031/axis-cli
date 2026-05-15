@@ -36,6 +36,26 @@ Immediate (per-execution) → Working (per-session) → Long-term (immutable his
 - [ ] Confirm: cross-platform atomic rename still works on Windows
 - [ ] Confirm: UTF-8-safe truncation invariants preserved in Immediate summaries
 
+## Executable Verification
+
+```bash
+# No external dependencies (only stdlib imports)
+grep -rn "\"github.com/" internal/memory/ --include="*.go" | grep -v "_test.go" | grep -v "axis-cli"
+# Expected: 0 lines
+
+# No CRLF in JSONL writes (must use \n only)
+grep -rn '\\r\\n\|"\r\n"' internal/memory/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines
+
+# No background goroutines (no "go func" in non-test code)
+grep -rn "go func\|go .*(" internal/memory/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines
+
+# No os.Open for .axis/ files (should use os.ReadFile for snapshot reads)
+grep -rn "os\.Open" internal/memory/ --include="*.go" | grep -v "_test.go" | grep -v "os\.OpenFile"
+# Expected: 0 lines (use os.ReadFile for reads, os.OpenFile for append-writes)
+```
+
 ## Common Traps
 
 | Trap | Why It Is Wrong |

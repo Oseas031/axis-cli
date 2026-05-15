@@ -1,3 +1,12 @@
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-05-14
+related:
+  - dialectical-development-methodology.md
+---
+
 ﻿# Spec Lifecycle Conventions
 
 > 展开自 CLAUDE.md §5（Spec-First 协议）

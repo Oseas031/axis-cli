@@ -1,3 +1,13 @@
+---
+type: architecture
+status: active
+created: 2026-05-08
+last_verified: 2026-05-14
+related:
+  - semantic-boundaries.md
+  - kernel-abstraction-model.md
+---
+
 ﻿﻿# First Principles of Agent-Native Scheduling
 
 > 展开自 CLAUDE.md §1（绝对禁令）+ §6（语义边界）+ §11（演化原则）

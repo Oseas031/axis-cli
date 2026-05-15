@@ -14,6 +14,22 @@
 - [ ] Confirm: change does not alter provider request structure or prompt semantics
 - [ ] Confirm: change includes audit test verifying "no injection" boundary
 
+## Executable Verification
+
+```bash
+# Agent must not directly import provider (must go through contract)
+grep -rn "provider\.Call\|provider\.Execute" internal/agent/ --include="*.go" | grep -v "_test.go" | grep -v "contract"
+# Expected: 0 lines
+
+# No context.Background() in agent business logic
+grep -rn "context\.Background()" internal/agent/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines
+
+# No direct prompt augmentation from context summary
+grep -rn "ContextSummary.*prompt\|prompt.*ContextSummary" internal/agent/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines
+```
+
 ## Common Traps
 
 | Trap | Why It Is Wrong |

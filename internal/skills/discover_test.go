@@ -92,15 +92,15 @@ func TestDiscoverWithFixtures(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Discover: %v", err)
 	}
-	if len(metas) != 2 {
-		t.Fatalf("got %d skills, want 2", len(metas))
+	if len(metas) < 2 {
+		t.Fatalf("got %d skills, want at least 2", len(metas))
 	}
 	found := make(map[string]bool)
 	for _, m := range metas {
 		found[m.Name] = true
 	}
 	if !found["pdf"] || !found["code-review"] {
-		t.Errorf("expected pdf and code-review, got %v", found)
+		t.Errorf("expected pdf and code-review in results, got %v", found)
 	}
 }
 

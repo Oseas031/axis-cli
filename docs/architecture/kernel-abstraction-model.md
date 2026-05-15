@@ -1,3 +1,13 @@
+---
+type: architecture
+status: active
+created: 2026-05-12
+last_verified: 2026-05-14
+related:
+  - agent-native-first-principles.md
+  - module-and-naming-conventions.md
+---
+
 ﻿# Kernel Abstraction Model
 
 > 展开自 CLAUDE.md §6（语义边界）— 内核抽象的结构表达

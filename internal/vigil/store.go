@@ -33,11 +33,20 @@ func (s *Store) Load() ([]*Item, error) {
 		}
 		return nil, err
 	}
+	data = stripBOM(data)
 	var items []*Item
 	if err := json.Unmarshal(data, &items); err != nil {
 		return nil, err
 	}
 	return items, nil
+}
+
+// stripBOM removes UTF-8 BOM (0xEF 0xBB 0xBF) if present.
+func stripBOM(data []byte) []byte {
+	if len(data) >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF {
+		return data[3:]
+	}
+	return data
 }
 
 func (s *Store) Save(items []*Item) error {

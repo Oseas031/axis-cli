@@ -14,6 +14,22 @@
 - [ ] Confirm: change is preview-first (dry-run visible before any state mutation)
 - [ ] Confirm: change does not auto-inject context into `AgentExecutionRequest` beyond summary-only opt-in
 
+## Executable Verification
+
+```bash
+# Contextpack must not import provider/model
+grep -rn '"github.com/.*internal/model"' internal/contextpack/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines
+
+# Contextpack must not import kernel (scheduler/dispatcher)
+grep -rn '"github.com/.*internal/kernel"' internal/contextpack/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines
+
+# No external DB dependencies
+grep -rn "\"github.com/" internal/contextpack/ --include="*.go" | grep -v "_test.go" | grep -v "axis-cli"
+# Expected: 0 lines
+```
+
 ## Common Traps
 
 | Trap | Why It Is Wrong |

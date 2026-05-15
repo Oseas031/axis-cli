@@ -36,6 +36,19 @@ axis vigil triage
 - **resume 自动 triage**：每次 resume 静默执行归档/stale/升级，无需手动调用 triage
 - **triage 规则**：pending >7天 → stale；被 ≥3 项依赖 → 升为 P0；completed >48h → 归档
 - **无需手动标记完成**：正常路径由 git hook 处理
+- **竞态防护（Lock）**：`start` 获取文件锁，`done` 释放。多 AI 会话不会同时操作同一 item
+
+## 竞态防护
+
+`axis vigil start <id>` 在 `.axis/vigil/locks/<id>.lock` 写入锁文件（JSON: holder/PID/started_at）。
+
+行为：
+- 另一个活进程已持有锁 → `start` 拒绝，报告持有者 PID
+- 持有者进程已死（stale lock）→ 自动回收，新会话可接管
+- `done` 完成时自动释放锁
+- `resume`/`list` 输出中 🔒 标记表示 item 被活进程锁定
+
+AI 会话规则：看到 🔒 标记的 item，不要尝试 start，选择其他 pending item。
 
 ## 状态流转
 
@@ -64,6 +77,7 @@ feat(vigil): core data layer vigil:vigil-b7c vigil:vigil-d2e
 ## 数据位置
 
 - Active items: `.axis/vigil/items.json`
+- Locks: `.axis/vigil/locks/<id>.lock`
 - Archive: `.axis/vigil/archive/YYYY-MM.json`
 
 ## 与 CLAUDE.md 的关系

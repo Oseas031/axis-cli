@@ -1,1317 +1,1721 @@
-﻿[
-    {
-        "id":  "vigil-85feda",
-        "title":  "defaultToolRegistry() hardcoded tool set",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Needs Agent identity + per-task Contract tool_scopes",
-        "created_at":  "2026-05-14T11:33:48.4293422+08:00",
-        "completed_at":  "2026-05-14T15:26:46.8517981+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:46.8517981+08:00"
-                        }
-                    ]
+[
+  {
+    "id": "vigil-85feda",
+    "title": "defaultToolRegistry() hardcoded tool set",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-8fda37",
-        "title":  "dispatcher hardcoded AutonomyLevelLow",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Needs competence profile + autonomy rule engine",
-        "created_at":  "2026-05-14T11:33:48.8492071+08:00",
-        "completed_at":  "2026-05-14T15:26:47.298607+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:47.298607+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Needs Agent identity + per-task Contract tool_scopes",
+    "created_at": "2026-05-14T11:33:48.4293422+08:00",
+    "completed_at": "2026-05-14T15:26:46.8517981+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:46.8517981+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-8fda37",
+    "title": "dispatcher hardcoded AutonomyLevelLow",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-bda908",
-        "title":  "multi-turn loop cap=10 termination",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Needs Agent stop signal (__done tool)",
-        "created_at":  "2026-05-14T11:33:49.307745+08:00",
-        "completed_at":  "2026-05-14T15:26:48.5988323+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:48.5988323+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Needs competence profile + autonomy rule engine",
+    "created_at": "2026-05-14T11:33:48.8492071+08:00",
+    "completed_at": "2026-05-14T15:26:47.298607+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:47.298607+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-bda908",
+    "title": "multi-turn loop cap=10 termination",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-6e8834",
-        "title":  "Permission scopes never checked",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Needs Permission Ladder infrastructure",
-        "created_at":  "2026-05-14T11:33:49.7464986+08:00",
-        "completed_at":  "2026-05-14T15:26:45.8646322+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:45.8646322+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Needs Agent stop signal (__done tool)",
+    "created_at": "2026-05-14T11:33:49.307745+08:00",
+    "completed_at": "2026-05-14T15:26:48.5988323+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:48.5988323+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-6e8834",
+    "title": "Permission scopes never checked",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-aa60a3",
-        "title":  "syscall tools are empty shells",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Needs scheduler integration interface",
-        "created_at":  "2026-05-14T11:33:50.193684+08:00",
-        "completed_at":  "2026-05-14T15:32:00.4617728+08:00",
-        "commit_hash":  "36db6b4",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:32:00.4617728+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Needs Permission Ladder infrastructure",
+    "created_at": "2026-05-14T11:33:49.7464986+08:00",
+    "completed_at": "2026-05-14T15:26:45.8646322+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:45.8646322+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-aa60a3",
+    "title": "syscall tools are empty shells",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-2655b5",
-        "title":  "Set* temporal coupling",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Wait for AgentConfig struct refactor",
-        "created_at":  "2026-05-14T11:33:50.6212442+08:00",
-        "completed_at":  "2026-05-14T15:26:47.7283957+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:47.7283957+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Needs scheduler integration interface",
+    "created_at": "2026-05-14T11:33:50.193684+08:00",
+    "completed_at": "2026-05-14T15:32:00.4617728+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:32:00.4617728+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-2655b5",
+    "title": "Set* temporal coupling",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-020f38",
-        "title":  "circuit breaker=5 hardcoded",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Can be Contract field, low priority",
-        "created_at":  "2026-05-14T11:33:51.0480199+08:00",
-        "completed_at":  "2026-05-14T15:26:46.3891301+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:46.3891301+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Wait for AgentConfig struct refactor",
+    "created_at": "2026-05-14T11:33:50.6212442+08:00",
+    "completed_at": "2026-05-14T15:26:47.7283957+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:47.7283957+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-020f38",
+    "title": "circuit breaker=5 hardcoded",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-b2f106",
-        "title":  "dispatcher no audit log",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Needs structured event emitter",
-        "created_at":  "2026-05-14T11:33:51.4698505+08:00",
-        "completed_at":  "2026-05-14T15:26:49.0261022+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:49.0261022+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Can be Contract field, low priority",
+    "created_at": "2026-05-14T11:33:51.0480199+08:00",
+    "completed_at": "2026-05-14T15:26:46.3891301+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:46.3891301+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-b2f106",
+    "title": "dispatcher no audit log",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-1553ac",
-        "title":  "mock provider silent default",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Reasonable for dev, fix before production",
-        "created_at":  "2026-05-14T11:33:51.896573+08:00",
-        "completed_at":  "2026-05-14T15:26:48.1634581+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:48.1634581+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Needs structured event emitter",
+    "created_at": "2026-05-14T11:33:51.4698505+08:00",
+    "completed_at": "2026-05-14T15:26:49.0261022+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:49.0261022+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-1553ac",
+    "title": "mock provider silent default",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "tech-debt"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-4c6383",
-        "title":  "FileWriteTool path validation weaker than FileReadTool",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "tech-debt",
-                     "security"
-                 ],
-        "origin":  {
-                       "type":  "code_scan",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Security fix, can be done independently",
-        "created_at":  "2026-05-14T11:33:52.3117147+08:00",
-        "started_at":  "2026-05-14T11:39:37.3391886+08:00",
-        "completed_at":  "2026-05-14T11:45:02.5219912+08:00",
-        "commit_hash":  "ce44079",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "in_progress",
-                            "at":  "2026-05-14T11:39:37.3391886+08:00"
-                        },
-                        {
-                            "from":  "completed",
-                            "to":  "completed",
-                            "at":  "2026-05-14T11:45:02.5219912+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Reasonable for dev, fix before production",
+    "created_at": "2026-05-14T11:33:51.896573+08:00",
+    "completed_at": "2026-05-14T15:26:48.1634581+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:48.1634581+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-4c6383",
+    "title": "FileWriteTool path validation weaker than FileReadTool",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "tech-debt",
+      "security"
+    ],
+    "origin": {
+      "type": "code_scan",
+      "ref": ""
     },
-    {
-        "id":  "vigil-c806e2",
-        "title":  "Judge: generalization scoring (OOD/ID ratio)",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "judge"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Agent cannot upgrade on familiar tasks alone. Threshold: \u003e=0.8 upgrade, \u003c0.5 downgrade",
-        "created_at":  "2026-05-14T11:34:03.6395868+08:00",
-        "completed_at":  "2026-05-14T12:28:04.9117772+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:04.9117772+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Security fix, can be done independently",
+    "created_at": "2026-05-14T11:33:52.3117147+08:00",
+    "started_at": "2026-05-14T11:39:37.3391886+08:00",
+    "completed_at": "2026-05-14T11:45:02.5219912+08:00",
+    "commit_hash": "ce44079",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-14T11:39:37.3391886+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-14T11:45:02.5219912+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-c806e2",
+    "title": "Judge: generalization scoring (OOD/ID ratio)",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "judge"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-ef8c34",
-        "title":  "Autonomy Transition rule refactor",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "autonomy"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Replace consecutive-success with: resource-constrained + OOD + architecture-driven",
-        "created_at":  "2026-05-14T11:34:04.065694+08:00",
-        "completed_at":  "2026-05-14T12:28:02.7456864+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:02.7456864+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Agent cannot upgrade on familiar tasks alone. Threshold: \u003e=0.8 upgrade, \u003c0.5 downgrade",
+    "created_at": "2026-05-14T11:34:03.6395868+08:00",
+    "completed_at": "2026-05-14T12:28:04.9117772+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:04.9117772+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-ef8c34",
+    "title": "Autonomy Transition rule refactor",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "autonomy"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-9d684f",
-        "title":  "Permission Ladder Level 0 whitelist",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "security"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Initial command whitelist: ls/cat/grep/wc/git/go build/go test",
-        "created_at":  "2026-05-14T11:34:04.5149068+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Replace consecutive-success with: resource-constrained + OOD + architecture-driven",
+    "created_at": "2026-05-14T11:34:04.065694+08:00",
+    "completed_at": "2026-05-14T12:28:02.7456864+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:02.7456864+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-9d684f",
+    "title": "Permission Ladder Level 0 whitelist",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "security"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-253bf5",
-        "title":  "Refactor: split orchestrator",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "refactor"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Extract ToolRegistryBuilder + ExecutorFactory, orchestrator only does scheduling loop",
-        "created_at":  "2026-05-14T11:34:04.9557844+08:00",
-        "completed_at":  "2026-05-14T12:28:03.170585+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:03.170585+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Initial command whitelist: ls/cat/grep/wc/git/go build/go test",
+    "created_at": "2026-05-14T11:34:04.5149068+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-253bf5",
+    "title": "Refactor: split orchestrator",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "refactor"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-69274c",
-        "title":  "Refactor: AgentConfig struct",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "refactor"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Unify provider/tools/skills/compaction into single config, eliminate Set* method chain",
-        "created_at":  "2026-05-14T11:34:05.3793377+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Extract ToolRegistryBuilder + ExecutorFactory, orchestrator only does scheduling loop",
+    "created_at": "2026-05-14T11:34:04.9557844+08:00",
+    "completed_at": "2026-05-14T12:28:03.170585+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:03.170585+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-69274c",
+    "title": "Refactor: AgentConfig struct",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "refactor"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-1651f6",
-        "title":  "Subagent context isolation",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Parent fresh context dispatch, subagent returns summary only",
-        "created_at":  "2026-05-14T11:34:05.8034126+08:00",
-        "completed_at":  "2026-05-14T12:28:03.6028181+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:03.6028181+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Unify provider/tools/skills/compaction into single config, eliminate Set* method chain",
+    "created_at": "2026-05-14T11:34:05.3793377+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-1651f6",
+    "title": "Subagent context isolation",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-4f646e",
-        "title":  "Guarantee Registry",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Explicit auditable system guarantees. Sublated from arXiv:2605.12239 Know layer",
-        "created_at":  "2026-05-14T11:34:06.2229738+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Parent fresh context dispatch, subagent returns summary only",
+    "created_at": "2026-05-14T11:34:05.8034126+08:00",
+    "completed_at": "2026-05-14T12:28:03.6028181+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:03.6028181+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-4f646e",
+    "title": "Guarantee Registry",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-5e1eab",
-        "title":  "Quality-Gated Model Escalation",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Judge score \u003c threshold -\u003e auto upgrade provider tier. Sublated from arXiv:2605.12239",
-        "created_at":  "2026-05-14T11:34:06.6477413+08:00",
-        "completed_at":  "2026-05-14T12:28:04.0347057+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:04.0347057+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Explicit auditable system guarantees. Sublated from arXiv:2605.12239 Know layer",
+    "created_at": "2026-05-14T11:34:06.2229738+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-5e1eab",
+    "title": "Quality-Gated Model Escalation",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-d8a622",
-        "title":  "Background Tasks async execution",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Slow operations go background, Agent continues thinking",
-        "created_at":  "2026-05-14T11:34:07.0688035+08:00",
-        "completed_at":  "2026-05-14T12:28:04.4745458+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:04.4745458+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Judge score \u003c threshold -\u003e auto upgrade provider tier. Sublated from arXiv:2605.12239",
+    "created_at": "2026-05-14T11:34:06.6477413+08:00",
+    "completed_at": "2026-05-14T12:28:04.0347057+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:04.0347057+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-d8a622",
+    "title": "Background Tasks async execution",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-8b8482",
-        "title":  "Feature progressive unlock (BashTool/Evolution/Permissions)",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "autonomy"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "30 tasks + accuracy\u003e=90% + generalization\u003e=0.8 + reliability\u003e=95% + zero violations",
-        "created_at":  "2026-05-14T11:34:17.3231788+08:00",
-        "completed_at":  "2026-05-14T15:26:49.4822467+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:49.4822467+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Slow operations go background, Agent continues thinking",
+    "created_at": "2026-05-14T11:34:07.0688035+08:00",
+    "completed_at": "2026-05-14T12:28:04.4745458+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:04.4745458+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-8b8482",
+    "title": "Feature progressive unlock (BashTool/Evolution/Permissions)",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "autonomy"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-a2abbc",
-        "title":  "Unified Capability registration interface",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "refactor"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Capability interface (tool + prompt injection + config), register in one line",
-        "created_at":  "2026-05-14T11:34:17.7554872+08:00",
-        "completed_at":  "2026-05-14T15:32:00.8954798+08:00",
-        "commit_hash":  "36db6b4",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:32:00.8954798+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "30 tasks + accuracy\u003e=90% + generalization\u003e=0.8 + reliability\u003e=95% + zero violations",
+    "created_at": "2026-05-14T11:34:17.3231788+08:00",
+    "completed_at": "2026-05-14T15:26:49.4822467+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:49.4822467+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-a2abbc",
+    "title": "Unified Capability registration interface",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "refactor"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-233b3b",
-        "title":  "Provider semantic layering (Execute vs Utility)",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Independent quotas and model selection for dialogue vs summarization/judge/embedding",
-        "created_at":  "2026-05-14T11:34:18.209757+08:00",
-        "completed_at":  "2026-05-14T15:32:01.3325873+08:00",
-        "commit_hash":  "36db6b4",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:32:01.3325873+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Capability interface (tool + prompt injection + config), register in one line",
+    "created_at": "2026-05-14T11:34:17.7554872+08:00",
+    "completed_at": "2026-05-14T15:32:00.8954798+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:32:00.8954798+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-233b3b",
+    "title": "Provider semantic layering (Execute vs Utility)",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-fd6153",
-        "title":  "Multi-Agent collaboration (JSONL mailbox)",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "JSONL mailbox protocol + auto-claim + worktree integration",
-        "created_at":  "2026-05-14T11:34:18.642982+08:00",
-        "completed_at":  "2026-05-14T15:32:01.7830621+08:00",
-        "commit_hash":  "36db6b4",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:32:01.7830621+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Independent quotas and model selection for dialogue vs summarization/judge/embedding",
+    "created_at": "2026-05-14T11:34:18.209757+08:00",
+    "completed_at": "2026-05-14T15:32:01.3325873+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:32:01.3325873+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-fd6153",
+    "title": "Multi-Agent collaboration (JSONL mailbox)",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-fdb806",
-        "title":  "Skills composable metadata",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "input_type/output_type/composable_with in SKILL.md frontmatter. Sublated from arXiv:2605.12239",
-        "created_at":  "2026-05-14T11:34:19.072044+08:00",
-        "completed_at":  "2026-05-14T15:26:49.9349477+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:49.9349477+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "JSONL mailbox protocol + auto-claim + worktree integration",
+    "created_at": "2026-05-14T11:34:18.642982+08:00",
+    "completed_at": "2026-05-14T15:32:01.7830621+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:32:01.7830621+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-fdb806",
+    "title": "Skills composable metadata",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-1054a4",
-        "title":  "CodingAgent spec: requirements.md + design.md",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "coding-agent"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Based on first-principles.md, implement 4-Phase tool call ordering + output format Contract",
-        "created_at":  "2026-05-14T11:34:19.4945461+08:00",
-        "started_at":  "2026-05-14T11:39:37.7594392+08:00",
-        "completed_at":  "2026-05-14T11:45:03.1972469+08:00",
-        "commit_hash":  "b7d795f",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "in_progress",
-                            "at":  "2026-05-14T11:39:37.7594392+08:00"
-                        },
-                        {
-                            "from":  "in_progress",
-                            "to":  "completed",
-                            "at":  "2026-05-14T11:45:03.1972469+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "input_type/output_type/composable_with in SKILL.md frontmatter. Sublated from arXiv:2605.12239",
+    "created_at": "2026-05-14T11:34:19.072044+08:00",
+    "completed_at": "2026-05-14T15:26:49.9349477+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:49.9349477+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-1054a4",
+    "title": "CodingAgent spec: requirements.md + design.md",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "coding-agent"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-1384ea",
-        "title":  "Research: Symbolic Equivalence Partitioning (arXiv:2604.06485)",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "research"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "CodingAgent P2: equivalence classes for code selection. +7.2% at N=10",
-        "created_at":  "2026-05-14T11:53:26.7092462+08:00",
-        "completed_at":  "2026-05-14T12:10:27.2399342+08:00",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:10:27.2399342+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Based on first-principles.md, implement 4-Phase tool call ordering + output format Contract",
+    "created_at": "2026-05-14T11:34:19.4945461+08:00",
+    "started_at": "2026-05-14T11:39:37.7594392+08:00",
+    "completed_at": "2026-05-14T11:45:03.1972469+08:00",
+    "commit_hash": "b7d795f",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-14T11:39:37.7594392+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-14T11:45:03.1972469+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-1384ea",
+    "title": "Research: Symbolic Equivalence Partitioning (arXiv:2604.06485)",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-71ce28",
-        "title":  "Research: Variational Posterior Guidance (arXiv:2605.11019)",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "research"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Compression = finding equivalent short paths. Maps to three-layer compaction",
-        "created_at":  "2026-05-14T11:53:34.0509617+08:00",
-        "completed_at":  "2026-05-14T12:10:27.6794965+08:00",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:10:27.6794965+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "CodingAgent P2: equivalence classes for code selection. +7.2% at N=10",
+    "created_at": "2026-05-14T11:53:26.7092462+08:00",
+    "completed_at": "2026-05-14T12:10:27.2399342+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:10:27.2399342+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-71ce28",
+    "title": "Research: Variational Posterior Guidance (arXiv:2605.11019)",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-96f52f",
-        "title":  "Research: Token-Level Hallucination Detection 0.6B (arXiv:2605.12384)",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "research"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Lightweight judge surpasses QwQ-32B. Maps to Judge drafter/verifier pattern",
-        "created_at":  "2026-05-14T11:53:34.6053212+08:00",
-        "completed_at":  "2026-05-14T12:10:28.1199978+08:00",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:10:28.1199978+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Compression = finding equivalent short paths. Maps to three-layer compaction",
+    "created_at": "2026-05-14T11:53:34.0509617+08:00",
+    "completed_at": "2026-05-14T12:10:27.6794965+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:10:27.6794965+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-96f52f",
+    "title": "Research: Token-Level Hallucination Detection 0.6B (arXiv:2605.12384)",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-e94383",
-        "title":  "Judge must use independent short context (Context Rot fix)",
-        "priority":  "P0",
-        "status":  "completed",
-        "tags":  [
-                     "security",
-                     "judge"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "arXiv:2605.12366: 800K token閸氬孩绱″Λ鈧悳?x-30x. Judge閸欘亞婀協inal artifacts+task spec, 娑撳秶婀呯€瑰本鏆ranscript.",
-        "created_at":  "2026-05-14T11:58:55.1653083+08:00",
-        "completed_at":  "2026-05-14T12:28:02.2044284+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:02.2044284+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "Lightweight judge surpasses QwQ-32B. Maps to Judge drafter/verifier pattern",
+    "created_at": "2026-05-14T11:53:34.6053212+08:00",
+    "completed_at": "2026-05-14T12:10:28.1199978+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:10:28.1199978+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-e94383",
+    "title": "Judge must use independent short context (Context Rot fix)",
+    "priority": "P0",
+    "status": "completed",
+    "tags": [
+      "security",
+      "judge"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-5a10ec",
-        "title":  "CodingAgent: multi-candidate generation + differential testing",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "coding-agent",
-                     "research"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "arXiv:2604.06485 SEP: generate N\u003e=3 candidates, run same inputs, select dominant equivalence class. Replaces single-shot + verify.",
-        "created_at":  "2026-05-14T12:10:19.6130531+08:00",
-        "completed_at":  "2026-05-14T12:28:05.354265+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:05.354265+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "arXiv:2605.12366: 800K token閸氬孩绱″Λ鈧悳?x-30x. Judge閸欘亞婀協inal artifacts+task spec, 娑撳秶婀呯€瑰本鏆ranscript.",
+    "created_at": "2026-05-14T11:58:55.1653083+08:00",
+    "completed_at": "2026-05-14T12:28:02.2044284+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:02.2044284+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-5a10ec",
+    "title": "CodingAgent: multi-candidate generation + differential testing",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "coding-agent",
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-2b4048",
-        "title":  "ContextBundle: task-aware compression scoring",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "contextpack",
-                     "research"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "arXiv:2605.11019 VPG-EA: score context chunks by task relevance before compression. Not simple truncation.",
-        "created_at":  "2026-05-14T12:10:20.1202144+08:00",
-        "completed_at":  "2026-05-14T15:26:50.4289182+08:00",
-        "commit_hash":  "6634a0b",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:26:50.4289182+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "arXiv:2604.06485 SEP: generate N\u003e=3 candidates, run same inputs, select dominant equivalence class. Replaces single-shot + verify.",
+    "created_at": "2026-05-14T12:10:19.6130531+08:00",
+    "completed_at": "2026-05-14T12:28:05.354265+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:05.354265+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-2b4048",
+    "title": "ContextBundle: task-aware compression scoring",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "contextpack",
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-15c221",
-        "title":  "Judge: lightweight first-pass + escalation gate",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "judge",
-                     "research"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "arXiv:2605.12384 TokenHD: 0.6B beats QwQ-32B at hallucination detection. Cheap judge first, expensive only on demand.",
-        "created_at":  "2026-05-14T12:10:20.5514906+08:00",
-        "completed_at":  "2026-05-14T12:28:05.7923863+08:00",
-        "commit_hash":  "0f0c4a5",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T12:28:05.7923863+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "arXiv:2605.11019 VPG-EA: score context chunks by task relevance before compression. Not simple truncation.",
+    "created_at": "2026-05-14T12:10:20.1202144+08:00",
+    "completed_at": "2026-05-14T15:26:50.4289182+08:00",
+    "commit_hash": "6634a0b",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:26:50.4289182+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-15c221",
+    "title": "Judge: lightweight first-pass + escalation gate",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "judge",
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-e91a00",
-        "title":  "Runtime startup: mark orphaned running/pending tasks as abandoned",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "reliability",
-                     "gap-a"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "On axis start, scan event log for running/pending tasks from previous PID. Append abandoned event. Prevents zombie tasks in GUI/event stream.",
-        "created_at":  "2026-05-14T15:18:52+08:00",
-        "completed_at":  "2026-05-14T15:31:59.9570441+08:00",
-        "commit_hash":  "36db6b4",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T15:31:59.9570441+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "arXiv:2605.12384 TokenHD: 0.6B beats QwQ-32B at hallucination detection. Cheap judge first, expensive only on demand.",
+    "created_at": "2026-05-14T12:10:20.5514906+08:00",
+    "completed_at": "2026-05-14T12:28:05.7923863+08:00",
+    "commit_hash": "0f0c4a5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T12:28:05.7923863+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-e91a00",
+    "title": "Runtime startup: mark orphaned running/pending tasks as abandoned",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "reliability",
+      "gap-a"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": ""
     },
-    {
-        "id":  "vigil-f01a00",
-        "title":  "Docker-based SandboxedBashTool (true process/network/fs isolation)",
-        "priority":  "P0",
-        "status":  "completed",
-        "tags":  [
-                     "security",
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "architecture-critique-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Implement SandboxedBashTool using docker exec. Low trust tasks run in container (read-only project mount + tmpfs workdir + network none + resource limits). Fallback to direct exec if Docker unavailable. Replaces L0 whitelist as primary security boundary.",
-        "created_at":  "2026-05-14T16:52:00+08:00",
-        "completed_at":  "2026-05-14T20:34:00+08:00",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T20:34:00+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "On axis start, scan event log for running/pending tasks from previous PID. Append abandoned event. Prevents zombie tasks in GUI/event stream.",
+    "created_at": "2026-05-14T15:18:52+08:00",
+    "completed_at": "2026-05-14T15:31:59.9570441+08:00",
+    "commit_hash": "36db6b4",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T15:31:59.9570441+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f01a00",
+    "title": "Docker-based SandboxedBashTool (true process/network/fs isolation)",
+    "priority": "P0",
+    "status": "completed",
+    "tags": [
+      "security",
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
     },
-    {
-        "id":  "vigil-f01b00",
-        "title":  "Rename Sandboxed Evolution to Staged Evolution (remaining: spec directory + file refs)",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "naming",
-                     "credibility"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "architecture-critique-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "README already uses \u0027Staged Evolution Protocol\u0027. Remaining: rename docs/specs/sandboxed-evolution/ directory to docs/specs/staged-evolution/, update internal cross-references. Downgraded from P0 to P2 since public-facing naming is already correct.",
-        "created_at":  "2026-05-14T16:52:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Implement SandboxedBashTool using docker exec. Low trust tasks run in container (read-only project mount + tmpfs workdir + network none + resource limits). Fallback to direct exec if Docker unavailable. Replaces L0 whitelist as primary security boundary.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "completed_at": "2026-05-14T20:34:00+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T20:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f01b00",
+    "title": "Rename Sandboxed Evolution to Staged Evolution (remaining: spec directory + file refs)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "naming",
+      "credibility"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
     },
-    {
-        "id":  "vigil-f01c00",
-        "title":  "Autonomy negative feedback: auto-downgrade on consecutive failures",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "autonomy",
-                     "reliability"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "architecture-critique-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "AutonomyRules has upgrade path but no downgrade trigger. Add: N consecutive task failures -\u003e auto-downgrade autonomy level. N consecutive tool errors -\u003e restrict to L0 whitelist.",
-        "created_at":  "2026-05-14T16:52:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "README already uses 'Staged Evolution Protocol'. Remaining: rename docs/specs/sandboxed-evolution/ directory to docs/specs/staged-evolution/, update internal cross-references. Downgraded from P0 to P2 since public-facing naming is already correct.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f01c00",
+    "title": "Autonomy negative feedback: auto-downgrade on consecutive failures",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "autonomy",
+      "reliability"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
     },
-    {
-        "id":  "vigil-f01d00",
-        "title":  "Runaway detection: semantic progress tracking",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "reliability",
-                     "agent"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "architecture-critique-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "VALIDATED by iter-07b: Agent blind-retried \u0027go test\u0027 twice (turns 1-2 identical output). Runaway detection would save 1 turn. Impl: if last 2 tool calls have identical command+output -\u003e inject \u0027try different approach\u0027 feedback instead of abort. Cheap heuristic, proven needed.",
-        "created_at":  "2026-05-14T16:52:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "AutonomyRules has upgrade path but no downgrade trigger. Add: N consecutive task failures -\u003e auto-downgrade autonomy level. N consecutive tool errors -\u003e restrict to L0 whitelist.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f01d00",
+    "title": "Runaway detection: semantic progress tracking",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "reliability",
+      "agent"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
     },
-    {
-        "id":  "vigil-f01e00",
-        "title":  "Honest positioning: README/docs reflect single-user dev tool, not distributed infra",
-        "priority":  "P1",
-        "status":  "completed",
-        "tags":  [
-                     "docs",
-                     "credibility"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "architecture-critique-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "README has explicit \u0027Current Limitations\u0027 section covering: single-machine, no multi-tenant, Docker dependency, Self-Judgement advisory, no production validation.",
-        "created_at":  "2026-05-14T16:52:00+08:00",
-        "completed_at":  "2026-05-14T20:34:00+08:00",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T20:34:00+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "VALIDATED by iter-07b: Agent blind-retried 'go test' twice (turns 1-2 identical output). Runaway detection would save 1 turn. Impl: if last 2 tool calls have identical command+output -\u003e inject 'try different approach' feedback instead of abort. Cheap heuristic, proven needed.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f01e00",
+    "title": "Honest positioning: README/docs reflect single-user dev tool, not distributed infra",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "docs",
+      "credibility"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
     },
-    {
-        "id":  "vigil-f01f00",
-        "title":  "Real-world validation: run 10+ coding tasks, collect data, calibrate parameters",
-        "priority":  "P1",
-        "status":  "completed",
-        "completed_at":  "2026-05-14T21:27:00+08:00",
-        "tags":  [
-                     "validation",
-                     "agent"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "architecture-critique-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "DONE: 25+ tasks executed. MaxIterations=20/MaxErrors=5/TurnTimeout=60s adequate. ExecutionJudge 4-criteria replaces rubber-stamp. See validation-report-2026-05-14.md",
-        "created_at":  "2026-05-14T16:52:00+08:00",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T21:27:00+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "README has explicit 'Current Limitations' section covering: single-machine, no multi-tenant, Docker dependency, Self-Judgement advisory, no production validation.",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "completed_at": "2026-05-14T20:34:00+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T20:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f01f00",
+    "title": "Real-world validation: run 10+ coding tasks, collect data, calibrate parameters",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "validation",
+      "agent"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
     },
-    {
-        "id":  "vigil-f01g00",
-        "title":  "Reposition SelfJudgement as auxiliary signal, not reliable verdict",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "architecture",
-                     "honesty"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "architecture-critique-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "README Current Limitations states: \u0027Self-Judgement is advisory: LLM judging LLM has unresolvable same-source bias. Only compiler/test results are authoritative verification.\u0027",
-        "created_at":  "2026-05-14T16:52:00+08:00",
-        "completed_at":  "2026-05-14T20:34:00+08:00",
-        "history":  [
-                        {
-                            "from":  "pending",
-                            "to":  "completed",
-                            "at":  "2026-05-14T20:34:00+08:00"
-                        }
-                    ]
+    "depends_on": null,
+    "notes": "DONE: 25+ tasks executed. MaxIterations=20/MaxErrors=5/TurnTimeout=60s adequate. ExecutionJudge 4-criteria replaces rubber-stamp. See validation-report-2026-05-14.md",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "completed_at": "2026-05-14T21:27:00+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T21:27:00+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f01g00",
+    "title": "Reposition SelfJudgement as auxiliary signal, not reliable verdict",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture",
+      "honesty"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "architecture-critique-2026-05-14"
     },
-    {
-        "id":  "vigil-f02a00",
-        "title":  "Aspirational spec: single-machine to distributed architecture evolution path",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "architecture",
-                     "aspirational"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "interview-dialectical-todo-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Write docs/architecture/distributed-evolution-path.md. Mark aspirational. Define activation condition: when real-world validation (f01f00) proves single-machine ceiling is hit. Direction \u003e correctness at this stage.",
-        "created_at":  "2026-05-14T20:42:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "README Current Limitations states: 'Self-Judgement is advisory: LLM judging LLM has unresolvable same-source bias. Only compiler/test results are authoritative verification.'",
+    "created_at": "2026-05-14T16:52:00+08:00",
+    "completed_at": "2026-05-14T20:34:00+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-14T20:34:00+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-f02a00",
+    "title": "Aspirational spec: single-machine to distributed architecture evolution path",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture",
+      "aspirational"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
     },
-    {
-        "id":  "vigil-f02b00",
-        "title":  "Abstract StateStore interface (enable future persistence swap)",
-        "priority":  "P2",
-        "status":  "completed",
-        "tags":  [
-                     "architecture",
-                     "interface"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "interview-dialectical-todo-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Extract StateStore interface from in-memory state. Current impl becomes MemoryStateStore. Interface: Save/Load/List/Delete. Enables future swap to SQLite/BoltDB without rewriting consumers. Interface is existence.",
-        "created_at":  "2026-05-14T20:42:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Write docs/architecture/distributed-evolution-path.md. Mark aspirational. Define activation condition: when real-world validation (f01f00) proves single-machine ceiling is hit. Direction \u003e correctness at this stage.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f02b00",
+    "title": "Abstract StateStore interface (enable future persistence swap)",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture",
+      "interface"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
     },
-    {
-        "id":  "vigil-f02c00",
-        "title":  "Abstract MessageTransport interface (enable future MQ swap)",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "architecture",
-                     "interface"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "interview-dialectical-todo-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Extract MessageTransport interface from JSONL mailbox. Current impl becomes JSONLTransport. Interface: Send/Receive/Ack. Enables future swap to channel/queue without rewriting comm layer.",
-        "created_at":  "2026-05-14T20:42:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Extract StateStore interface from in-memory state. Current impl becomes MemoryStateStore. Interface: Save/Load/List/Delete. Enables future swap to SQLite/BoltDB without rewriting consumers. Interface is existence.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f02c00",
+    "title": "Abstract MessageTransport interface (enable future MQ swap)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "architecture",
+      "interface"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
     },
-    {
-        "id":  "vigil-f02d00",
-        "title":  "Semantic layer anti-spoofing: validate Agent\u0027s semantic_layer declaration",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "security",
-                     "trust"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "interview-dialectical-todo-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Agent self-declares utility/primary. Add LayerValidator: compare declared layer vs historical token consumption for same task type. If mismatch (declares primary but task pattern matches utility), downgrade to utility. Prevents gaming for expensive models.",
-        "created_at":  "2026-05-14T20:42:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Extract MessageTransport interface from JSONL mailbox. Current impl becomes JSONLTransport. Interface: Send/Receive/Ack. Enables future swap to channel/queue without rewriting comm layer.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f02d00",
+    "title": "Semantic layer anti-spoofing: validate Agent's semantic_layer declaration",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "security",
+      "trust"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
     },
-    {
-        "id":  "vigil-f02e00",
-        "title":  "Cost budget as first-class constraint: AgentTask.cost_budget + auto-downgrade",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "architecture",
-                     "cost"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "interview-dialectical-todo-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Add cost_budget field to AgentTask. Dispatcher checks accumulated token cost per task. If approaching budget, auto-downgrade to cheaper model tier. Closes the cost control loop that token accounting opened.",
-        "created_at":  "2026-05-14T20:42:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Agent self-declares utility/primary. Add LayerValidator: compare declared layer vs historical token consumption for same task type. If mismatch (declares primary but task pattern matches utility), downgrade to utility. Prevents gaming for expensive models.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f02e00",
+    "title": "Cost budget as first-class constraint: AgentTask.cost_budget + auto-downgrade",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "architecture",
+      "cost"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "interview-dialectical-todo-2026-05-14"
     },
-    {
-        "id":  "vigil-f03a00",
-        "title":  "FollowUpTask population: LLMAgentExecutor parses Agent output for next steps",
-        "priority":  "P1",
-        "status":  "pending",
-        "tags":  [
-                     "agent",
-                     "bootstrap"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "validation-report-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Validation found: FollowUpHandler wired in dispatcher but LLMAgentExecutor never populates FollowUpTasks field. Agent output needs parsing for \u0027next steps\u0027 section. Without this, Bootstrap Loop is dead code.",
-        "created_at":  "2026-05-14T21:27:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Add cost_budget field to AgentTask. Dispatcher checks accumulated token cost per task. If approaching budget, auto-downgrade to cheaper model tier. Closes the cost control loop that token accounting opened.",
+    "created_at": "2026-05-14T20:42:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03a00",
+    "title": "FollowUpTask population: LLMAgentExecutor parses Agent output for next steps",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "agent",
+      "bootstrap"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "validation-report-2026-05-14"
     },
-    {
-        "id":  "vigil-f03b00",
-        "title":  "BashTool Windows PATH: inject go/node/python paths or document system prompt hint",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "reliability",
-                     "dx"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "validation-report-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Validation iter-07b: Agent wasted 7 turns discovering cmd.exe works for go test. Fix: either inject common tool paths into BashTool env, or add Windows hint to Agent system prompt (\u0027use cmd.exe /c for go/node commands\u0027).",
-        "created_at":  "2026-05-14T21:27:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Validation found: FollowUpHandler wired in dispatcher but LLMAgentExecutor never populates FollowUpTasks field. Agent output needs parsing for 'next steps' section. Without this, Bootstrap Loop is dead code.",
+    "created_at": "2026-05-14T21:27:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03b00",
+    "title": "BashTool Windows PATH: inject go/node/python paths or document system prompt hint",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "reliability",
+      "dx"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "validation-report-2026-05-14"
     },
-    {
-        "id":  "vigil-f03c00",
-        "title":  "Adversarial validation: tasks designed to trigger judgement_failed",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "validation",
-                     "judge"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "validation-report-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "Validation gap: no production judgement_failed event yet. Need tasks that truly cannot be completed (missing files, impossible constraints) to verify ExecutionJudge rejects and retry-on-failure triggers.",
-        "created_at":  "2026-05-14T21:27:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Validation iter-07b: Agent wasted 7 turns discovering cmd.exe works for go test. Fix: either inject common tool paths into BashTool env, or add Windows hint to Agent system prompt ('use cmd.exe /c for go/node commands').",
+    "created_at": "2026-05-14T21:27:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03c00",
+    "title": "Adversarial validation: tasks designed to trigger judgement_failed",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "validation",
+      "judge"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "validation-report-2026-05-14"
     },
-    {
-        "id":  "vigil-f03d00",
-        "title":  "MemoryTool: Agent can persist learnings across tasks",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "agent",
-                     "memory"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "freecode-research-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "EVIDENCE: iter-07b Agent spent 7 turns rediscovering cmd.exe works for go commands. With memory, next task knows immediately. Impl: MemoryTool (read/write .axis/memory/*.md), Agent decides what to remember. Not a background service 鈥?Agent calls it explicitly. Inspired by free-code memdir but respects Zero Prescription.",
-        "created_at":  "2026-05-14T23:00:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Validation gap: no production judgement_failed event yet. Need tasks that truly cannot be completed (missing files, impossible constraints) to verify ExecutionJudge rejects and retry-on-failure triggers.",
+    "created_at": "2026-05-14T21:27:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03d00",
+    "title": "MemoryTool: Agent can persist learnings across tasks",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "agent",
+      "memory"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "freecode-research-2026-05-14"
     },
-    {
-        "id":  "vigil-f03e00",
-        "title":  "Feature Gate compile-time elimination (dead code removal for disabled capabilities)",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "security",
-                     "architecture"
-                 ],
-        "origin":  {
-                       "type":  "manual",
-                       "ref":  "freecode-research-2026-05-14"
-                   },
-        "depends_on":  null,
-        "notes":  "free-code uses bun:bundle feature() for compile-time DCE. Axis equivalent: go build tags per capability tier. Disabled capabilities should not exist in binary, not just be runtime-gated. Stronger security guarantee than Permission Ladder alone.",
-        "created_at":  "2026-05-14T23:00:00+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "EVIDENCE: iter-07b Agent spent 7 turns rediscovering cmd.exe works for go commands. With memory, next task knows immediately. Impl: MemoryTool (read/write .axis/memory/*.md), Agent decides what to remember. Not a background service 鈥?Agent calls it explicitly. Inspired by free-code memdir but respects Zero Prescription.",
+    "created_at": "2026-05-14T23:00:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f03e00",
+    "title": "Feature Gate compile-time elimination (dead code removal for disabled capabilities)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "security",
+      "architecture"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "freecode-research-2026-05-14"
     },
-    {
-        "id":  "vigil-e3f3e7",
-        "title":  "Chat: time separator between messages \u003e30min apart",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "gui"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Insert date/time divider when adjacent messages are \u003e30min apart for visual session grouping",
-        "created_at":  "2026-05-14T20:52:42.6860224+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "free-code uses bun:bundle feature() for compile-time DCE. Axis equivalent: go build tags per capability tier. Disabled capabilities should not exist in binary, not just be runtime-gated. Stronger security guarantee than Permission Ladder alone.",
+    "created_at": "2026-05-14T23:00:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-e3f3e7",
+    "title": "Chat: time separator between messages \u003e30min apart",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "gui"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-1119ff",
-        "title":  "Chat: localStorage capacity protection (auto-trim \u003e2000 msgs)",
-        "priority":  "P2",
-        "status":  "pending",
-        "tags":  [
-                     "gui"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "When messages exceed 2000, auto-trim oldest to prevent localStorage overflow",
-        "created_at":  "2026-05-14T20:52:47.4653744+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "Insert date/time divider when adjacent messages are \u003e30min apart for visual session grouping",
+    "created_at": "2026-05-14T20:52:42.6860224+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-1119ff",
+    "title": "Chat: localStorage capacity protection (auto-trim \u003e2000 msgs)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "gui"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-a1f271",
-        "title":  "Chat: selective message deletion (single or before-timestamp)",
-        "priority":  "P3",
-        "status":  "pending",
-        "tags":  [
-                     "gui"
-                 ],
-        "origin":  {
-                       "type":  "",
-                       "ref":  ""
-                   },
-        "depends_on":  null,
-        "notes":  "Allow user to delete individual messages or clear all before a certain time point",
-        "created_at":  "2026-05-14T20:52:54.068479+08:00",
-        "history":  [
-
-                    ]
+    "depends_on": null,
+    "notes": "When messages exceed 2000, auto-trim oldest to prevent localStorage overflow",
+    "created_at": "2026-05-14T20:52:47.4653744+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-a1f271",
+    "title": "Chat: selective message deletion (single or before-timestamp)",
+    "priority": "P3",
+    "status": "pending",
+    "tags": [
+      "gui"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
     },
-    {
-        "id":  "vigil-a10100",
-        "origin":  {
-                       "ref":  "self-iteration-gap-analysis-2026-05-14",
-                       "type":  "manual"
-                   },
-        "history":  [
-
-                    ],
-        "tags":  [
-                     "memory",
-                     "self-iteration"
-                 ],
-        "created_at":  "2026-05-14T23:19:00+08:00",
-        "status":  "pending",
-        "title":  "Store successful execution patterns in memory (not just failures)",
-        "priority":  "P2",
-        "notes":  "Currently only failures are stored. Success patterns (which tools worked, which strategy solved it) should also be stored for reuse."
+    "depends_on": null,
+    "notes": "Allow user to delete individual messages or clear all before a certain time point",
+    "created_at": "2026-05-14T20:52:54.068479+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-a10100",
+    "title": "Store successful execution patterns in memory (not just failures)",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "memory",
+      "self-iteration"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "self-iteration-gap-analysis-2026-05-14"
     },
-    {
-        "id":  "vigil-a10200",
-        "origin":  {
-                       "ref":  "self-iteration-gap-analysis-2026-05-14",
-                       "type":  "manual"
-                   },
-        "history":  [
-
-                    ],
-        "tags":  [
-                     "bootstrap",
-                     "self-iteration"
-                 ],
-        "created_at":  "2026-05-14T23:19:00+08:00",
-        "status":  "pending",
-        "title":  "FollowUpTask generation from Agent output",
-        "priority":  "P2",
-        "notes":  "LLMAgentExecutor never populates FollowUpTasks. Need to parse Agent output for \u0027next steps\u0027 and generate follow-up tasks. Requires oracle validation before auto-submission."
+    "depends_on": null,
+    "notes": "Currently only failures are stored. Success patterns (which tools worked, which strategy solved it) should also be stored for reuse.",
+    "created_at": "2026-05-14T23:19:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-a10200",
+    "title": "FollowUpTask generation from Agent output",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "bootstrap",
+      "self-iteration"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "self-iteration-gap-analysis-2026-05-14"
     },
-    {
-        "id":  "vigil-a10300",
-        "origin":  {
-                       "ref":  "self-iteration-gap-analysis-2026-05-14",
-                       "type":  "manual"
-                   },
-        "history":  [
-
-                    ],
-        "tags":  [
-                     "autonomy",
-                     "self-iteration"
-                 ],
-        "created_at":  "2026-05-14T23:19:00+08:00",
-        "status":  "pending",
-        "title":  "Autonomy auto-upgrade/downgrade based on execution history",
-        "priority":  "P2",
-        "notes":  "N consecutive successes -\u003e upgrade autonomy level. N consecutive failures -\u003e downgrade. Read from memory patterns to decide."
+    "depends_on": null,
+    "notes": "LLMAgentExecutor never populates FollowUpTasks. Need to parse Agent output for 'next steps' and generate follow-up tasks. Requires oracle validation before auto-submission.",
+    "created_at": "2026-05-14T23:19:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-a10300",
+    "title": "Autonomy auto-upgrade/downgrade based on execution history",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+      "autonomy",
+      "self-iteration"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "self-iteration-gap-analysis-2026-05-14"
     },
-    {
-        "id":  "vigil-a10400",
-        "origin":  {
-                       "ref":  "self-iteration-gap-analysis-2026-05-14",
-                       "type":  "manual"
-                   },
-        "history":  [
-
-                    ],
-        "tags":  [
-                     "evolution",
-                     "self-iteration"
-                 ],
-        "created_at":  "2026-05-14T23:19:00+08:00",
-        "status":  "pending",
-        "title":  "Agent self-modification: dynamic system prompt based on memory",
-        "priority":  "P3",
-        "notes":  "Agent should be able to append learned rules to its own system prompt. Requires safety boundary (max additions, human review gate)."
-    }
+    "depends_on": null,
+    "notes": "N consecutive successes -\u003e upgrade autonomy level. N consecutive failures -\u003e downgrade. Read from memory patterns to decide.",
+    "created_at": "2026-05-14T23:19:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-a10400",
+    "title": "Agent self-modification: dynamic system prompt based on memory",
+    "priority": "P3",
+    "status": "pending",
+    "tags": [
+      "evolution",
+      "self-iteration"
+    ],
+    "origin": {
+      "type": "manual",
+      "ref": "self-iteration-gap-analysis-2026-05-14"
+    },
+    "depends_on": null,
+    "notes": "Agent should be able to append learned rules to its own system prompt. Requires safety boundary (max additions, human review gate).",
+    "created_at": "2026-05-14T23:19:00+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-b1d12b",
+    "title": "研究文档：Claude Code与Codex的Harness设计哲学比较",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:38:36.2781609+08:00",
+    "completed_at": "2026-05-15T10:21:29.9264692+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:21:29.9264692+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-e06388",
+    "title": "研究文档：Harness Engineering——Claude Code 设计指南",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:38:36.3693285+08:00",
+    "completed_at": "2026-05-15T10:21:30.1117477+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:21:30.1117477+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-5832dc",
+    "title": "研究 https://github.com/Tencent/TencentDB-Agent-Memory",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:40:02.6626187+08:00",
+    "completed_at": "2026-05-15T10:02:19.6289781+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:02:19.6289781+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-feba74",
+    "title": "研究 https://github.com/nashsu/llm_wiki 并将axis文档系统搭建为知识库",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:40:35.6658045+08:00",
+    "completed_at": "2026-05-15T09:53:31.9172046+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T09:53:31.9172046+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-b9a420",
+    "title": "研究 mattpocock/skills 设计并安装该skill（大佬程序员，完成度极高）https://github.com/mattpocock/skills",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:41:33.7787865+08:00",
+    "completed_at": "2026-05-15T10:21:51.1523498+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:21:51.1523498+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-06e2d5",
+    "title": "研究 Agentic Interpretation: Lattice-Structured Evidence for LLM-Based Program Analysis https://arxiv.org/abs/2605.12694",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:45:03.7004223+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-826e9b",
+    "title": "研究 Speculative Interaction Agents: Asynchronous I/O and Speculative Tool Calling https://arxiv.org/abs/2605.13360",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:45:03.793922+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-033e8d",
+    "title": "研究 CHAL: Council of Hierarchical Agentic Language (多Agent辩证框架) https://arxiv.org/abs/2605.12718",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:45:03.8818365+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-5b128d",
+    "title": "axis docs lint 命令实现：孤立文档检测、死链接检查、frontmatter 验证、README.md 同步检查",
+    "priority": "P2",
+    "status": "pending",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:57:57.8211865+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-880602",
+    "title": "lock-test-item",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "test"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T09:58:26.661281+08:00",
+    "started_at": "2026-05-15T09:58:30.7926436+08:00",
+    "completed_at": "2026-05-15T09:58:42.3318829+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T09:58:30.7926436+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T09:58:42.3318829+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-417c71",
+    "title": "HistoryCompactor: Tool Result Offload — tool result 全文外化到 .axis/memory/refs/，摘要+replaceability score 留在 history，HistoryCompactor 按 score 选择性替换（灵感：TencentDB-Agent-Memory L1 offload）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T10:01:47.2088116+08:00",
+    "completed_at": "2026-05-15T10:11:41.2825022+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:11:41.2825022+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-6a847d",
+    "title": "Task Canvas syscall: Agent 可通过 syscall 查询当前任务 Mermaid 进度图（pull-based，不自动注入），解决长任务方向感丢失（灵感：TencentDB-Agent-Memory L2 Mermaid）",
+    "priority": "P2",
+    "status": "pending",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T10:01:53.227579+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-050040",
+    "title": "HistoryCompactor 分级压缩: mild(50%,按score替换)/aggressive(80%,删旧保新)/emergency(95%,截断到60%)，替代当前单一策略（灵感：TencentDB-Agent-Memory L3 三级压缩）",
+    "priority": "P2",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T10:01:59.5773793+08:00",
+    "completed_at": "2026-05-15T10:11:48.9027563+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:11:48.9027563+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-d4c39e",
+    "title": "Working Memory BM25 检索: 纯 Go BM25 替代 strings.Contains，对 bundle.Goal + packet.Summary 建倒排索引，提升 Recall 精度（灵感：TencentDB-Agent-Memory hybrid recall）",
+    "priority": "P3",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T10:02:06.291589+08:00",
+    "completed_at": "2026-05-15T10:14:29.4153491+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:14:29.4153491+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-a18ced",
+    "title": "Dream 扩展: 新增 DreamSuccess 从成功事件提炼 best practices 写入 principles/，触发条件同类任务成功≥3次（灵感：TencentDB-Agent-Memory L2→L3 提炼）",
+    "priority": "P3",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T10:02:14.5046384+08:00",
+    "completed_at": "2026-05-15T10:16:07.8027918+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:16:07.8027918+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-59bf39",
+    "title": "test-doc-reminder",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "test"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T10:04:39.6123868+08:00",
+    "started_at": "2026-05-15T10:04:39.901716+08:00",
+    "completed_at": "2026-05-15T10:04:39.9983895+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T10:04:39.901716+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T10:04:39.9983895+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-378ebb",
+    "title": "Prompt 分层装配链: default-\u003eproject-\u003etask-\u003eskills-\u003eappend, 优先级硬编码",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "architecture",
+      "harness"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "参照 Claude Code buildEffectiveSystemPrompt() 设计。project prompt 只写 constraint 不写 prescribed path。不变式: precedence(project)\u003eprecedence(default); append 永远不替换 base",
+    "created_at": "2026-05-15T10:21:21.4126192+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-07c165",
+    "title": "权限三态化: 补 ask 语义, dispatcher 中风险操作暂停等待确认",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "architecture",
+      "harness",
+      "security"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "与 AutonomyLevel 联动: 低自主权=ask, 高自主权=allow。不变式: ask 永远不自动升级为 allow; deny 对同一 tool_use_id sticky",
+    "created_at": "2026-05-15T10:21:21.5121465+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-8a284d",
+    "title": "Compact 语义恢复: 压缩后重新注入 plan/skills/file-state/feedback",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "architecture",
+      "harness"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "SummarizationCompaction 后恢复: 1.active plan 2.invoked skills摘要(per-skill token cap) 3.最近N文件read state 4.correction feedback 5.compact_boundary message",
+    "created_at": "2026-05-15T10:21:21.6087171+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-d6f1e8",
+    "title": "中断账本闭合: pending tool_use 必须有 matching synthetic tool_result",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "architecture",
+      "harness",
+      "reliability"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "on_abort/timeout: 为每个悬空 tool_use 生成 synthetic tool_result(is_error:true)。不变式: every emitted tool_use has matching tool_result",
+    "created_at": "2026-05-15T10:21:21.7070671+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-f4afa0",
+    "title": "test-tags-alias",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "architecture",
+      "harness"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "testing alias",
+    "created_at": "2026-05-15T10:22:45.7902923+08:00",
+    "completed_at": "2026-05-15T10:22:51.3506676+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T10:22:51.3506676+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-85e020",
+    "title": "axis docs lint 扩展：bad-name（命名违规检测）、forbidden-location（禁止位置）、incomplete-triplet（spec 三件套不完整）",
+    "priority": "P2",
+    "status": "pending",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T11:00:46.1459512+08:00",
+    "history": []
+  }
 ]

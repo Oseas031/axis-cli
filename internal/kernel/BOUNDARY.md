@@ -15,6 +15,22 @@
 - [ ] Confirm: change is observable via CLI or event log (no hidden behavior)
 - [ ] Tests include boundary assertions (e.g., "scheduler must not call provider directly")
 
+## Executable Verification
+
+```bash
+# Scheduler/dispatcher must not import provider (orchestrator is allowed as it creates executors)
+grep -rn '"github.com/.*internal/model"' internal/kernel/scheduler/ internal/kernel/dispatcher/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines
+
+# Kernel must not import contextpack
+grep -rn '"github.com/.*internal/contextpack"' internal/kernel/ --include="*.go" | grep -v "_test.go"
+# Expected: 0 lines
+
+# No context.Background() in kernel business logic
+grep -rn "context\.Background()" internal/kernel/ --include="*.go" | grep -v "_test.go" | grep -v "main.go"
+# Expected: 0 lines
+```
+
 ## Common Traps
 
 | Trap | Why It Is Wrong |

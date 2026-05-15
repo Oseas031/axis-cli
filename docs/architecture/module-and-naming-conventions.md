@@ -1,3 +1,13 @@
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-05-14
+related:
+  - semantic-boundaries.md
+  - kernel-abstraction-model.md
+---
+
 ﻿# Module and Naming Conventions
 
 > 展开自 CLAUDE.md §6（语义边界）+ §12（命名与结构）

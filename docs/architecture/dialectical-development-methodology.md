@@ -1,3 +1,12 @@
+---
+type: architecture
+status: active
+created: 2026-05-08
+last_verified: 2026-05-14
+related:
+  - spec-lifecycle-conventions.md
+---
+
 # Dialectical Development Methodology
 
 > 展开自 CLAUDE.md §0（作者工作方法论）+ §13（矛盾治理框架）

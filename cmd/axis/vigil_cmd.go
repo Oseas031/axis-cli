@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/axis-cli/axis/internal/project"
@@ -28,6 +30,11 @@ func newVigilCommand() *cobra.Command {
 
 func vigilStore() *vigil.Store {
 	return vigil.NewStore(project.MustResolveRoot())
+}
+
+func vigilLocker() *vigil.Locker {
+	root := project.MustResolveRoot()
+	return vigil.NewLocker(root + "/.axis/vigil")
 }
 
 func newVigilResumeCommand() *cobra.Command {
@@ -87,8 +94,14 @@ func newVigilResumeCommand() *cobra.Command {
 			out := cmd.OutOrStdout()
 			if len(inProgress) > 0 {
 				fmt.Fprintln(out, "## In Progress")
+				locker := vigilLocker()
 				for _, it := range inProgress {
-					fmt.Fprintf(out, "  %s  %s  [%s]\n", it.ID, it.Title, it.Priority)
+					if locker.IsLocked(it.ID) {
+						info, _ := locker.Read(it.ID)
+						fmt.Fprintf(out, "  %s  %s  [%s] 🔒 PID %d\n", it.ID, it.Title, it.Priority, info.PID)
+					} else {
+						fmt.Fprintf(out, "  %s  %s  [%s]\n", it.ID, it.Title, it.Priority)
+					}
 				}
 			}
 			if len(recentDone) > 0 {
@@ -149,8 +162,13 @@ func newVigilListCommand() *cobra.Command {
 				fmt.Fprintln(cmd.OutOrStdout(), "No items found.")
 				return nil
 			}
+			locker := vigilLocker()
 			for _, it := range filtered {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s  %s  [%s]  %s\n", it.ID, it.Title, it.Priority, it.Status)
+				lock := ""
+				if it.Status == vigil.StatusInProgress && locker.IsLocked(it.ID) {
+					lock = " 🔒"
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "%s  %s  [%s]  %s%s\n", it.ID, it.Title, it.Priority, it.Status, lock)
 			}
 			return nil
 		},
@@ -192,7 +210,9 @@ func newVigilAddCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&priority, "priority", "P1", "Priority level")
-	cmd.Flags().StringSliceVar(&tags, "tag", nil, "Tags (repeatable)")
+	cmd.Flags().StringSliceVar(&tags, "tag", nil, "Tags (repeatable, comma-separated or multiple --tag)")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "Alias for --tag")
+	cmd.Flags().MarkHidden("tags")
 	cmd.Flags().StringVar(&origin, "origin", "", "Origin type")
 	cmd.Flags().StringSliceVar(&dependsOn, "depends-on", nil, "Dependencies (repeatable)")
 	cmd.Flags().StringVar(&notes, "notes", "", "Notes")
@@ -206,13 +226,22 @@ func newVigilStartCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			store := vigilStore()
+			locker := vigilLocker()
 			item, err := store.Get(args[0])
 			if err != nil {
 				return fmt.Errorf("failed to start %s: %w", args[0], err)
 			}
 			if item.Status == vigil.StatusInProgress {
+				if locker.IsLocked(args[0]) {
+					info, _ := locker.Read(args[0])
+					fmt.Fprintf(cmd.OutOrStdout(), "%s already in progress (locked by PID %d)\n", item.ID, info.PID)
+					return nil
+				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s already in progress\n", item.ID)
 				return nil
+			}
+			if err := locker.Lock(args[0], fmt.Sprintf("pid-%d", os.Getpid())); err != nil {
+				return fmt.Errorf("cannot start %s: %w", args[0], err)
 			}
 			old := item.Status
 			item.Status = vigil.StatusInProgress
@@ -220,6 +249,7 @@ func newVigilStartCommand() *cobra.Command {
 			item.StartedAt = &now
 			item.History = append(item.History, vigil.StatusChange{From: old, To: vigil.StatusInProgress, At: now})
 			if err := store.Update(item); err != nil {
+				_ = locker.Unlock(args[0])
 				return fmt.Errorf("failed to start %s: %w", args[0], err)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Started %s — %s\nNext: axis vigil done %s\n", item.ID, item.Title, item.ID)
@@ -236,6 +266,7 @@ func newVigilDoneCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			store := vigilStore()
+			locker := vigilLocker()
 			item, err := store.Get(args[0])
 			if err != nil {
 				return fmt.Errorf("failed to complete %s: %w", args[0], err)
@@ -251,7 +282,9 @@ func newVigilDoneCommand() *cobra.Command {
 			if err := store.Update(item); err != nil {
 				return fmt.Errorf("failed to complete %s: %w", args[0], err)
 			}
+			_ = locker.Unlock(args[0])
 			fmt.Fprintf(cmd.OutOrStdout(), "Completed %s — %s\nNext: axis vigil resume\n", item.ID, item.Title)
+			printDocSyncReminders(cmd, commit)
 			return nil
 		},
 	}
@@ -308,6 +341,55 @@ func newVigilTriageCommand() *cobra.Command {
 			}
 			return nil
 		},
+	}
+}
+
+// docSyncMap maps source directories to documentation that may need updating.
+var docSyncMap = []struct {
+	prefix string
+	doc    string
+}{
+	{"internal/vigil/", ".axis/skills/vigil/SKILL.md"},
+	{"internal/skills/", ".axis/skills/"},
+	{"internal/memory/", "docs/architecture/semantic-boundaries.md (memory section)"},
+	{"internal/kernel/", "docs/architecture/semantic-boundaries.md (kernel section)"},
+	{"internal/contextpack/", "docs/architecture/semantic-boundaries.md (contextpack section)"},
+	{"internal/agent/", "docs/architecture/semantic-boundaries.md (agent section)"},
+	{"internal/model/", "docs/architecture/semantic-boundaries.md (provider/tool section)"},
+	{"internal/control/", "docs/status/current-progress.md"},
+	{"internal/evolution/", "docs/status/current-progress.md"},
+	{"cmd/axis/", "README.md (CLI Commands table)"},
+	{"tools/axis-gui/", "tools/axis-gui/README.md"},
+	{"tools/axis-up/", "tools/axis-up/README.md"},
+}
+
+func printDocSyncReminders(cmd *cobra.Command, commit string) {
+	var gitArgs []string
+	if commit != "" {
+		gitArgs = []string{"diff", "--name-only", commit + "^", commit}
+	} else {
+		gitArgs = []string{"diff", "--name-only", "HEAD"}
+	}
+	out, err := exec.Command("git", gitArgs...).Output()
+	if err != nil || len(out) == 0 {
+		return
+	}
+	files := strings.Split(strings.TrimSpace(string(out)), "\n")
+	seen := map[string]bool{}
+	for _, f := range files {
+		f = strings.ReplaceAll(f, "\\", "/")
+		for _, m := range docSyncMap {
+			if strings.HasPrefix(f, m.prefix) && !seen[m.doc] {
+				seen[m.doc] = true
+			}
+		}
+	}
+	if len(seen) > 0 {
+		w := cmd.OutOrStdout()
+		fmt.Fprintln(w, "⚠ Doc sync reminder:")
+		for doc := range seen {
+			fmt.Fprintf(w, "  → %s\n", doc)
+		}
 	}
 }
 

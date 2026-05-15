@@ -16,6 +16,7 @@ import (
 	"github.com/axis-cli/axis/internal/control"
 	"github.com/axis-cli/axis/internal/kernel/orchestrator"
 	"github.com/axis-cli/axis/internal/memory/horizon"
+	"github.com/axis-cli/axis/internal/model/compactor"
 	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/model/providerconfig"
 	"github.com/axis-cli/axis/internal/project"
@@ -112,7 +113,7 @@ func NewRootCommand(app *App) *cobra.Command {
 	}
 	shellCmd.Flags().Bool("no-prompt", false, "Suppress interactive shell prompt for pipe/automation drivers")
 
-	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand())
+	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand(), newDocsCommand())
 
 	rootCmd.PersistentFlags().StringVar(&app.providerName, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
 	rootCmd.PersistentFlags().StringVar(&app.modelName, "model", "", "Model name for real providers")
@@ -254,6 +255,16 @@ func (app *App) initOrchestrator() {
 		emitter := &eventLogEmitter{log: eventLog}
 		memStore := horizon.NewStore(project.MemoryDir(app.resolvedRoot()))
 		_ = memStore.Init()
+
+		// Create offload compactor (degrades to noop on failure)
+		offloadDir := project.MemoryDir(app.resolvedRoot()) + string(os.PathSeparator) + "offload"
+		var compactorOpt agent.LLMAgentOption
+		if c, err := compactor.New(compactor.DefaultConfig(offloadDir)); err == nil {
+			compactorOpt = agent.WithHistoryCompactor(c)
+		} else {
+			compactorOpt = func(e *agent.LLMAgentExecutor) {} // noop: keep default compactor
+		}
+
 		agentExec := agent.NewLLMAgentExecutor(p, nil,
 			agent.WithAgentID("axis-coding-agent"),
 			agent.WithSystemPrompt("You are Axis Coding Agent. Use available tools to complete tasks. Be concise and direct. Do not over-analyze simple questions — if the user asks what tools you have, just list them briefly. When done, respond with your final output without tool calls.\n\nEnvironment: Windows with WSL bash. Tools available in PATH: go, git, find, grep, wc, cat. For Windows-specific commands use cmd.exe /c \"...\". Do NOT retry the same command if it fails — try a different approach."),
@@ -262,6 +273,7 @@ func (app *App) initOrchestrator() {
 			agent.WithEventEmitter(emitter),
 			agent.WithPostJudge(&agent.ExecutionJudge{}),
 			agent.WithMemory(agent.NewHorizonMemory(memStore)),
+			compactorOpt,
 		)
 
 		app.orch = orchestrator.NewOrchestrator(

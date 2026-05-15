@@ -10,4 +10,6 @@ var (
 	ErrDescriptionRequired = errors.New("skill description is required")
 	ErrMissingSKILLMD      = errors.New("SKILL.md not found in skill directory")
 	ErrNameMismatch        = errors.New("skill name in frontmatter does not match directory name")
+	ErrDependencyNotFound  = errors.New("skill dependency not found")
+	ErrConflictDetected    = errors.New("skill conflict detected")
 )

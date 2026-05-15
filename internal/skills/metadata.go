@@ -10,6 +10,8 @@ type SkillMetadata struct {
 	DependsOn     []string `json:"depends_on,omitempty"`
 	ConflictsWith []string `json:"conflicts_with,omitempty"`
 	Version       string   `json:"version,omitempty"`
+	Source        string   `json:"source,omitempty"`
+	SourceVersion string   `json:"source_version,omitempty"`
 }
 
 // ParseSkillMetadata splits YAML frontmatter from body and parses composable metadata.
@@ -40,6 +42,7 @@ func ParseSkillMetadata(content string) (*SkillMetadata, string) {
 		}
 		key := strings.TrimSpace(line[:colonIdx])
 		val := strings.TrimSpace(line[colonIdx+1:])
+		val = stripQuotes(val)
 		switch key {
 		case "name":
 			meta.Name = val
@@ -53,6 +56,10 @@ func ParseSkillMetadata(content string) (*SkillMetadata, string) {
 			meta.ConflictsWith = splitList(val)
 		case "version":
 			meta.Version = val
+		case "source":
+			meta.Source = val
+		case "source_version":
+			meta.SourceVersion = val
 		}
 	}
 	return meta, body
