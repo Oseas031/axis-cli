@@ -115,6 +115,9 @@ func newVigilResumeCommand() *cobra.Command {
 				for _, it := range pending {
 					fmt.Fprintf(out, "  %s  %s  [%s]\n", it.ID, it.Title, it.Priority)
 				}
+				if len(inProgress) == 0 {
+					fmt.Fprintf(out, "\nHint: start an item before working on it: axis vigil start %s\n", pending[0].ID)
+				}
 			}
 			return nil
 		},
@@ -123,7 +126,7 @@ func newVigilResumeCommand() *cobra.Command {
 
 func newVigilListCommand() *cobra.Command {
 	var priority, tag, status string
-	var jsonOut bool
+	var jsonOut, all bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List work items",
@@ -135,12 +138,14 @@ func newVigilListCommand() *cobra.Command {
 			}
 			var filtered []*vigil.Item
 			for _, it := range items {
-				if status == "" {
-					if it.Status != vigil.StatusPending && it.Status != vigil.StatusInProgress && it.Status != vigil.StatusStale {
+				if !all {
+					if status == "" {
+						if it.Status != vigil.StatusPending && it.Status != vigil.StatusInProgress && it.Status != vigil.StatusStale {
+							continue
+						}
+					} else if string(it.Status) != status {
 						continue
 					}
-				} else if string(it.Status) != status {
-					continue
 				}
 				if priority != "" && it.Priority != priority {
 					continue
@@ -173,6 +178,7 @@ func newVigilListCommand() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&all, "all", false, "Show all items regardless of status")
 	cmd.Flags().StringVar(&priority, "priority", "", "Filter by priority")
 	cmd.Flags().StringVar(&tag, "tag", "", "Filter by tag")
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status (default: active)")
