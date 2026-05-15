@@ -5,14 +5,21 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/axis-cli/axis/internal/actor"
 	"github.com/axis-cli/axis/internal/agent"
+	"github.com/axis-cli/axis/internal/comm"
 	"github.com/axis-cli/axis/internal/contract/admission"
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
+	"github.com/axis-cli/axis/internal/evolution"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
 	dispatcher "github.com/axis-cli/axis/internal/kernel/dispatcher"
+	"github.com/axis-cli/axis/internal/kernel/capability"
+	"github.com/axis-cli/axis/internal/kernel/featuregate"
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
 	"github.com/axis-cli/axis/internal/kernel/scheduler"
 	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
@@ -48,6 +55,20 @@ func WithAgentExecutor(e agent.AgentExecutor) OrchestratorOption {
 	}
 }
 
+// WithCapabilityRegistry sets a custom capability registry.
+func WithCapabilityRegistry(r *capability.CapabilityRegistry) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.capRegistry = r
+	}
+}
+
+// WithFeatureGate sets a custom feature gate for the orchestrator.
+func WithFeatureGate(g *featuregate.Gate) OrchestratorOption {
+	return func(o *Orchestrator) {
+		o.gate = g
+	}
+}
+
 // Orchestrator coordinates all kernel modules
 type Orchestrator struct {
 	stateStore         sharedlayer.StateStore
@@ -60,6 +81,8 @@ type Orchestrator struct {
 	agentExecutor      agent.AgentExecutor
 	toolRegistry       *tool.Registry
 	modelProvider      provider.ModelProvider
+	capRegistry        *capability.CapabilityRegistry
+	gate               *featuregate.Gate
 	mu                 sync.Mutex
 	running            bool
 	started            bool          // true if Start was ever called
@@ -133,6 +156,55 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 			_ = orch.SubmitTask(t)
 		}
 	})
+
+	// Wire feature gate
+	if orch.gate == nil {
+		orch.gate = featuregate.NewGate()
+	}
+	orch.dispatcher.SetFeatureGate(orch.gate)
+
+	// Wire capability registry
+	if orch.capRegistry == nil {
+		orch.capRegistry = capability.NewCapabilityRegistry()
+	}
+	orch.dispatcher.SetCapabilityRegistry(orch.capRegistry)
+
+	// Wire evolution store
+	evoStore, err := evolution.NewStore(filepath.Join(root, ".axis", "evolution"))
+	if err == nil {
+		orch.dispatcher.SetEvolutionStore(evoStore, root)
+	}
+
+	// Enable candidate pool for high-risk differential testing (v1 stub)
+	orch.dispatcher.SetCandidatePoolEnabled(true)
+
+	// Wire active spawn executor
+	commDir := filepath.Join(root, ".axis", "comm")
+	_ = os.MkdirAll(commDir, 0755)
+	mb := comm.NewMailbox(commDir)
+	router := comm.NewRouter(mb)
+	spawnExec := actor.NewSpawnExecutor(actor.SpawnExecutorConfig{
+		Provider: resolvedProvider,
+		Tools:    orch.toolRegistry,
+		Router:   router,
+	})
+	if spawnTool, ok := orch.toolRegistry.Get("spawn"); ok {
+		if st, ok := spawnTool.(*tool.SpawnTool); ok {
+			st.SetExecFn(func(ctx context.Context, taskID, prompt, isolation string) (map[string]any, error) {
+				err := spawnExec.Execute(ctx, actor.SpawnRequest{
+					TaskID:    taskID,
+					Prompt:    prompt,
+					Isolation: isolation,
+					ParentID:  "orchestrator",
+					MessageID: fmt.Sprintf("spawn-%s-%d", taskID, time.Now().UnixNano()),
+				})
+				if err != nil {
+					return map[string]any{"status": "failed", "error": err.Error()}, nil
+				}
+				return map[string]any{"status": "completed", "task_id": taskID, "message": "subtask completed"}, nil
+			})
+		}
+	}
 
 	return orch
 }
@@ -262,6 +334,16 @@ func (o *Orchestrator) IsRunning() bool {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	return o.running
+}
+
+// FeatureGate returns the orchestrator's feature gate.
+func (o *Orchestrator) FeatureGate() *featuregate.Gate {
+	return o.gate
+}
+
+// CapabilityRegistry returns the orchestrator's capability registry.
+func (o *Orchestrator) CapabilityRegistry() *capability.CapabilityRegistry {
+	return o.capRegistry
 }
 
 // GetAllTasks returns all tasks known to the scheduler.

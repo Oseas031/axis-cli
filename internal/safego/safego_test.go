@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -65,17 +66,17 @@ func TestGoWithWaitGroup_RecoversPanicAndSignalsDone(t *testing.T) {
 
 func TestGoWithWaitGroup_RunsNormally(t *testing.T) {
 	var wg sync.WaitGroup
-	var counter int
+	var counter atomic.Int32
 
 	for i := 0; i < 10; i++ {
 		GoWithWaitGroup(context.Background(), &wg, func() {
-			counter++
+			counter.Add(1)
 		})
 	}
 
 	wg.Wait()
-	if counter != 10 {
-		t.Fatalf("expected counter=10, got %d", counter)
+	if counter.Load() != 10 {
+		t.Fatalf("expected counter=10, got %d", counter.Load())
 	}
 }
 

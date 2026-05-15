@@ -77,13 +77,18 @@ func NewProvider(name string, opts ...ProviderOption) (ModelProvider, error) {
 		apiKey:     "",
 		baseURL:    "",
 		timeout:    30 * time.Second,
-		maxRetries: 3,
+		maxRetries: 5,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 
 	// Apply options
 	for _, opt := range opts {
 		opt(cfg)
+	}
+
+	// Sync httpClient timeout with configured timeout
+	if cfg.httpClient.Timeout != cfg.timeout {
+		cfg.httpClient.Timeout = cfg.timeout
 	}
 
 	// Real providers require an API key.

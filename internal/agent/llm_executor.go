@@ -74,10 +74,13 @@ type LLMAgentExecutor struct {
 	terminate    TerminationFn
 	compactor    HistoryCompactor
 	maxErrors    int // circuit breaker threshold
+	turnTimeout  time.Duration
 	agentID      string
 	emitter      EventEmitter
 	postJudge    PostExecutionJudge
 	memory       ExecutionMemory
+	workingMem   *WorkingMemoryRecaller
+	immediateMem *ImmediateMemoryAdapter
 }
 
 // LLMAgentOption configures an LLMAgentExecutor.
@@ -108,6 +111,12 @@ func WithMaxErrors(n int) LLMAgentOption {
 	return func(e *LLMAgentExecutor) { e.maxErrors = n }
 }
 
+// WithTurnTimeout sets the default per-turn timeout.
+// Can be overridden per-task via metadata "axis.turn_timeout" (e.g. "90s").
+func WithTurnTimeout(d time.Duration) LLMAgentOption {
+	return func(e *LLMAgentExecutor) { e.turnTimeout = d }
+}
+
 // WithAgentID sets the agent identity.
 func WithAgentID(id string) LLMAgentOption {
 	return func(e *LLMAgentExecutor) { e.agentID = id }
@@ -136,15 +145,26 @@ func WithMemory(m ExecutionMemory) LLMAgentOption {
 	return func(e *LLMAgentExecutor) { e.memory = m }
 }
 
+// WithWorkingMemory sets the BM25 working memory recaller for context injection.
+func WithWorkingMemory(r *WorkingMemoryRecaller) LLMAgentOption {
+	return func(e *LLMAgentExecutor) { e.workingMem = r }
+}
+
+// WithImmediateMemory sets the immediate memory adapter for file-change awareness.
+func WithImmediateMemory(a *ImmediateMemoryAdapter) LLMAgentOption {
+	return func(e *LLMAgentExecutor) { e.immediateMem = a }
+}
+
 // NewLLMAgentExecutor creates a new LLM-driven agent executor.
 func NewLLMAgentExecutor(p provider.ModelProvider, tools *tool.Registry, opts ...LLMAgentOption) *LLMAgentExecutor {
 	e := &LLMAgentExecutor{
-		provider:  p,
-		tools:     tools,
-		maxIter:   20,
-		maxErrors: 5,
-		compactor: noopCompactor{},
-		agentID:   "default",
+		provider:    p,
+		tools:       tools,
+		maxIter:     20,
+		maxErrors:   5,
+		turnTimeout: 45 * time.Second,
+		compactor:   noopCompactor{},
+		agentID:     "default",
 	}
 	for _, opt := range opts {
 		opt(e)
@@ -227,6 +247,17 @@ func (e *LLMAgentExecutor) Execute(ctx context.Context, req *AgentExecutionReque
 		retryResult.Error = fmt.Sprintf("self-judgement failed after retry (score=%.2f): %s", jr2.Score, jr2.Summary())
 		e.emit(req.Task.TaskID, "judgement_failed_final", retryResult.Error)
 		e.storeLesson(req.Task.TaskID, "retry also failed: "+jr2.Summary())
+		// Include structured judgement details in output for user visibility
+		if retryResult.Output == nil {
+			retryResult.Output = make(map[string]any)
+		}
+		retryResult.Output["_judgement"] = map[string]any{
+			"passed":          false,
+			"score":           jr2.Score,
+			"confidence":      jr2.Confidence,
+			"failed_criteria": jr2.Summary(),
+			"suggested_fixes": jr2.SuggestedFixes,
+		}
 	}
 	return retryResult, nil
 }
@@ -253,6 +284,34 @@ func (e *LLMAgentExecutor) executeOnce(ctx context.Context, req *AgentExecutionR
 		sysPrompt = sysPrompt + "\n\n[CORRECTION] " + feedback
 	}
 
+	if e.workingMem != nil {
+		query := ""
+		if req.Task != nil && req.Task.Input != nil {
+			if msg, ok := req.Task.Input["message"].(string); ok {
+				query = msg
+			}
+		}
+		if wmCtx := e.workingMem.Recall(ctx, query); wmCtx != "" {
+			sysPrompt = sysPrompt + "\n\n" + wmCtx
+		}
+	}
+
+	if e.immediateMem != nil {
+		taskID := ""
+		intent := ""
+		if req.Task != nil {
+			taskID = req.Task.TaskID
+			if req.Task.Input != nil {
+				if msg, ok := req.Task.Input["message"].(string); ok {
+					intent = msg
+				}
+			}
+		}
+		if imCtx := e.immediateMem.BuildSituationalContext(ctx, taskID, intent); imCtx != "" {
+			sysPrompt = sysPrompt + "\n\n" + imCtx
+		}
+	}
+
 	modelReq := &provider.ModelRequest{
 		ContractID:   req.Task.ContractID,
 		Input:        req.Task.Input,
@@ -266,7 +325,7 @@ func (e *LLMAgentExecutor) executeOnce(ctx context.Context, req *AgentExecutionR
 		MaxIterations: e.maxIter,
 		MaxErrors:     e.maxErrors,
 		Compactor:     e.compactor,
-		TurnTimeout:   45 * time.Second,
+		TurnTimeout:   e.resolveTurnTimeout(req),
 		OnToolExecuted: func(toolName string, result map[string]any, err error) {
 			trace := ToolTrace{Name: toolName}
 			if err != nil {
@@ -387,6 +446,19 @@ func (e *LLMAgentExecutor) storeLesson(taskID, lesson string) {
 		return
 	}
 	_ = e.memory.StoreLessson(taskID, lesson)
+}
+
+// resolveTurnTimeout determines the per-turn timeout for a task.
+// Priority: task metadata "axis.turn_timeout" > executor default.
+func (e *LLMAgentExecutor) resolveTurnTimeout(req *AgentExecutionRequest) time.Duration {
+	if req.Task != nil && req.Task.Metadata != nil {
+		if raw, ok := req.Task.Metadata["axis.turn_timeout"]; ok && raw != "" {
+			if d, err := time.ParseDuration(raw); err == nil && d > 0 {
+				return d
+			}
+		}
+	}
+	return e.turnTimeout
 }
 
 // buildResult constructs an AgentExecutionResult with trace and identity.

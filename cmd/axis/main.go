@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -14,8 +15,10 @@ import (
 	"github.com/axis-cli/axis/internal/agent"
 	"github.com/axis-cli/axis/internal/contextpack"
 	"github.com/axis-cli/axis/internal/control"
+	"github.com/axis-cli/axis/internal/guarantee"
 	"github.com/axis-cli/axis/internal/kernel/orchestrator"
 	"github.com/axis-cli/axis/internal/memory/horizon"
+	"github.com/axis-cli/axis/internal/memory/working"
 	"github.com/axis-cli/axis/internal/model/compactor"
 	"github.com/axis-cli/axis/internal/model/provider"
 	"github.com/axis-cli/axis/internal/model/providerconfig"
@@ -42,7 +45,7 @@ func envAPIKeyForProvider(providerName string) string {
 
 var (
 	orch       *orchestrator.Orchestrator
-	defaultApp = &App{providerName: "mock"}
+	defaultApp = &App{providerName: "mock", guarantees: initDefaultGuarantees()}
 )
 
 type App struct {
@@ -51,6 +54,7 @@ type App struct {
 	providerName string
 	modelName    string
 	root         string // project root for file-backed stores; empty means in-memory
+	guarantees   *guarantee.Registry
 }
 
 // resolvedRoot returns the project root, resolving from cwd if not explicitly set.
@@ -113,7 +117,7 @@ func NewRootCommand(app *App) *cobra.Command {
 	}
 	shellCmd.Flags().Bool("no-prompt", false, "Suppress interactive shell prompt for pipe/automation drivers")
 
-	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand(), newDocsCommand())
+	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand(), newDocsCommand(), newGuaranteeCommand(app))
 
 	rootCmd.PersistentFlags().StringVar(&app.providerName, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
 	rootCmd.PersistentFlags().StringVar(&app.modelName, "model", "", "Model name for real providers")
@@ -265,15 +269,29 @@ func (app *App) initOrchestrator() {
 			compactorOpt = func(e *agent.LLMAgentExecutor) {} // noop: keep default compactor
 		}
 
+		// Create working memory recaller (degrades gracefully on failure)
+		var wmOpt agent.LLMAgentOption
+		var immOpt agent.LLMAgentOption
+		if wmEngine, wmErr := working.Open(filepath.Join(project.MemoryDir(app.resolvedRoot()), "working")); wmErr == nil {
+			wmOpt = agent.WithWorkingMemory(agent.NewWorkingMemoryRecaller(wmEngine, 5))
+			immOpt = agent.WithImmediateMemory(agent.NewImmediateMemoryAdapter(app.resolvedRoot(), wmEngine, 4000))
+		} else {
+			wmOpt = func(e *agent.LLMAgentExecutor) {} // noop
+			immOpt = func(e *agent.LLMAgentExecutor) {} // noop
+		}
+
 		agentExec := agent.NewLLMAgentExecutor(p, nil,
 			agent.WithAgentID("axis-coding-agent"),
 			agent.WithSystemPrompt("You are Axis Coding Agent. Use available tools to complete tasks. Be concise and direct. Do not over-analyze simple questions — if the user asks what tools you have, just list them briefly. When done, respond with your final output without tool calls.\n\nEnvironment: Windows with WSL bash. Tools available in PATH: go, git, find, grep, wc, cat. For Windows-specific commands use cmd.exe /c \"...\". Do NOT retry the same command if it fails — try a different approach."),
 			agent.WithMaxIterations(20),
 			agent.WithMaxErrors(5),
+			agent.WithTurnTimeout(90*time.Second),
 			agent.WithEventEmitter(emitter),
 			agent.WithPostJudge(&agent.ExecutionJudge{}),
 			agent.WithMemory(agent.NewHorizonMemory(memStore)),
 			compactorOpt,
+			wmOpt,
+			immOpt,
 		)
 
 		app.orch = orchestrator.NewOrchestrator(
@@ -425,4 +443,36 @@ func (e *eventLogEmitter) Emit(taskID, eventType, message string) {
 		Actor:     "axis-coding-agent",
 		Message:   message,
 	})
+}
+
+
+func initDefaultGuarantees() *guarantee.Registry {
+	r := guarantee.NewRegistry()
+	r.Register(guarantee.Guarantee{
+		ID:          "project-root-resolvable",
+		Description: "project.MustResolveRoot() must not panic",
+		Level:       guarantee.LevelHard,
+		Check: func() (err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("MustResolveRoot panicked: %v", r)
+				}
+			}()
+			project.MustResolveRoot()
+			return nil
+		},
+	})
+	r.Register(guarantee.Guarantee{
+		ID:          "axis-dir-writable",
+		Description: ".axis/ directory exists",
+		Level:       guarantee.LevelSoft,
+		Check: func() error {
+			root := project.MustResolveRoot()
+			if _, err := os.Stat(project.AxisDir(root)); err != nil {
+				return fmt.Errorf(".axis/ directory not found: %w", err)
+			}
+			return nil
+		},
+	})
+	return r
 }

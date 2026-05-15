@@ -182,22 +182,33 @@ func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 	httpReq.Header.Set("x-api-key", p.config.apiKey)
 	httpReq.Header.Set("anthropic-version", "2023-06-01")
 
-	// Retry loop with exponential backoff: retry on 5xx and network errors only.
+	// Retry loop with exponential backoff: retry on 5xx, 429, and network errors.
 	var lastErr error
 	var respBody []byte
 	for attempt := 0; attempt <= p.config.maxRetries; attempt++ {
 		if attempt > 0 {
-			backoff := time.Duration(attempt) * time.Second
+			backoff := time.Duration(1<<uint(attempt-1)) * time.Second // exponential: 1s, 2s, 4s, 8s...
+			if backoff > 30*time.Second {
+				backoff = 30 * time.Second
+			}
 			select {
 			case <-time.After(backoff):
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			}
+			// Recreate request with fresh body for retry
+			httpReq, err = http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/v1/messages", bytes.NewReader(body))
+			if err != nil {
+				return nil, fmt.Errorf("failed to create request: %w", err)
+			}
+			httpReq.Header.Set("Content-Type", "application/json")
+			httpReq.Header.Set("x-api-key", p.config.apiKey)
+			httpReq.Header.Set("anthropic-version", "2023-06-01")
 		}
 
 		resp, err := p.config.httpClient.Do(httpReq)
 		if err != nil {
-			lastErr = fmt.Errorf("request failed (attempt %d/%d): %w", attempt, p.config.maxRetries, err)
+			lastErr = fmt.Errorf("request failed (attempt %d/%d): %w", attempt+1, p.config.maxRetries+1, err)
 			continue
 		}
 
@@ -211,12 +222,12 @@ func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*Mo
 			break
 		}
 
-		if resp.StatusCode >= 500 {
-			lastErr = fmt.Errorf("API error (status %d, attempt %d/%d): %s", resp.StatusCode, attempt, p.config.maxRetries, string(respBody))
+		if resp.StatusCode >= 500 || resp.StatusCode == 429 {
+			lastErr = fmt.Errorf("API error (status %d, attempt %d/%d): %s", resp.StatusCode, attempt+1, p.config.maxRetries+1, string(respBody))
 			continue
 		}
 
-		// 4xx errors are not retried.
+		// 4xx errors (except 429) are not retried.
 		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
 	}
 	if lastErr != nil && len(respBody) == 0 {

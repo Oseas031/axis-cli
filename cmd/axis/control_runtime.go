@@ -11,6 +11,7 @@ import (
 
 	"github.com/axis-cli/axis/internal/contextpack"
 	"github.com/axis-cli/axis/internal/control"
+	"github.com/axis-cli/axis/internal/guarantee"
 )
 
 func newLocalHTTPServer(handler http.Handler) *http.Server {
@@ -28,6 +29,19 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) 
 	}
 	initOrchestrator()
 	runtimeOrch := orch
+
+	// Verify guarantees before starting
+	if defaultApp.guarantees != nil {
+		violations := defaultApp.guarantees.Verify()
+		for _, v := range violations {
+			if v.Level == guarantee.LevelHard {
+				return fmt.Errorf("hard guarantee violation [%s]: %v", v.GuaranteeID, v.Error)
+			}
+			if v.Level == guarantee.LevelSoft && out != nil {
+				fmt.Fprintf(out, "Warning: soft guarantee violation [%s]: %v\n", v.GuaranteeID, v.Error)
+			}
+		}
+	}
 
 	if err := runtimeOrch.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start orchestrator: %w", err)

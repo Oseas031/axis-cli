@@ -9,8 +9,10 @@ import (
 )
 
 type Assembler struct {
-	budget ContextBudget
-	index  *TFIDFIndex
+	budget         ContextBudget
+	index          *TFIDFIndex
+	anchorStrategy AnchorMitigationStrategy
+	anchorSeed     int64
 }
 
 type Option func(*Assembler)
@@ -24,6 +26,13 @@ func WithBudget(budget ContextBudget) Option {
 func WithIndex(index *TFIDFIndex) Option {
 	return func(a *Assembler) {
 		a.index = index
+	}
+}
+
+func WithAnchorMitigation(strategy AnchorMitigationStrategy, seed int64) Option {
+	return func(a *Assembler) {
+		a.anchorStrategy = strategy
+		a.anchorSeed = seed
 	}
 }
 
@@ -90,6 +99,11 @@ func (a *Assembler) Assemble(task *types.AgentTask) (*ContextBundle, error) {
 	}
 	if len(bundle.Packets) == 0 {
 		bundle.Trace.Notes = append(bundle.Trace.Notes, "no rule matched; returned an empty preview bundle")
+	}
+	// Apply anchor mitigation to prevent Lead Anchor Effect.
+	if a.anchorStrategy != AnchorNone && len(bundle.Packets) > 1 {
+		bundle.Packets = ApplyAnchorMitigation(bundle.Packets, a.anchorStrategy, a.anchorSeed)
+		bundle.Trace.Notes = append(bundle.Trace.Notes, fmt.Sprintf("anchor mitigation applied: strategy=%d", a.anchorStrategy))
 	}
 	return bundle, nil
 }

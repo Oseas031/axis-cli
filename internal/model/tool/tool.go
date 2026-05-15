@@ -50,6 +50,14 @@ func (r *Registry) Register(t Tool, scopes []string) error {
 	return nil
 }
 
+// Replace overwrites an existing tool entry (or adds it if absent).
+func (r *Registry) Replace(name string, t Tool, scopes []string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.tools[name] = t
+	r.scopes[name] = scopes
+}
+
 // Get retrieves a tool by name.
 func (r *Registry) Get(name string) (Tool, bool) {
 	r.mu.RLock()

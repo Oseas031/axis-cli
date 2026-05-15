@@ -187,11 +187,17 @@ func extractField(s, key string) string {
 }
 
 func parseStatusLine(s string) string {
-	i := strings.LastIndex(s, "status:")
+	// Only parse the first line ("Task X status: Y") to avoid matching
+	// JSON fields in the output body that also contain "status:".
+	firstLine := s
+	if nl := strings.IndexByte(s, '\n'); nl >= 0 {
+		firstLine = s[:nl]
+	}
+	i := strings.Index(firstLine, "status:")
 	if i < 0 {
 		return ""
 	}
-	return strings.TrimSpace(s[i+7:])
+	return strings.TrimSpace(firstLine[i+7:])
 }
 
 func truncate(s string, n int) string {

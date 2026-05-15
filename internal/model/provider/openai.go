@@ -196,22 +196,32 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+p.config.apiKey)
 
-	// Retry loop with exponential backoff: retry on 5xx and network errors only.
+	// Retry loop with exponential backoff: retry on 5xx, 429, network errors, and empty choices.
 	var lastErr error
 	var respBody []byte
 	for attempt := 0; attempt <= p.config.maxRetries; attempt++ {
 		if attempt > 0 {
-			backoff := time.Duration(attempt) * time.Second
+			backoff := time.Duration(1<<uint(attempt-1)) * time.Second // exponential: 1s, 2s, 4s, 8s...
+			if backoff > 30*time.Second {
+				backoff = 30 * time.Second
+			}
 			select {
 			case <-time.After(backoff):
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			}
+			// Recreate request with fresh body for retry
+			httpReq, err = http.NewRequestWithContext(ctx, http.MethodPost, openAIChatCompletionsURL(baseURL), bytes.NewReader(body))
+			if err != nil {
+				return nil, fmt.Errorf("failed to create request: %w", err)
+			}
+			httpReq.Header.Set("Content-Type", "application/json")
+			httpReq.Header.Set("Authorization", "Bearer "+p.config.apiKey)
 		}
 
 		resp, err := p.config.httpClient.Do(httpReq)
 		if err != nil {
-			lastErr = fmt.Errorf("request failed (attempt %d/%d): %w", attempt, p.config.maxRetries, err)
+			lastErr = fmt.Errorf("request failed (attempt %d/%d): %w", attempt+1, p.config.maxRetries+1, err)
 			continue
 		}
 
@@ -221,17 +231,26 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 			return nil, fmt.Errorf("failed to read response: %w", err)
 		}
 
-		if resp.StatusCode == http.StatusOK {
-			break
-		}
-
-		if resp.StatusCode >= 500 {
-			lastErr = fmt.Errorf("API error (status %d, attempt %d/%d): %s", resp.StatusCode, attempt, p.config.maxRetries, string(respBody))
+		if resp.StatusCode >= 500 || resp.StatusCode == 429 {
+			lastErr = fmt.Errorf("API error (status %d, attempt %d/%d): %s", resp.StatusCode, attempt+1, p.config.maxRetries+1, string(respBody))
 			continue
 		}
 
-		// 4xx errors are not retried.
-		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+		if resp.StatusCode != http.StatusOK {
+			// 4xx errors (except 429) are not retried.
+			return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+		}
+
+		// Check for empty choices (transient provider issue under load)
+		var probe struct {
+			Choices []json.RawMessage `json:"choices"`
+		}
+		if json.Unmarshal(respBody, &probe) == nil && len(probe.Choices) == 0 {
+			lastErr = fmt.Errorf("empty choices in 200 response (attempt %d/%d)", attempt+1, p.config.maxRetries+1)
+			continue
+		}
+
+		break // success
 	}
 	if lastErr != nil && len(respBody) == 0 {
 		return nil, fmt.Errorf("max retries (%d) exceeded: %w", p.config.maxRetries, lastErr)
@@ -242,8 +261,20 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
+	// Some providers (e.g. MiniMax) return HTTP 200 with an error body instead
+	// of a proper 4xx/5xx status. Detect this before checking choices.
+	var errBody struct {
+		Error struct {
+			Message string `json:"message"`
+			Type    string `json:"type"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(respBody, &errBody) == nil && errBody.Error.Message != "" {
+		return nil, fmt.Errorf("provider error: %s (type=%s)", errBody.Error.Message, errBody.Error.Type)
+	}
+
 	if len(orResp.Choices) == 0 {
-		return nil, fmt.Errorf("no choices in response")
+		return nil, fmt.Errorf("no choices in response (after %d attempts)", p.config.maxRetries+1)
 	}
 
 	choice := orResp.Choices[0]

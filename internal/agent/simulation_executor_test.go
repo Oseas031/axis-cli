@@ -81,3 +81,20 @@ func TestToBashPathUsesDetectedDrivePrefix(t *testing.T) {
 		t.Fatalf("expected /c path, got %q", got)
 	}
 }
+
+
+func TestParseStatusLine_IgnoresJSONBody(t *testing.T) {
+	// Regression: parseStatusLine used LastIndex which matched "status": in JSON output
+	multiLine := "Task sim-123 status: completed\nOutput:\n{\n  \"status\": \"completed\"\n}"
+	if got := parseStatusLine(multiLine); got != "completed" {
+		t.Fatalf("expected 'completed', got %q", got)
+	}
+	// Single line
+	if got := parseStatusLine("Task x status: failed"); got != "failed" {
+		t.Fatalf("expected 'failed', got %q", got)
+	}
+	// No match
+	if got := parseStatusLine("no status here"); got != "" {
+		t.Fatalf("expected empty, got %q", got)
+	}
+}
