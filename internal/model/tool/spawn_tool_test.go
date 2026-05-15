@@ -150,3 +150,35 @@ func TestSpawnTool_SharedArtifacts(t *testing.T) {
 		t.Errorf("unexpected artifacts: %v", policy.SharedArtifacts)
 	}
 }
+
+
+func TestDevilsAdvocatePolicy(t *testing.T) {
+	p := DevilsAdvocatePolicy()
+
+	if p.InheritMemory {
+		t.Error("expected InheritMemory=false")
+	}
+	if p.InheritContext {
+		t.Error("expected InheritContext=false")
+	}
+	if !p.RequireProviderDiversity {
+		t.Error("expected RequireProviderDiversity=true")
+	}
+	if !p.CoTIsolation {
+		t.Error("expected CoTIsolation=true")
+	}
+	if len(p.SharedArtifacts) != 0 {
+		t.Error("expected empty SharedArtifacts")
+	}
+}
+
+func TestIsolationPolicyDefaults(t *testing.T) {
+	var p IsolationPolicy
+
+	if p.RequireProviderDiversity {
+		t.Error("expected default RequireProviderDiversity=false")
+	}
+	if p.CoTIsolation {
+		t.Error("expected default CoTIsolation=false")
+	}
+}

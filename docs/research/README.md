@@ -2,6 +2,7 @@
 
 | 文件 | 日期 | 主题 |
 |------|------|------|
+| [bystander-effect-multi-agent-reasoning-2026-05-15](bystander-effect-multi-agent-reasoning-2026-05-15.md) | 05-15 | 多Agent旁观者效应：认知偷懒量化 + Axis防御策略 |
 | [llm-wiki-knowledge-base-2026-05-15](llm-wiki-knowledge-base-2026-05-15.md) | 05-15 | Karpathy LLM Wiki 模式 + Axis 适配 |
 | [harness-categorical-architecture-2026-05-14](harness-categorical-architecture-2026-05-14.md) | 05-14 | Harness 范畴论架构 |
 | [mls-bench-constraint-integration](mls-bench-constraint-integration.md) | 05-14 | MLS-Bench 约束集成 |

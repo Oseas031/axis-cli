@@ -54,10 +54,14 @@
 7. **Subagent 产出必须验收**。主上下文跑 `go test` + 抽查关键逻辑路径，不盲信。
 8. **v1 简化显式标记**。简化处加 `// v1: <说明>. TODO: <改进方向>`。
 9. **push 后自动监控 CI**。git push 后派 subagent 轮询 `gh run watch`，CI 失败则自动修复。
-10. **Devil's Advocate 机制**。重大产出后派 subagent 唱反调——它声称解决了什么但实际没解决？遵守了规则但产出了垃圾？遗漏了什么主要矛盾？触发条件（双重确认）：Agent 提议或用户指示，任一触发即执行。反调 subagent 只有建议权，主 Agent 必须显式回应每条批判。
+10. **Devil's Advocate 机制**。重大产出后派 subagent 唱反调——它声称解决了什么但实际没解决？遵守了规则但产出了垃圾？遗漏了什么主要矛盾？反调 subagent 只有建议权，主 Agent 必须显式回应每条批判。**反调必须通过 subagent 执行，禁止主上下文自行扮演反调角色**（主上下文自审属于 rule #12，不替代 rule #10）。
+    **触发路径（双路径，工具层强制）**：
+    - **主动触发**：用户消息包含触发词（唱反调/反调/devil/critique/grill）→ 立即 spawn 反调 subagent。
+    - **自动触发**：Phase III 结束时检查——新增 ≥2 个文件 OR 变更 ≥3 个模块 OR 新增 exported type ≥3 → 自动 spawn 反调 subagent。
+    详见 `.kiro/skills/devils-advocate/SKILL.md`。
 11. **意图展开原则**。人类给出简短指令时，禁止仅按字面浅层执行。必须先解构还原其隐性前提、完整逻辑、终极意图。以展开后的完整意图作为执行依据。不确定时问。
 12. **否定之否定：重大产出后立即自审**。自审三问：本次遵守的规则中哪条实际阻碍了产出？方法论流程中哪个环节走形式？本次产出暴露了哪个结构性盲区？触发条件同 rule #10。自审结论走 §13.5 反馈闭环写回。
-13. **工作追踪用 vigil**。详见 `.axis/skills/vigil/SKILL.md`。新会话第一步：`axis vigil resume`。
+13. **工作追踪用 vigil**。详见 `.axis/skills/vigil/SKILL.md`。新会话第一步：`axis vigil resume`。标记集成类 vigil 项为 done 时，必须 grep 确认目标模块确实被 import 了（不凭代码存在就标记完成）。
 14. **研究必须走完管线**。触发词：找论文/研究/查文献/用放大镜。强制流程：发现（amp）→ 筛选 → 深入（写 `docs/research/` 报告）→ 扬弃（提取精华）→ 落地（`axis vigil add`）。不允许只写报告不落地，不允许只加待办不写报告。详见 `.axis/skills/research-pipeline/SKILL.md`。
 
 ### 参考文档
@@ -92,6 +96,7 @@
 - [ ] Context 传播：I/O 和可取消操作接受 `ctx context.Context` 作为第一参数
 - [ ] 并发卫生：每个 goroutine 有明确退出路径；无 busy-poll；无 double-close channel
 - [ ] Bug fix 包含回归测试（修复前失败）
+- [ ] 新增 exported symbol 有 `// v1:` 简化标记或完整实现（二选一）
 - [ ] 如果变更影响 milestone、spec 或 convention，文档已同步
 
 > 如果变更感觉很快但违反了以上任何一条，那就是错误的变更。先写 Spec-RDT。
@@ -251,6 +256,7 @@ staticcheck ./... && gosec ./...       # 静态分析 + 安全
 - 永远不返回 `(nil, nil)` — 使用 sentinel error 或类型化零值
 - 永远不用 `strings.HasPrefix` 做安全关键的路径检查 — 使用 `filepath.Clean` + segment matching
 - 永远不静默吞掉 error
+- HTTP retry 循环中永远不复用 `http.Request`（Body 被消费后为空）— 每次 attempt 用 `bytes.NewReader(body)` 重建 request
 
 ### 并发安全
 - 每个 goroutine 有明确退出路径：`context.Cancel`、done channel、`sync.WaitGroup`

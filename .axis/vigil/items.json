@@ -1439,7 +1439,7 @@
     "id": "vigil-5b128d",
     "title": "axis docs lint 命令实现：孤立文档检测、死链接检查、frontmatter 验证、README.md 同步检查",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": null,
     "origin": {
       "type": "",
@@ -1447,7 +1447,14 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T09:57:57.8211865+08:00",
-    "history": []
+    "completed_at": "2026-05-15T11:17:25.745537+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T11:17:25.745537+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-880602",
@@ -1716,6 +1723,621 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T11:00:46.1459512+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-80ce6c",
+    "title": "研究 https://arxiv.org/abs/2605.10698",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:25:35.6055332+08:00",
+    "completed_at": "2026-05-15T14:36:35.2713846+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T14:36:35.2713846+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-cf6700",
+    "title": "CandidatePool 强制异构策略: 多Agent评审必须来自不同provider，防止Kinship同族谄媚（论文证明异构swarm准确率+23%）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research",
+      "agent",
+      "candidatepool"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "arXiv:2605.10698: Bystander Effect证明同构swarm认知偷懒严重，异构多样性是防御手段",
+    "created_at": "2026-05-15T14:36:04.7803414+08:00",
+    "completed_at": "2026-05-15T14:46:29.3775074+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T14:46:29.3775074+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-cc7aed",
+    "title": "Subagent反调隔离强化: Devil's Advocate必须用不同provider + 不接收主Agent CoT，防止Alignment Hallucination",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research",
+      "agent",
+      "judgement"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "arXiv:2605.10698: Sovereignty Gap证明模型内部正确但外部迎合swarm，同族压力\u003e异族压力",
+    "created_at": "2026-05-15T14:36:09.9392196+08:00",
+    "completed_at": "2026-05-15T14:46:29.5637863+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T14:46:29.5637863+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-ad418d",
+    "title": "Prompt装配Lead Anchor防御: 多源反馈注入context时随机化顺序或按可信度排序，防止首位锚定效应",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "research",
+      "contextpack"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "arXiv:2605.10698: Lead Anchor Effect证明第一个审计者品牌身份不成比例地决定swarm走向，顺序改变导致10%准确率差异",
+    "created_at": "2026-05-15T14:36:14.9696185+08:00",
+    "completed_at": "2026-05-15T14:46:29.7462389+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T14:46:29.7462389+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-604e20",
+    "title": "Self-Judgement Sovereignty Gap检测: Judge的CoT与verdict矛盾时标记Alignment Hallucination嫌疑，自动升级到compiler/test验证",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "research",
+      "agent",
+      "judgement"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "arXiv:2605.10698: GPT-5.4内部有效性0.71但外部准确率0.21，Gap=+0.50证明谄媚性对齐是系统性行为",
+    "created_at": "2026-05-15T14:36:20.6515175+08:00",
+    "completed_at": "2026-05-15T14:46:29.929206+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T14:46:29.929206+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-18782d",
+    "title": "Scheduler 同优先级任务排序时考虑 context.estimated_tokens（metadata 字段 + sort）— 源自 MAGIS 研究启示：调度感知 context 成本",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "context",
+      "scheduler"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:45:03.8501948+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-22c420",
+    "title": "元原则备忘：遇到优化瓶颈时先问'能否变换问题结构'再问'能否在当前结构上优化' — MAGIS 核心启示",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "principle"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:45:31.8125637+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-ce7043",
+    "title": "Swarm Topology 抽象层: 显式建模多Agent协作拓扑（顺序/并行、同构/异构、规模），统一 JSONL mailbox + CandidatePool 为可配置拓扑，调度器按拓扑约束分配Agent——架构级缺失，需 Spec-RDT",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "architecture",
+      "multi-agent"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:55:32.0791211+08:00",
+    "started_at": "2026-05-15T15:27:00.5688176+08:00",
+    "completed_at": "2026-05-15T15:27:25.4970507+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:27:00.5688176+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T15:27:25.4970507+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-3f7a78",
+    "title": "集成: OffloadCompactor 接入 LLMAgentExecutor（model/compactor 已实现三级压缩但未通过 WithHistoryCompactor 注入 executor）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P1"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:56:36.1244245+08:00",
+    "started_at": "2026-05-15T15:21:43.728813+08:00",
+    "completed_at": "2026-05-15T16:09:08.1404621+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:43.728813+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:08.1404621+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-8531b3",
+    "title": "集成: AnchorMitigation 接入 ContextAssembler（contextpack/anchor_mitigation.go 已实现但 assembler.go 未调用 ApplyAnchorMitigation）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P2"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:56:41.5931806+08:00",
+    "started_at": "2026-05-15T15:21:43.8388247+08:00",
+    "completed_at": "2026-05-15T16:09:08.3499544+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:43.8388247+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:08.3499544+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-7a369a",
+    "title": "集成: FeatureGate 接入 Orchestrator/Dispatcher（featuregate 包已实现但未在调度/分发路径中检查 gate 状态）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P2"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:56:47.320061+08:00",
+    "started_at": "2026-05-15T15:21:43.9510146+08:00",
+    "completed_at": "2026-05-15T16:09:08.545136+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:43.9510146+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:08.545136+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-e27e8c",
+    "title": "集成: CapabilityRegistry 接入 Dispatcher（kernel/capability 包已实现但未被任何调用方使用）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P2"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:56:52.4717648+08:00",
+    "started_at": "2026-05-15T15:21:44.0676508+08:00",
+    "completed_at": "2026-05-15T16:09:08.7504511+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:44.0676508+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:08.7504511+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-8ff4f4",
+    "title": "集成: GuaranteeRegistry 接入启动流程（internal/guarantee 包已实现但未被任何模块 import）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P3"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:56:57.4472689+08:00",
+    "started_at": "2026-05-15T15:21:44.1801556+08:00",
+    "completed_at": "2026-05-15T16:09:08.9641874+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:44.1801556+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:08.9641874+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-e339c4",
+    "title": "集成: Actor+Comm 接入 Orchestrator（internal/actor 和 internal/comm 已实现 spawn+mailbox 但未被 kernel 层 import，SpawnTool 是空壳）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P1"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:57:03.6556174+08:00",
+    "started_at": "2026-05-15T15:21:44.297215+08:00",
+    "completed_at": "2026-05-15T16:09:09.1767551+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:44.297215+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:09.1767551+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-351289",
+    "title": "集成: CandidatePool 接入 Dispatcher 高风险任务路径（agent/candidates.go 已实现多候选差分测试但未被调度路径调用）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P2"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:57:09.2562785+08:00",
+    "started_at": "2026-05-15T15:21:44.4102346+08:00",
+    "completed_at": "2026-05-15T16:09:09.3799564+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:44.4102346+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:09.3799564+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-a45148",
+    "title": "集成: WorkingMemory BM25 引擎接入 Agent 执行路径（memory/working 已实现 BM25 recall 但仅 CLI 命令和 immediate/builder 引用，未接入 LLMAgentExecutor）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P2"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:57:16.1138285+08:00",
+    "started_at": "2026-05-15T15:21:44.5261325+08:00",
+    "completed_at": "2026-05-15T16:09:09.5756543+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:44.5261325+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:09.5756543+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-e17281",
+    "title": "集成: ImmediateMemory 接入 Agent 执行路径（memory/immediate 包存在但无外部 import）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P3"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:57:21.0416215+08:00",
+    "started_at": "2026-05-15T15:21:44.6465799+08:00",
+    "completed_at": "2026-05-15T16:09:09.7733536+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:44.6465799+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:09.7733536+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-320334",
+    "title": "集成: Evolution Protocol 接入 Dispatcher 结构性变更路径（evolution 包仅通过 CLI evolve 命令暴露，dispatcher 对结构性任务无自动触发 staged evolution）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "integration",
+      "P2"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T14:57:26.8130374+08:00",
+    "started_at": "2026-05-15T15:21:44.7567798+08:00",
+    "completed_at": "2026-05-15T16:09:09.9686177+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-05-15T15:21:44.7567798+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-05-15T16:09:09.9686177+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-e8dfe9",
+    "title": "Swarm 前置验证: 用2个不同provider对同一任务跑CandidatePool，证明多候选产出有意义差异",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "swarm",
+      "validation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T15:27:06.2105276+08:00",
+    "completed_at": "2026-05-15T16:03:05.8986805+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T16:03:05.8986805+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-40f6ab",
+    "title": "Swarm T1: SwarmConfig + ParseFromMetadata (internal/kernel/swarm/config.go)",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "swarm",
+      "implementation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T15:27:13.8979648+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-6716d6",
+    "title": "Swarm T2: Agent Selection + Diversity Validation (internal/kernel/swarm/dispatch.go)",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "swarm",
+      "implementation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T15:27:14.0053733+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-4510c0",
+    "title": "Swarm T3: Parallel Dispatch + Collect (internal/kernel/swarm/dispatch.go)",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "swarm",
+      "implementation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T15:27:14.109479+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-3e0f99",
+    "title": "Swarm T4: Majority Vote Aggregation (internal/kernel/swarm/aggregate.go)",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "swarm",
+      "implementation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T15:27:14.2138881+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-4f6d03",
+    "title": "Swarm T5: Dispatcher Integration — swarm metadata检测+路由 (dispatcher.go修改)",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "swarm",
+      "implementation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T15:27:14.3193113+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-71ac4b",
+    "title": "Swarm T6: swarm.executed Event Recording",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "swarm",
+      "implementation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T15:27:14.42651+08:00",
     "history": []
   }
 ]

@@ -62,3 +62,54 @@ func TestPartition_AllDifferent(t *testing.T) {
 		t.Fatalf("expected dominant size 1 (no consensus), got %d", dominant.Size)
 	}
 }
+
+
+func TestValidateDiversity_NoneAlwaysPasses(t *testing.T) {
+	pool := &CandidatePool{
+		Candidates: []Candidate{{ID: "1", Source: "gpt4"}},
+		Diversity:  DiversityNone,
+	}
+	if err := pool.ValidateDiversity(); err != nil {
+		t.Fatalf("DiversityNone should always pass, got: %v", err)
+	}
+}
+
+func TestValidateDiversity_HeterogeneousPassesWithTwoSources(t *testing.T) {
+	pool := &CandidatePool{
+		Candidates: []Candidate{
+			{ID: "1", Source: "gpt4"},
+			{ID: "2", Source: "claude"},
+		},
+		Diversity: DiversityHeterogeneous,
+	}
+	if err := pool.ValidateDiversity(); err != nil {
+		t.Fatalf("expected pass with 2 distinct sources, got: %v", err)
+	}
+}
+
+func TestValidateDiversity_HeterogeneousFailsWithOneSource(t *testing.T) {
+	pool := &CandidatePool{
+		Candidates: []Candidate{
+			{ID: "1", Source: "gpt4"},
+			{ID: "2", Source: "gpt4"},
+		},
+		Diversity: DiversityHeterogeneous,
+	}
+	if err := pool.ValidateDiversity(); err == nil {
+		t.Fatal("expected error with single source under heterogeneous policy")
+	}
+}
+
+func TestDistinctSources(t *testing.T) {
+	pool := &CandidatePool{
+		Candidates: []Candidate{
+			{ID: "1", Source: "gpt4"},
+			{ID: "2", Source: "claude"},
+			{ID: "3", Source: "gpt4"},
+		},
+	}
+	sources := pool.DistinctSources()
+	if len(sources) != 2 {
+		t.Fatalf("expected 2 distinct sources, got %d", len(sources))
+	}
+}

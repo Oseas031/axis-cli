@@ -2,15 +2,30 @@ package agent
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
+)
+
+// v1: static policy. TODO: dynamic policy based on task entropy
+
+// DiversityPolicy controls sourcing requirements for candidate pools.
+// Heterogeneous sourcing defends against the Bystander Effect (arXiv:2605.10698).
+type DiversityPolicy int
+
+const (
+	// DiversityNone imposes no constraint on candidate sources.
+	DiversityNone DiversityPolicy = iota
+	// DiversityHeterogeneous requires candidates from >=2 distinct sources.
+	DiversityHeterogeneous
 )
 
 // CandidatePool manages multiple solution candidates for a coding task.
 type CandidatePool struct {
 	Candidates []Candidate
 	TestInputs []TestInput
+	Diversity  DiversityPolicy
 }
 
 type Candidate struct {
@@ -22,6 +37,27 @@ type Candidate struct {
 type TestInput struct {
 	Input    string
 	Expected string // empty if unknown
+}
+
+// DistinctSources returns the unique Source values across all candidates.
+func (cp *CandidatePool) DistinctSources() []string {
+	seen := make(map[string]struct{})
+	var sources []string
+	for _, c := range cp.Candidates {
+		if _, ok := seen[c.Source]; !ok {
+			seen[c.Source] = struct{}{}
+			sources = append(sources, c.Source)
+		}
+	}
+	return sources
+}
+
+// ValidateDiversity checks whether the pool satisfies its diversity policy.
+func (cp *CandidatePool) ValidateDiversity() error {
+	if cp.Diversity == DiversityHeterogeneous && len(cp.DistinctSources()) < 2 {
+		return errors.New("diversity policy requires candidates from at least 2 distinct sources")
+	}
+	return nil
 }
 
 type EquivalenceClass struct {

@@ -14,6 +14,9 @@ type IsolationPolicy struct {
 	InheritMemory   bool     `json:"inherit_memory"`   // default: false
 	InheritContext  bool     `json:"inherit_context"`  // default: false
 	SharedArtifacts []string `json:"shared_artifacts"` // explicit list of artifacts to pass
+	// v1: binary diversity flag. TODO: explicit provider exclusion list
+	RequireProviderDiversity bool `json:"require_provider_diversity"` // spawned agent must use different provider
+	CoTIsolation             bool `json:"cot_isolation"`              // hide parent's chain-of-thought from spawned agent
 }
 
 // DefaultIsolationPolicy returns a policy with full isolation (no inheritance).
@@ -25,12 +28,32 @@ func DefaultIsolationPolicy() IsolationPolicy {
 	}
 }
 
+// DevilsAdvocatePolicy returns an IsolationPolicy configured for adversarial
+// review: no shared memory/context, provider diversity enforced, and CoT hidden
+// from the reviewer to prevent Alignment Hallucination (arXiv:2605.10698).
+func DevilsAdvocatePolicy() IsolationPolicy {
+	return IsolationPolicy{
+		InheritMemory:            false,
+		InheritContext:           false,
+		RequireProviderDiversity: true,
+		CoTIsolation:             true,
+	}
+}
+
 // SpawnTool allows an Agent to create an isolated subtask.
 // The subtask runs with a clean context (no parent history leakage)
 // and returns only a summary to the parent.
-type SpawnTool struct{}
+type SpawnTool struct {
+	execFn func(ctx context.Context, taskID, prompt, isolation string) (map[string]any, error)
+}
 
 func NewSpawnTool() *SpawnTool { return &SpawnTool{} }
+
+// SetExecFn injects an active executor. When set, Execute delegates to it
+// instead of returning a passive stub response.
+func (t *SpawnTool) SetExecFn(fn func(ctx context.Context, taskID, prompt, isolation string) (map[string]any, error)) {
+	t.execFn = fn
+}
 
 func (t *SpawnTool) Name() string { return "spawn" }
 
@@ -60,6 +83,11 @@ func (t *SpawnTool) Execute(ctx context.Context, input map[string]any) (map[stri
 	}
 	if isolation != "full" && isolation != "shared" {
 		return map[string]any{"error": fmt.Sprintf("invalid isolation level: %s (use 'full' or 'shared')", isolation)}, nil
+	}
+
+	// Delegate to active executor if wired
+	if t.execFn != nil {
+		return t.execFn(ctx, taskID, prompt, isolation)
 	}
 
 	// Build isolation policy based on isolation level

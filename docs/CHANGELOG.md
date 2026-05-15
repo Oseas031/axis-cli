@@ -2,6 +2,14 @@
 
 > Append-only record of documentation changes. Parseable format: `## [date] operation | subject`
 
+## [2026-05-15] research | Bystander Effect in Multi-Agent Reasoning
+- Added: `docs/research/bystander-effect-multi-agent-reasoning-2026-05-15.md` — 多Agent认知偷懒量化 + Axis防御策略
+- Added vigil-cf6700: CandidatePool 强制异构策略 (P1)
+- Added vigil-cc7aed: Subagent反调隔离强化 (P1)
+- Added vigil-ad418d: Prompt装配Lead Anchor防御 (P1)
+- Added vigil-604e20: Self-Judgement Sovereignty Gap检测 (P2)
+- Completed: vigil-80ce6c
+
 ## [2026-05-15] research | Harness Engineering (Claude Code + Codex comparison)
 - Added: `reports/research/harness-engineering-claude-code-guide-2026-05-15.md` — Book1 full text (PDF→MD)
 - Added: `reports/research/harness-comparison-claude-code-vs-codex-2026-05-15.md` — Book2 full text (PDF→MD)
