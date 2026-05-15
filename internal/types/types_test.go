@@ -125,9 +125,9 @@ func TestTaskStatusConstants(t *testing.T) {
 func TestFieldTypeConstants(t *testing.T) {
 	types := map[FieldType]string{
 		FieldTypeString: "string",
-		FieldTypeInt:    "int",
-		FieldTypeFloat:  "float",
-		FieldTypeBool:   "bool",
+		FieldTypeInt:    "integer",
+		FieldTypeFloat:  "number",
+		FieldTypeBool:   "boolean",
 		FieldTypeArray:  "array",
 		FieldTypeObject: "object",
 	}
@@ -231,5 +231,26 @@ func TestAgentContract_Fields(t *testing.T) {
 	}
 	if contract.ContractID != "c1" || len(contract.InputSchema.Fields) != 1 {
 		t.Error("Contract fields not set correctly")
+	}
+}
+
+
+func TestAgentTask_CostBudgetJSON(t *testing.T) {
+	task := &AgentTask{
+		TaskID:     "test-1",
+		ContractID: "default",
+		CostBudget: 0.50,
+		Status:     TaskStatusPending,
+	}
+	data, err := json.Marshal(task)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded AgentTask
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.CostBudget != 0.50 {
+		t.Fatalf("expected 0.50, got %f", decoded.CostBudget)
 	}
 }

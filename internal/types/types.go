@@ -28,6 +28,7 @@ type AgentTask struct {
 	StartedAt    *time.Time        `json:"started_at,omitempty"`
 	CompletedAt  *time.Time        `json:"completed_at,omitempty"`
 	Metadata     map[string]string `json:"metadata,omitempty"`
+	CostBudget   float64           `json:"cost_budget,omitempty"` // Maximum USD cost allowed for this task; 0 = unlimited
 }
 
 // TaskResult represents the result of a task execution
@@ -51,9 +52,9 @@ type FieldType string
 
 const (
 	FieldTypeString FieldType = "string"
-	FieldTypeInt    FieldType = "int"
-	FieldTypeFloat  FieldType = "float"
-	FieldTypeBool   FieldType = "bool"
+	FieldTypeInt    FieldType = "integer"
+	FieldTypeFloat  FieldType = "number"
+	FieldTypeBool   FieldType = "boolean"
 	FieldTypeArray  FieldType = "array"
 	FieldTypeObject FieldType = "object"
 )

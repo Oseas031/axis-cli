@@ -14,6 +14,7 @@ import (
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	"github.com/axis-cli/axis/internal/evolution"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
+	"github.com/axis-cli/axis/internal/kernel/budget"
 	"github.com/axis-cli/axis/internal/kernel/capability"
 	"github.com/axis-cli/axis/internal/kernel/featuregate"
 	"github.com/axis-cli/axis/internal/kernel/swarm"
@@ -49,6 +50,7 @@ type DispatcherImpl struct {
 	autonomyResolver func(task *types.AgentTask) agent.AutonomyLevel
 	auditLog         []AuditEntry
 	auditMu          sync.RWMutex
+	costTracker          *budget.CostTracker
 	auditFn              func(taskID, event, detail string)
 	followUpFn           func(tasks []*types.AgentTask)
 	candidatePoolEnabled bool
@@ -138,6 +140,11 @@ func (d *DispatcherImpl) SetProviderNames(names []string) {
 // SetFeatureGate sets the feature gate for pre-execution checks.
 func (d *DispatcherImpl) SetFeatureGate(g *featuregate.Gate) {
 	d.gate = g
+}
+
+// SetCostTracker sets the cost tracker for budget enforcement.
+func (d *DispatcherImpl) SetCostTracker(ct *budget.CostTracker) {
+	d.costTracker = ct
 }
 
 // SetEvolutionStore sets the evolution store for evolution protocol routing.
@@ -420,6 +427,19 @@ func (d *DispatcherImpl) executeTask(ctx context.Context, task *types.AgentTask)
 			Error:     err.Error(),
 			Completed: time.Now(),
 		}, err
+	}
+
+	// Cost budget enforcement
+	if d.costTracker != nil && task.CostBudget > 0 {
+		if err := d.costTracker.CheckBudget(task.TaskID, task.CostBudget); err != nil {
+			d.audit(task.TaskID, "cost_budget_exceeded", err.Error())
+			return &types.TaskResult{
+				TaskID:    task.TaskID,
+				Status:    types.TaskStatusFailed,
+				Error:     err.Error(),
+				Completed: time.Now(),
+			}, err
+		}
 	}
 
 	// Swarm topology detection
