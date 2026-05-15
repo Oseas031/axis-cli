@@ -167,6 +167,7 @@ rdm_predicate:  # 全部为 true 时操作为 RDM
 | P3 | `docs/architecture/semantic-boundaries.md` | 每个模块的"不得做"清单 |
 | P4 | `docs/architecture/spec-lifecycle-conventions.md` | 何时写/更新 Spec-RDT |
 | P5 | `docs/status/current-progress.md` | 里程碑状态 ground truth |
+| P5 | `docs/architecture/git-conventions.md` | Git 工作流规范（分支/commit/push） |
 | Ref | `docs/architecture/dialectical-development-methodology.md` | 方法论本体论层（需要时查阅） |
 
 ## 4. 目录边界
