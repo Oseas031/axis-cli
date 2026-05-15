@@ -6,8 +6,6 @@ package working
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 )
 
@@ -116,10 +114,4 @@ func makeBundleKey(bundleID string) string {
 	return bundleKeyPrefix + bundleID
 }
 
-// parseBundleID extracts the bundle ID from a canonical KV key.
-func parseBundleID(key string) (string, error) { //nolint:unused
-	if !strings.HasPrefix(key, bundleKeyPrefix) {
-		return "", fmt.Errorf("working: invalid key prefix %q", key)
-	}
-	return strings.TrimPrefix(key, bundleKeyPrefix), nil
-}
+

@@ -18,7 +18,7 @@ func newGUICommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			guiExe := findGUIExe()
 			if guiExe == "" {
-				return fmt.Errorf("axis-gui executable not found. Build it with: cd tools/axis-gui && go build -o axis-gui.exe .")
+				return fmt.Errorf("axis-gui executable not found; build it with: cd tools/axis-gui && go build -o axis-gui.exe")
 			}
 			cwd, _ := os.Getwd()
 			guiCmd := exec.Command(guiExe, "--port", fmt.Sprintf("%d", port), "--root", cwd)

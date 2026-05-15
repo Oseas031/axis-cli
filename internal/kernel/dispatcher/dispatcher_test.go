@@ -141,12 +141,11 @@ func TestDispatcher_DispatchParentContextCancelled(t *testing.T) {
 }
 
 func TestDispatcher_DispatchErrChan(t *testing.T) {
-	contractExec := contractexec.NewContractExecutor()
+	contractExec := contractexec.NewContractExecutorWithConfig(contractexec.ExecutorConfig{
+		Provider: provider.NewMockModelProvider(),
+	})
 	humanExec := humanexec.NewHumanExecutor()
 	dispatch := NewDispatcher(contractExec, humanExec)
-
-	// Set a provider so Execute goes through the full path
-	contractExec.SetProvider(provider.NewMockModelProvider())
 
 	// Contract whose output schema requires a field the mock won't provide
 	contract := &types.AgentContract{
@@ -597,9 +596,10 @@ func TestDispatcher_Dispatch_AgentExecutorMissingContextDoesNotBlock(t *testing.
 }
 
 func TestDispatcher_Dispatch_ContractPathDoesNotInjectContextSummary(t *testing.T) {
-	contractExec := contractexec.NewContractExecutor()
 	modelProvider := &capturingModelProvider{}
-	contractExec.SetProvider(modelProvider)
+	contractExec := contractexec.NewContractExecutorWithConfig(contractexec.ExecutorConfig{
+		Provider: modelProvider,
+	})
 	humanExec := humanexec.NewHumanExecutor()
 	dispatcher := NewDispatcher(contractExec, humanExec)
 	contract := &types.AgentContract{ContractID: "contract-context-boundary"}

@@ -15,6 +15,9 @@ func TestDockerAvailable(t *testing.T) {
 }
 
 func TestSandboxedBashTool_Execute(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires Docker")
+	}
 	if !DockerAvailable() {
 		t.Skip("docker not available")
 	}
@@ -35,6 +38,9 @@ func TestSandboxedBashTool_Execute(t *testing.T) {
 }
 
 func TestSandboxedBashTool_NetworkIsolation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires Docker")
+	}
 	if !DockerAvailable() {
 		t.Skip("docker not available")
 	}
@@ -51,6 +57,9 @@ func TestSandboxedBashTool_NetworkIsolation(t *testing.T) {
 }
 
 func TestSandboxedBashTool_FileSystemIsolation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires Docker")
+	}
 	if !DockerAvailable() {
 		t.Skip("docker not available")
 	}
@@ -67,6 +76,9 @@ func TestSandboxedBashTool_FileSystemIsolation(t *testing.T) {
 }
 
 func TestSandboxedBashTool_Cleanup(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires Docker")
+	}
 	if !DockerAvailable() {
 		t.Skip("docker not available")
 	}

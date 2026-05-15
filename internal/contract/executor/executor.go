@@ -205,7 +205,6 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 		circuitBreakerThreshold = 5
 	}
 
-	var lastOutput map[string]any
 	for turn := 0; turn < maxTurns; turn++ {
 		req.History = history
 		if turnsSinceProgress >= 5 {
@@ -313,7 +312,6 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 		}
 
 		if resp.Output != nil {
-			lastOutput = resp.Output
 			if err := e.ValidateOutput(contractID, resp.Output); err != nil {
 				return &types.ExecutionResult{
 					Error: fmt.Sprintf("output validation failed: %v", err),
@@ -324,7 +322,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 	}
 
 	return &types.ExecutionResult{
-		Output: lastOutput,
+		Output: nil,
 		Error:  fmt.Sprintf("execution terminated: maximum turns (%d) reached without completion", maxTurns),
 	}, fmt.Errorf("execution terminated: maximum turns (%d) reached without completion", maxTurns)
 }

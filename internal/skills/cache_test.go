@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-const skillTemplate = "---\nname: %s\ndescription: A skill\ntags: test\nversion: 1.0.0\nauthor: test\n---\n# %s\n"
-
 func createSkill(t *testing.T, dir, name string) {
 	t.Helper()
 	skillDir := filepath.Join(dir, name)

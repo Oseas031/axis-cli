@@ -2,17 +2,15 @@
 
 package vigil
 
-import "os"
+import "syscall"
 
 // processAlive checks if a process with the given PID is still running.
 func processAlive(pid int) bool {
 	if pid <= 0 {
 		return false
 	}
-	p, err := os.FindProcess(pid)
-	if err != nil {
-		return false
-	}
-	// Unix: signal 0 checks existence without actually sending a signal.
-	return p.Signal(nil) == nil
+	// Signal 0 checks existence without actually sending a signal.
+	// ESRCH means no such process; EPERM means it exists but we lack permission.
+	err := syscall.Kill(pid, 0)
+	return err == nil || err == syscall.EPERM
 }
