@@ -167,3 +167,24 @@ func TestRun_OnToolExecutedHook(t *testing.T) {
 		t.Error("hook not called")
 	}
 }
+
+func TestClosePendingToolCalls(t *testing.T) {
+	// No pending calls
+	h := []types.ModelMessage{{Role: "user", Content: "hi"}}
+	got := closePendingToolCalls(h)
+	if len(got) != 1 {
+		t.Fatal("should not modify history without pending tool calls")
+	}
+
+	// Pending tool call
+	h = []types.ModelMessage{
+		{Role: "assistant", ToolCalls: []types.ToolCall{{ID: "tc-1", Name: "bash"}}},
+	}
+	got = closePendingToolCalls(h)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 messages, got %d", len(got))
+	}
+	if got[1].Role != "tool" || got[1].ToolCallID != "tc-1" {
+		t.Fatal("synthetic result not correct")
+	}
+}

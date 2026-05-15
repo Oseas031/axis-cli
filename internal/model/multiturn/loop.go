@@ -56,6 +56,7 @@ func Run(ctx context.Context, cfg LoopConfig, req *provider.ModelRequest) (*Loop
 	for iter := 0; iter < cfg.MaxIterations; iter++ {
 		select {
 		case <-ctx.Done():
+			history = closePendingToolCalls(history)
 			return &LoopResult{History: history, Error: fmt.Sprintf("context cancelled: %v", ctx.Err())}, ctx.Err()
 		default:
 		}
@@ -66,6 +67,7 @@ func Run(ctx context.Context, cfg LoopConfig, req *provider.ModelRequest) (*Loop
 		resp, err := cfg.Provider.Execute(turnCtx, req)
 		turnCancel()
 		if err != nil {
+			history = closePendingToolCalls(history)
 			return &LoopResult{History: history, Error: fmt.Sprintf("provider error: %v", err)}, err
 		}
 
@@ -147,5 +149,26 @@ func Run(ctx context.Context, cfg LoopConfig, req *provider.ModelRequest) (*Loop
 		}
 	}
 
+	history = closePendingToolCalls(history)
 	return &LoopResult{History: history, Error: fmt.Sprintf("iteration budget exhausted (%d turns)", cfg.MaxIterations)}, nil
+}
+
+// closePendingToolCalls appends synthetic error results for any tool_use
+// in the last assistant message that lacks a matching tool_result.
+func closePendingToolCalls(history []types.ModelMessage) []types.ModelMessage {
+	if len(history) == 0 {
+		return history
+	}
+	last := history[len(history)-1]
+	if last.Role != "assistant" || len(last.ToolCalls) == 0 {
+		return history
+	}
+	for _, tc := range last.ToolCalls {
+		history = append(history, types.ModelMessage{
+			Role:       "tool",
+			ToolCallID: tc.ID,
+			Content:    "[interrupted] execution aborted before tool completion",
+		})
+	}
+	return history
 }

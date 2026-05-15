@@ -249,3 +249,30 @@ func TestLLMAgentExecutor_ContextCancellation(t *testing.T) {
 		t.Error("expected error message in result")
 	}
 }
+
+
+func TestParseFollowUpTasks(t *testing.T) {
+	e := &LLMAgentExecutor{agentID: "test"}
+
+	// nil output
+	if got := e.parseFollowUpTasks(nil); got != nil {
+		t.Fatal("expected nil for nil output")
+	}
+
+	// no _next_steps key
+	if got := e.parseFollowUpTasks(map[string]any{"foo": "bar"}); got != nil {
+		t.Fatal("expected nil without _next_steps")
+	}
+
+	// valid _next_steps
+	output := map[string]any{
+		"_next_steps": []any{"do X", "do Y"},
+	}
+	tasks := e.parseFollowUpTasks(output)
+	if len(tasks) != 2 {
+		t.Fatalf("expected 2 tasks, got %d", len(tasks))
+	}
+	if tasks[0].Input["goal"] != "do X" {
+		t.Fatalf("wrong goal: %v", tasks[0].Input["goal"])
+	}
+}

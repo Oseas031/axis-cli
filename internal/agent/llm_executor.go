@@ -475,5 +475,37 @@ func (e *LLMAgentExecutor) buildResult(output map[string]any, traces []ToolTrace
 	if len(traces) > 0 {
 		result.Output["_tool_traces"] = traces
 	}
+	result.FollowUpTasks = e.parseFollowUpTasks(output)
 	return result
+}
+
+// parseFollowUpTasks extracts follow-up tasks from the agent output's _next_steps key.
+func (e *LLMAgentExecutor) parseFollowUpTasks(output map[string]any) []*types.AgentTask {
+	if output == nil {
+		return nil
+	}
+	raw, ok := output["_next_steps"]
+	if !ok {
+		return nil
+	}
+	steps, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+	var tasks []*types.AgentTask
+	for i, s := range steps {
+		desc, ok := s.(string)
+		if !ok || desc == "" {
+			continue
+		}
+		tasks = append(tasks, &types.AgentTask{
+			TaskID: fmt.Sprintf("followup-%s-%d", e.agentID, i),
+			Input:  map[string]any{"goal": desc, "message": desc},
+			Metadata: map[string]string{
+				"intent.source":               "agent_followup",
+				types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent,
+			},
+		})
+	}
+	return tasks
 }
