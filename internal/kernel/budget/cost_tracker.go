@@ -17,6 +17,8 @@ func NewCostTracker() *CostTracker {
 }
 
 // Add records cost for a task. Returns the new total.
+// v1: Add is defined but not yet called from the execution path.
+// TODO: wire to provider token callback in multiturn loop or agent executor.
 func (ct *CostTracker) Add(taskID string, cost float64) float64 {
 	ct.mu.Lock()
 	defer ct.mu.Unlock()

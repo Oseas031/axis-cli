@@ -2,6 +2,9 @@ package compactor
 
 import "strings"
 
+// v1: RecoveryContext is the data structure only. Population logic not yet implemented.
+// TODO: extract ActivePlan/Feedback/FileStates from history before compaction.
+
 // RecoveryContext holds semantic state that must survive compaction.
 type RecoveryContext struct {
 	ActivePlan string   // current plan/goal summary

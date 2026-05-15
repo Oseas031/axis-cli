@@ -45,6 +45,9 @@ func NewPermissionResolver() *PermissionResolver {
 	}
 }
 
+// v1: Resolve is defined but not yet called from executeAgentTask.
+// TODO: wire into dispatch path and handle PermissionAsk (pause + confirm).
+
 // Resolve determines the permission for a task given its autonomy level and metadata.
 // Rules:
 //   - AutonomyLevelFull + no high-risk indicators → Allow

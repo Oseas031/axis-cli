@@ -3,6 +3,8 @@ package agent
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -480,6 +482,7 @@ func (e *LLMAgentExecutor) buildResult(output map[string]any, traces []ToolTrace
 }
 
 // parseFollowUpTasks extracts follow-up tasks from the agent output's _next_steps key.
+// v1: no parent ContractID propagation. TODO: pass parent task reference
 func (e *LLMAgentExecutor) parseFollowUpTasks(output map[string]any) []*types.AgentTask {
 	if output == nil {
 		return nil
@@ -499,7 +502,7 @@ func (e *LLMAgentExecutor) parseFollowUpTasks(output map[string]any) []*types.Ag
 			continue
 		}
 		tasks = append(tasks, &types.AgentTask{
-			TaskID: fmt.Sprintf("followup-%s-%d", e.agentID, i),
+			TaskID: fmt.Sprintf("followup-%s-%d-%s", e.agentID, i, shortRand()),
 			Input:  map[string]any{"goal": desc, "message": desc},
 			Metadata: map[string]string{
 				"intent.source":               "agent_followup",
@@ -508,4 +511,10 @@ func (e *LLMAgentExecutor) parseFollowUpTasks(output map[string]any) []*types.Ag
 		})
 	}
 	return tasks
+}
+
+func shortRand() string {
+	var b [3]byte
+	_, _ = rand.Read(b[:])
+	return hex.EncodeToString(b[:])
 }
