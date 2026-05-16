@@ -1,4 +1,4 @@
-// Package orchestrator provides task orchestration and coordination.
+﻿// Package orchestrator provides task orchestration and coordination.
 package orchestrator
 
 import (
@@ -161,6 +161,7 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	if orch.gate == nil {
 		orch.gate = featuregate.NewGate()
 	}
+	orch.gate.Unlock(featuregate.FeatureEvolution)
 	orch.dispatcher.SetFeatureGate(orch.gate)
 
 	// Wire capability registry
@@ -191,17 +192,17 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	if spawnTool, ok := orch.toolRegistry.Get("spawn"); ok {
 		if st, ok := spawnTool.(*tool.SpawnTool); ok {
 			st.SetExecFn(func(ctx context.Context, taskID, prompt, isolation string) (map[string]any, error) {
-				err := spawnExec.Execute(ctx, actor.SpawnRequest{
+				result, err := spawnExec.Execute(ctx, actor.SpawnRequest{
 					TaskID:    taskID,
 					Prompt:    prompt,
 					Isolation: isolation,
 					ParentID:  "orchestrator",
 					MessageID: fmt.Sprintf("spawn-%s-%d", taskID, time.Now().UnixNano()),
-				})
+						})
 				if err != nil {
 					return map[string]any{"status": "failed", "error": err.Error()}, nil
 				}
-				return map[string]any{"status": "completed", "task_id": taskID, "message": "subtask completed"}, nil
+				return result, nil
 			})
 		}
 	}
@@ -360,3 +361,4 @@ func (o *Orchestrator) GetDependencyGraph() map[string][]string {
 func (o *Orchestrator) ResolveCall(callID string, output map[string]any) error {
 	return o.humanExecutor.ResolveCall(callID, output, nil)
 }
+

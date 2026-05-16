@@ -1045,7 +1045,7 @@
     "id": "vigil-f02e00",
     "title": "Cost budget as first-class constraint: AgentTask.cost_budget + auto-downgrade",
     "priority": "P2",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture",
       "cost"
@@ -1057,13 +1057,26 @@
     "depends_on": null,
     "notes": "Add cost_budget field to AgentTask. Dispatcher checks accumulated token cost per task. If approaching budget, auto-downgrade to cheaper model tier. Closes the cost control loop that token accounting opened.",
     "created_at": "2026-05-14T20:42:00+08:00",
-    "history": []
+    "completed_at": "2026-05-15T23:13:44.1544485+08:00",
+    "commit_hash": "9c1c326",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:53:09.8537737+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T23:13:44.1544485+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-f03a00",
     "title": "FollowUpTask population: LLMAgentExecutor parses Agent output for next steps",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "agent",
       "bootstrap"
@@ -1075,7 +1088,20 @@
     "depends_on": null,
     "notes": "Validation found: FollowUpHandler wired in dispatcher but LLMAgentExecutor never populates FollowUpTasks field. Agent output needs parsing for 'next steps' section. Without this, Bootstrap Loop is dead code.",
     "created_at": "2026-05-14T21:27:00+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:34:56.7345737+08:00",
+    "commit_hash": "8c413fc",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:25:56.6254215+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:34:56.7345737+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-f03b00",
@@ -1152,7 +1178,7 @@
   {
     "id": "vigil-e3f3e7",
     "title": "Chat: time separator between messages \u003e30min apart",
-    "priority": "P2",
+    "priority": "P3",
     "status": "pending",
     "tags": [
       "gui"
@@ -1169,7 +1195,7 @@
   {
     "id": "vigil-1119ff",
     "title": "Chat: localStorage capacity protection (auto-trim \u003e2000 msgs)",
-    "priority": "P2",
+    "priority": "P3",
     "status": "pending",
     "tags": [
       "gui"
@@ -1390,7 +1416,7 @@
   {
     "id": "vigil-06e2d5",
     "title": "研究 Agentic Interpretation: Lattice-Structured Evidence for LLM-Based Program Analysis https://arxiv.org/abs/2605.12694",
-    "priority": "P1",
+    "priority": "P2",
     "status": "pending",
     "tags": [
       "research"
@@ -1406,7 +1432,7 @@
   {
     "id": "vigil-826e9b",
     "title": "研究 Speculative Interaction Agents: Asynchronous I/O and Speculative Tool Calling https://arxiv.org/abs/2605.13360",
-    "priority": "P1",
+    "priority": "P2",
     "status": "pending",
     "tags": [
       "research"
@@ -1422,7 +1448,7 @@
   {
     "id": "vigil-033e8d",
     "title": "研究 CHAL: Council of Hierarchical Agentic Language (多Agent辩证框架) https://arxiv.org/abs/2605.12718",
-    "priority": "P1",
+    "priority": "P2",
     "status": "pending",
     "tags": [
       "research"
@@ -1616,7 +1642,7 @@
     "id": "vigil-378ebb",
     "title": "Prompt 分层装配链: default-\u003eproject-\u003etask-\u003eskills-\u003eappend, 优先级硬编码",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture",
       "harness"
@@ -1628,13 +1654,26 @@
     "depends_on": null,
     "notes": "参照 Claude Code buildEffectiveSystemPrompt() 设计。project prompt 只写 constraint 不写 prescribed path。不变式: precedence(project)\u003eprecedence(default); append 永远不替换 base",
     "created_at": "2026-05-15T10:21:21.4126192+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:34:56.924779+08:00",
+    "commit_hash": "8c413fc",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:25:57.16814+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:34:56.924779+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-07c165",
     "title": "权限三态化: 补 ask 语义, dispatcher 中风险操作暂停等待确认",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture",
       "harness",
@@ -1647,13 +1686,26 @@
     "depends_on": null,
     "notes": "与 AutonomyLevel 联动: 低自主权=ask, 高自主权=allow。不变式: ask 永远不自动升级为 allow; deny 对同一 tool_use_id sticky",
     "created_at": "2026-05-15T10:21:21.5121465+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:34:57.1131919+08:00",
+    "commit_hash": "8c413fc",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:25:57.3534997+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:34:57.1131919+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-8a284d",
     "title": "Compact 语义恢复: 压缩后重新注入 plan/skills/file-state/feedback",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture",
       "harness"
@@ -1665,13 +1717,26 @@
     "depends_on": null,
     "notes": "SummarizationCompaction 后恢复: 1.active plan 2.invoked skills摘要(per-skill token cap) 3.最近N文件read state 4.correction feedback 5.compact_boundary message",
     "created_at": "2026-05-15T10:21:21.6087171+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:34:57.2973765+08:00",
+    "commit_hash": "8c413fc",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:25:56.9877473+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:34:57.2973765+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-d6f1e8",
     "title": "中断账本闭合: pending tool_use 必须有 matching synthetic tool_result",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "architecture",
       "harness",
@@ -1684,7 +1749,20 @@
     "depends_on": null,
     "notes": "on_abort/timeout: 为每个悬空 tool_use 生成 synthetic tool_result(is_error:true)。不变式: every emitted tool_use has matching tool_result",
     "created_at": "2026-05-15T10:21:21.7070671+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:34:57.4906968+08:00",
+    "commit_hash": "8c413fc",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:25:56.8093052+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:34:57.4906968+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-f4afa0",
@@ -1859,7 +1937,7 @@
   {
     "id": "vigil-18782d",
     "title": "Scheduler 同优先级任务排序时考虑 context.estimated_tokens（metadata 字段 + sort）— 源自 MAGIS 研究启示：调度感知 context 成本",
-    "priority": "P1",
+    "priority": "P2",
     "status": "pending",
     "tags": [
       "context",
@@ -1876,7 +1954,7 @@
   {
     "id": "vigil-22c420",
     "title": "元原则备忘：遇到优化瓶颈时先问'能否变换问题结构'再问'能否在当前结构上优化' — MAGIS 核心启示",
-    "priority": "P1",
+    "priority": "P2",
     "status": "pending",
     "tags": [
       "principle"
@@ -2247,7 +2325,7 @@
     "id": "vigil-40f6ab",
     "title": "Swarm T1: SwarmConfig + ParseFromMetadata (internal/kernel/swarm/config.go)",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "swarm",
       "implementation"
@@ -2258,13 +2336,26 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T15:27:13.8979648+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:05:33.8005209+08:00",
+    "commit_hash": "910551f",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T21:48:06.1974097+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:05:33.8005209+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-6716d6",
     "title": "Swarm T2: Agent Selection + Diversity Validation (internal/kernel/swarm/dispatch.go)",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "swarm",
       "implementation"
@@ -2275,13 +2366,26 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T15:27:14.0053733+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:05:33.9937052+08:00",
+    "commit_hash": "910551f",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T21:48:13.0510968+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:05:33.9937052+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-4510c0",
     "title": "Swarm T3: Parallel Dispatch + Collect (internal/kernel/swarm/dispatch.go)",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "swarm",
       "implementation"
@@ -2292,13 +2396,26 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T15:27:14.109479+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:05:34.1767759+08:00",
+    "commit_hash": "910551f",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T21:48:13.2183728+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:05:34.1767759+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-3e0f99",
     "title": "Swarm T4: Majority Vote Aggregation (internal/kernel/swarm/aggregate.go)",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "swarm",
       "implementation"
@@ -2309,13 +2426,26 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T15:27:14.2138881+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:05:34.3846568+08:00",
+    "commit_hash": "910551f",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T21:48:13.3821937+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:05:34.3846568+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-4f6d03",
     "title": "Swarm T5: Dispatcher Integration — swarm metadata检测+路由 (dispatcher.go修改)",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "swarm",
       "implementation"
@@ -2326,13 +2456,26 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T15:27:14.3193113+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:05:34.5808058+08:00",
+    "commit_hash": "910551f",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T21:48:13.5417022+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:05:34.5808058+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-71ac4b",
     "title": "Swarm T6: swarm.executed Event Recording",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "swarm",
       "implementation"
@@ -2343,13 +2486,26 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T15:27:14.42651+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:05:34.77814+08:00",
+    "commit_hash": "910551f",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T21:48:13.7050232+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T22:05:34.77814+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-c33f28",
     "title": "Swarm前置验证被阻塞: MiniMax思考模型每次调用60-70s，20次串行=24min不可行。已尝试: (1)mm-highspeed余额耗尽 (2)mm-official超时/rate-limit (3)timeout从60s→300s仍太慢。待解决: 充值mm-highspeed 或 找到禁用/降低思考的API参数 或 换非思考模型",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "swarm",
       "blocked"
@@ -2360,13 +2516,20 @@
     },
     "depends_on": null,
     "created_at": "2026-05-15T19:16:51.9942352+08:00",
-    "history": []
+    "completed_at": "2026-05-15T22:05:34.9683688+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:05:34.9683688+08:00"
+      }
+    ]
   },
   {
     "id": "vigil-7d3294",
     "title": "Git 工作流重构: 参照 git-guides/git-best-practices 建立分支策略+commit规范+CI+hook强制",
     "priority": "P1",
-    "status": "pending",
+    "status": "completed",
     "tags": [
       "engineering",
       "git"
@@ -2378,6 +2541,180 @@
     "depends_on": null,
     "notes": "现状: 47 commits未push, 直接main commit, 无CI, 无hook, commit粒度不一致. 参考: github.com/git-guides + gauravjainse/git-best-practices",
     "created_at": "2026-05-15T19:31:01.6973724+08:00",
+    "completed_at": "2026-05-15T19:40:52.2575464+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T19:40:52.2575464+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-2ff991",
+    "title": "E2E实战验证: 用axis ask --submit一句话触发cost_budget功能实现（vigil-f02e00），全程无人工干预，记录event log/token/时间/失败点",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "validation",
+      "e2e",
+      "combat-test"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T22:38:18.4004341+08:00",
+    "completed_at": "2026-05-15T23:13:37.4421808+08:00",
+    "commit_hash": "9c1c326",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:53:10.0554737+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T23:13:37.4421808+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-66ef55",
+    "title": "E2E战后分析: 对比人类实现同一任务的效率，记录失败边界，写入docs/validation/e2e-combat-001.md",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "validation",
+      "e2e"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T22:38:24.5149622+08:00",
+    "completed_at": "2026-05-15T23:13:37.6241975+08:00",
+    "commit_hash": "9c1c326",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:53:10.2383181+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T23:13:37.6241975+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-daf24f",
+    "title": "E2E验证转换条件#3: 在实战中触发至少1次staged evolution promote（如cost_budget涉及types变更则自动触发）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "validation",
+      "evolution"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T22:38:30.4444912+08:00",
+    "completed_at": "2026-05-15T23:13:37.8084275+08:00",
+    "commit_hash": "9c1c326",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T22:53:10.4290472+08:00"
+      },
+      {
+        "from": "completed",
+        "to": "completed",
+        "at": "2026-05-15T23:13:37.8084275+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-3ca735",
+    "title": "战斗报告: 将E2E实战数据写成docs/validation/e2e-combat-001.md，含prompt/产出/数据/弯路，作为README showcase",
+    "priority": "P1",
+    "status": "completed",
+    "tags": [
+      "showcase",
+      "docs"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T23:16:31.509569+08:00",
+    "completed_at": "2026-05-15T23:25:37.9432197+08:00",
+    "commit_hash": "2832fd5",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-05-15T23:25:37.9432197+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-c742e4",
+    "title": "E2E第二枪(bug fix类): 从GitHub issue描述→修复→回归测试，验证Agent处理reactive任务的能力",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "e2e",
+      "validation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T23:16:37.3879568+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-13c425",
+    "title": "E2E第三枪(重构类): 拆分大文件或模块深化，验证Agent理解架构+保持测试不退化的能力",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "e2e",
+      "validation"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T23:16:44.6232867+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-9d95a1",
+    "title": "写Axis设计哲学文章: 对象化基础设施vs LLM wrapper、审计vs审批、可控演化vs人类控制，发布到技术社区吸引早期用户",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "showcase",
+      "community"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-05-15T23:16:49.9645629+08:00",
     "history": []
   }
 ]

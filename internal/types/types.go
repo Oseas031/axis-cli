@@ -28,7 +28,8 @@ type AgentTask struct {
 	StartedAt    *time.Time        `json:"started_at,omitempty"`
 	CompletedAt  *time.Time        `json:"completed_at,omitempty"`
 	Metadata     map[string]string `json:"metadata,omitempty"`
-	CostBudget   float64           `json:"cost_budget,omitempty"` // Maximum USD cost allowed for this task; 0 = unlimited
+	// CostBudget is the maximum allowed cost in USD for this task. When exceeded, the task may be degraded or failed.
+	CostBudget float64 `json:"cost_budget,omitempty"`
 }
 
 // TaskResult represents the result of a task execution
@@ -92,7 +93,15 @@ const (
 	SLAKeyFailureClass = "sla.failure_class"
 	SLAKeyPriority     = "sla.priority"
 	SLAKeyBackoff      = "sla.backoff"
-	SLAKeyTokenBudget  = "sla.token_budget"
+	// SLAKeyCostBudget is the metadata key for cost budget override (in USD).
+	SLAKeyCostBudget = "sla.cost_budget"
+)
+
+// Cost budget metadata keys
+const (
+	// CostBudgetExhaustedAction specifies what to do when cost budget is exhausted.
+	// Values: "degrade" (default for degradable tasks) or "fail".
+	CostBudgetExhaustedAction = "cost_budget.exhausted_action"
 )
 
 // Tool metadata keys stored in AgentTask.Metadata.
@@ -142,10 +151,10 @@ const (
 	ErrDependencyCycle      ErrorCode = "DEPENDENCY_CYCLE"
 	ErrDependencyNotReady   ErrorCode = "DEPENDENCY_NOT_READY"
 	ErrContractNotFound     ErrorCode = "CONTRACT_NOT_FOUND"
+	ErrCostBudgetExceeded   ErrorCode = "COST_BUDGET_EXCEEDED"
 	ErrContractInputInvalid ErrorCode = "CONTRACT_INPUT_INVALID"
 	ErrTaskTimeout          ErrorCode = "TASK_TIMEOUT"
 	ErrTaskRetryExhausted   ErrorCode = "TASK_RETRY_EXHAUSTED"
-	ErrTokenBudgetExhausted ErrorCode = "TOKEN_BUDGET_EXHAUSTED"
 	ErrDispatchFailed       ErrorCode = "DISPATCH_FAILED"
 )
 

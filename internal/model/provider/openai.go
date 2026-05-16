@@ -163,6 +163,7 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 		params := openaiToolParams{
 			Type:       "object",
 			Properties: make(map[string]openaiToolParamProperty),
+			Required:   []string{},
 		}
 		for _, p := range t.Parameters {
 			params.Properties[p.Name] = openaiToolParamProperty{

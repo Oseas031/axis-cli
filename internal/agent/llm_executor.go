@@ -1,4 +1,4 @@
-// Package agent provides the LLM-driven agent executor.
+﻿// Package agent provides the LLM-driven agent executor.
 package agent
 
 import (
@@ -7,7 +7,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 	"strings"
+	"strconv"
 	"time"
 
 	"github.com/axis-cli/axis/internal/agent/judgement"
@@ -84,6 +88,7 @@ type LLMAgentExecutor struct {
 	workingMem   *WorkingMemoryRecaller
 	immediateMem *ImmediateMemoryAdapter
 	tokenUsageFn func(taskID string, inputTokens, outputTokens int) // v1: cost tracking hook
+	traceDir     string                                              // directory for trace JSONL files
 }
 
 // LLMAgentOption configures an LLMAgentExecutor.
@@ -163,12 +168,17 @@ func WithImmediateMemory(a *ImmediateMemoryAdapter) LLMAgentOption {
 	return func(e *LLMAgentExecutor) { e.immediateMem = a }
 }
 
+// WithTraceDir sets the directory for per-task trace JSONL files.
+func WithTraceDir(dir string) LLMAgentOption {
+	return func(e *LLMAgentExecutor) { e.traceDir = dir }
+}
+
 // NewLLMAgentExecutor creates a new LLM-driven agent executor.
 func NewLLMAgentExecutor(p provider.ModelProvider, tools *tool.Registry, opts ...LLMAgentOption) *LLMAgentExecutor {
 	e := &LLMAgentExecutor{
 		provider:    p,
 		tools:       tools,
-		maxIter:     20,
+		maxIter:     50,
 		maxErrors:   5,
 		turnTimeout: 45 * time.Second,
 		compactor:   noopCompactor{},
@@ -190,6 +200,11 @@ func (e *LLMAgentExecutor) GetAutonomyLevel() AutonomyLevel {
 // Used by orchestrator to wire the shared registry.
 func (e *LLMAgentExecutor) SetToolRegistry(r *tool.Registry) {
 	e.tools = r
+}
+
+// Tools returns the current tool registry.
+func (e *LLMAgentExecutor) Tools() *tool.Registry {
+	return e.tools
 }
 
 func (e *LLMAgentExecutor) emit(taskID, eventType, message string) {
@@ -327,10 +342,18 @@ func (e *LLMAgentExecutor) executeOnce(ctx context.Context, req *AgentExecutionR
 		SystemPrompt: sysPrompt,
 	}
 
+	maxIter := e.maxIter
+	if req.Task.Metadata != nil {
+		if raw, ok := req.Task.Metadata["axis.max_iterations"]; ok && raw != "" {
+			if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+				maxIter = parsed
+			}
+		}
+	}
 	cfg := multiturn.LoopConfig{
 		Provider:      tp,
 		Tools:         e.tools,
-		MaxIterations: e.maxIter,
+		MaxIterations: maxIter,
 		MaxErrors:     e.maxErrors,
 		Compactor:     e.compactor,
 		TurnTimeout:   e.resolveTurnTimeout(req),
@@ -350,6 +373,37 @@ func (e *LLMAgentExecutor) executeOnce(ctx context.Context, req *AgentExecutionR
 				e.tokenUsageFn(req.Task.TaskID, inputTokens, outputTokens)
 			}
 		},
+	}
+
+	// Wire CostTracker as CostGuard if task has a budget
+	costTracker := types.NewCostTrackerFromTask(req.Task)
+	if costTracker.BudgetUSD > 0 {
+		cfg.CostGuard = func(costUSD float64) error {
+			costTracker.AddCost(costUSD)
+			if costTracker.IsExhausted() {
+				return costTracker.BudgetExceededError()
+			}
+			if costTracker.IsDegraded() {
+				e.emit(req.Task.TaskID, "cost_degraded", fmt.Sprintf("%.1f%% of $%.4f budget used", costTracker.TotalCostUSD/costTracker.BudgetUSD*100, costTracker.BudgetUSD))
+			}
+			return nil
+		}
+	}
+
+	// Wire trace file writer if traceDir is configured
+	if e.traceDir != "" {
+		if err := os.MkdirAll(e.traceDir, 0o755); err == nil {
+			tracePath := filepath.Join(e.traceDir, req.Task.TaskID+".jsonl")
+			if f, err := os.OpenFile(tracePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644); err == nil {
+				defer f.Close()
+				cfg.OnTurnCompleted = func(msg types.ModelMessage) {
+					line, _ := json.Marshal(msg)
+					_, _ = f.Write(append(line, '\n'))
+				}
+			} else {
+				log.Printf("[trace] failed to open %s: %v", tracePath, err)
+			}
+		}
 	}
 
 	loopRes, err := multiturn.Run(ctx, cfg, modelReq)

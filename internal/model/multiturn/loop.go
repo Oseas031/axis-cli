@@ -1,4 +1,4 @@
-// Package multiturn provides a shared multi-turn tool-calling loop.
+﻿// Package multiturn provides a shared multi-turn tool-calling loop.
 package multiturn
 
 import (
@@ -25,8 +25,10 @@ type LoopConfig struct {
 	MaxErrors      int // circuit breaker threshold
 	Compactor      Compactor
 	TurnTimeout    time.Duration
-	OnToolExecuted func(toolName string, result map[string]any, err error) // optional hook
-	OnTokenUsage   func(inputTokens, outputTokens int)                     // optional: called after each provider response
+	OnToolExecuted  func(toolName string, result map[string]any, err error) // optional hook
+	OnTokenUsage    func(inputTokens, outputTokens int)                     // optional: called after each provider response
+	CostGuard       func(costUSD float64) error                             // optional: called with per-turn cost; non-nil return aborts loop
+	OnTurnCompleted func(msg types.ModelMessage)                            // optional: called for each message appended to history
 }
 
 // LoopResult is the outcome of a multi-turn loop execution.
@@ -39,7 +41,7 @@ type LoopResult struct {
 // Run executes the multi-turn tool-calling loop.
 func Run(ctx context.Context, cfg LoopConfig, req *provider.ModelRequest) (*LoopResult, error) {
 	if cfg.MaxIterations <= 0 {
-		cfg.MaxIterations = 20
+		cfg.MaxIterations = 50
 	}
 	if cfg.MaxErrors <= 0 {
 		cfg.MaxErrors = 5
@@ -76,27 +78,42 @@ func Run(ctx context.Context, cfg LoopConfig, req *provider.ModelRequest) (*Loop
 			cfg.OnTokenUsage(resp.InputTokens, resp.OutputTokens)
 		}
 
+		if cfg.CostGuard != nil && resp.CostEstimateUSD > 0 {
+			if err := cfg.CostGuard(resp.CostEstimateUSD); err != nil {
+				history = closePendingToolCalls(history)
+				return &LoopResult{History: history, Error: err.Error()}, nil
+			}
+		}
+
 		// No tool calls — return output
 		if len(resp.ToolCalls) == 0 {
 			return &LoopResult{Output: resp.Output, History: history}, nil
 		}
 
 		// Append assistant message with tool calls
-		history = append(history, types.ModelMessage{
+		assistantMsg := types.ModelMessage{
 			Role:      "assistant",
 			ToolCalls: resp.ToolCalls,
-		})
+		}
+		history = append(history, assistantMsg)
+		if cfg.OnTurnCompleted != nil {
+			cfg.OnTurnCompleted(assistantMsg)
+		}
 
 		// Execute each tool call
 		for _, tc := range resp.ToolCalls {
 			toolImpl, ok := cfg.Tools.Get(tc.Name)
 			if !ok {
 				errMsg := fmt.Sprintf("tool %s not found", tc.Name)
-				history = append(history, types.ModelMessage{
+				toolMsg := types.ModelMessage{
 					Role:       "tool",
 					ToolCallID: tc.ID,
 					Content:    errMsg,
-				})
+				}
+				history = append(history, toolMsg)
+				if cfg.OnTurnCompleted != nil {
+					cfg.OnTurnCompleted(toolMsg)
+				}
 				if cfg.OnToolExecuted != nil {
 					cfg.OnToolExecuted(tc.Name, nil, fmt.Errorf("%s", errMsg))
 				}
@@ -111,11 +128,15 @@ func Run(ctx context.Context, cfg LoopConfig, req *provider.ModelRequest) (*Loop
 			result, execErr := toolImpl.Execute(toolCtx, tc.Input)
 			toolCancel()
 			if execErr != nil {
-				history = append(history, types.ModelMessage{
+				toolMsg := types.ModelMessage{
 					Role:       "tool",
 					ToolCallID: tc.ID,
 					Content:    fmt.Sprintf("error: %v", execErr),
-				})
+				}
+				history = append(history, toolMsg)
+				if cfg.OnTurnCompleted != nil {
+					cfg.OnTurnCompleted(toolMsg)
+				}
 				if cfg.OnToolExecuted != nil {
 					cfg.OnToolExecuted(tc.Name, nil, execErr)
 				}
@@ -143,6 +164,9 @@ func Run(ctx context.Context, cfg LoopConfig, req *provider.ModelRequest) (*Loop
 				ToolCallID: tc.ID,
 				Content:    contentStr,
 			})
+			if cfg.OnTurnCompleted != nil {
+				cfg.OnTurnCompleted(types.ModelMessage{Role: "tool", ToolCallID: tc.ID, Content: contentStr})
+			}
 			if cfg.OnToolExecuted != nil {
 				cfg.OnToolExecuted(tc.Name, result, nil)
 			}

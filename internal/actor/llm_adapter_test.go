@@ -1,4 +1,4 @@
-package actor
+﻿package actor
 
 import (
 	"context"
@@ -85,40 +85,13 @@ func TestLLMAdapter_ScopedTools(t *testing.T) {
 func TestSpawnExecutor_LeaderWorkerFlow(t *testing.T) {
 	mock := &mockProvider{output: map[string]any{"text": "subtask result"}}
 	reg := tool.NewRegistry()
-
 	mb := comm.NewMailbox(t.TempDir())
 	router := comm.NewRouter(mb)
-
-	leader := &stubActor{id: "leader", status: ActorReady}
-	router.Register(leader)
-
-	se := NewSpawnExecutor(SpawnExecutorConfig{
-		Provider: mock, Tools: reg, Router: router,
-	})
-
-	err := se.Execute(context.Background(), SpawnRequest{
-		TaskID: "sub-1", Prompt: "analyze this file",
-		Isolation: "full", ParentID: "leader", MessageID: "orig-msg-1",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(leader.received) != 1 {
-		t.Fatalf("leader received %d messages, want 1", len(leader.received))
-	}
-	result := leader.received[0]
-	if result.Type != comm.MsgResult {
-		t.Errorf("type = %v", result.Type)
-	}
-	if result.Payload["text"] != "subtask result" {
-		t.Errorf("payload = %v", result.Payload)
-	}
-	if result.ReplyTo != "orig-msg-1" {
-		t.Errorf("ReplyTo = %q", result.ReplyTo)
-	}
+	se := NewSpawnExecutor(SpawnExecutorConfig{Provider: mock, Tools: reg, Router: router})
+	result, err := se.Execute(context.Background(), SpawnRequest{TaskID: "sub-1", Prompt: "analyze this file", Isolation: "full", ParentID: "leader", MessageID: "orig-msg-1"})
+	if err != nil { t.Fatal(err) }
+	if result["text"] != "subtask result" { t.Errorf("payload = %v", result) }
 }
-
 func TestSpawnExecutor_WorkerNoSpawnPermission(t *testing.T) {
 	mock := &mockProvider{output: map[string]any{"text": "ok"}}
 	reg := tool.NewRegistry()

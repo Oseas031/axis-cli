@@ -18,6 +18,7 @@ import (
 func newAskCommand() *cobra.Command {
 	var submit bool
 	var dryRun bool
+	var direct bool
 	var contractID string
 	var taskID string
 	var readStdin bool
@@ -58,6 +59,14 @@ func newAskCommand() *cobra.Command {
 				if result.Task.Metadata[types.TaskMetadataKeyExecutor] == "" {
 					result.Task.Metadata[types.TaskMetadataKeyExecutor] = types.ExecutorTypeAgent
 				}
+				// Default: execute via evolution protocol (isolated workspace).
+				// Use --direct to skip isolation and write to project tree directly.
+				if !direct {
+					result.Task.Metadata["axis.evolution_required"] = "true"
+					if result.Task.Metadata["axis.evolution_risk"] == "" {
+						result.Task.Metadata["axis.evolution_risk"] = "low"
+					}
+				}
 				if withContext {
 					bundle, err := assembleContextForTask(result.Task)
 					if err != nil {
@@ -96,6 +105,7 @@ func newAskCommand() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&submit, "submit", false, "Submit the generated task")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview the generated task without submitting")
+	cmd.Flags().BoolVar(&direct, "direct", false, "Skip evolution isolation — write directly to project tree")
 	cmd.Flags().StringVar(&contractID, "contract", "default", "Contract ID for the generated task")
 	cmd.Flags().StringVar(&taskID, "task-id", "", "Task ID for the generated task")
 	cmd.Flags().BoolVar(&readStdin, "stdin", false, "Read prompt from stdin")

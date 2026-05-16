@@ -3,6 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 
 	"github.com/axis-cli/axis/internal/evolution"
 	"github.com/spf13/cobra"
@@ -107,7 +110,42 @@ func evolvePromote(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Run %s promoted successfully\n", decision.RunID)
+
+	// Copy workspace files to project root
+	workspaceDir := filepath.Join(store.RunDir(runID), "workspace")
+	projectRoot := defaultApp.resolvedRoot()
+	if info, statErr := os.Stat(workspaceDir); statErr == nil && info.IsDir() {
+		copyErr := filepath.WalkDir(workspaceDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			rel, err := filepath.Rel(workspaceDir, path)
+			if err != nil {
+				return err
+			}
+			if rel == "." {
+				return nil
+			}
+			dest := filepath.Join(projectRoot, rel)
+			if d.IsDir() {
+				return os.MkdirAll(dest, 0o755)
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "  copied: %s\n", rel)
+			return os.WriteFile(dest, data, 0o644)
+		})
+		if copyErr != nil {
+			return fmt.Errorf("copy workspace files: %w", copyErr)
+		}
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Run %s promoted successfully\n", decision.RunID)
 	return nil
 }
 

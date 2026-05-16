@@ -1,129 +1,98 @@
----
+﻿---
 type: validation
 status: active
-created: 2026-05-15
-last_verified: 2026-05-15
+created: 2026-05-16
+title: "E2E Combat 001: Cost Budget via axis ask --submit"
 ---
 
-# E2E Combat Test 001: Full Session Battle Report
+# E2E Combat Test 001: Cost Budget via axis ask --submit
 
-> 单次会话，2.5 小时，从仓库治理到 P1 清零。
+> 目标：用 `axis ask --submit` 一句话触发 cost_budget 功能实现，全程无人工干预
 
 ## Session Metrics
 
 | 指标 | 数值 |
 |------|------|
-| 时长 | 2h 36min (20:44 → 23:20) |
-| Commits | 12 |
-| 净新增 Go 代码 | ~1,400 行（含测试） |
-| 删除（私密文件清理） | 60,871 行 |
-| Subagent 派发 | 11 pipelines / 25 stages |
+| 时长 | ~3min 40s (10:33:04 → 10:36:44) |
+| Provider | MiniMax-M2.7 (mm-official) |
+| Prompt | "为AgentTask添加cost_budget字段，当token消耗超过预算80%时自动降级执行" |
+| 任务ID | ask-20260516-103304-5480 |
+| 结果 | failed - iteration budget exhausted (20 turns) |
 | 人工介入 | 0 次 |
-| 走弯路 | 2 次（SetInterspersed 回退 + subagent 参数过大拆分） |
-| CI 失败后修复 | 1 次（staticcheck + sandbox skip + vigil lock） |
+| Agent 修改文件 | 1 (internal/types/types.go) |
 
-## What Was Done
+## 执行流程
 
-### Phase 1: Repo Governance (20:44 → 20:56)
+```
+axis ask --submit "为AgentTask添加cost_budget字段..."
+  → intent parser (deterministic)
+  → control client → orchestrator (port 9091)
+  → dispatcher → agent executor
+  → LLM (MiniMax-M2.7) → tool use → file edit
+  → ⏱ 20 turns exhausted → FAILED
+```
 
-**Prompt**: "管理我们的 github 仓库 太混乱了 参考 DavidFornander/git-best-practices"
+## 完成的工作
 
-| 行动 | 结果 |
+Agent 在 20 轮内完成了部分类型定义层面的工作：
+
+1. **AgentTask.CostBudget 字段** — 完整添加到 struct
+   ```go
+   // CostBudget defines the maximum USD cost allowed for this task.
+   // When accumulated cost exceeds 80% of this budget, the executor
+   // will automatically switch to a lower-cost model or approach.
+   // A value of 0 means unlimited budget.
+   CostBudget float64 `json:"cost_budget"`
+   ```
+
+2. **SLAKeyTokenBudget 常量**
+   ```go
+   SLAKeyTokenBudget = "sla.token_budget"
+   ```
+
+3. **错误码**
+   ```go
+   ErrTokenBudgetExhausted ErrorCode = "TOKEN_BUDGET_EXHAUSTED"
+   ErrCostBudgetExceeded   ErrorCode = "COST_BUDGET_EXCEEDED"
+   ```
+
+## 未完成的工作
+
+- [ ] CostTracker / budget package 的实现与集成
+- [ ] Dispatcher 中的 CostBudget 检查（80% 阈值自动降级）
+- [ ] 自动降级逻辑（切换低消耗模型）
+- [ ] 测试
+- [ ] 构建验证
+
+## 失败分析
+
+| 因素 | 影响 |
 |------|------|
-| Milestone tags m1-m6 | 6 annotated tags pushed |
-| GitHub Release v0.1.0 | https://github.com/Oseas031/axis-cli/releases/tag/v0.1.0 |
-| 删除废弃分支 | milestone1-acceptance removed |
-| Issue templates | bug_report / feature_request / task |
-| Branch protection | require "build" check, block force push |
-| 私密文件移除 | 250 files untracked (.claude/.devin/.swarm/WORKFLOW-HUMAN/configs/) |
-| git-conventions 更新 | "Never Commit" section added |
+| 20 轮迭代限制 | 完成类型定义后已无剩余轮次完成后续逻辑 |
+| MiniMax-M2.7 速度 | 平均每轮 ~11s，20 轮 ≈ 220s，非主要瓶颈 |
+| 单文件修改 | Agent 只修改了 types.go，未修改 dispatcher.go 等 |
+| 任务粒度 | 单一 prompt 对于多文件 feature 过大，subtask 分解未触发 |
 
-### Phase 2: CI Fix (21:05 → 21:17)
+## 与上一轮（人工多轮 Session）对比
 
-**Prompt**: "最近的多次提交都没通过测试"
+| 维度 | 本轮（axis ask --submit） | 上一轮（人工多轮） |
+|------|--------------------------|-------------------|
+| 时长 | 3min 40s | 2h 36min |
+| Commits | 0 (未触发提交) | 12 |
+| 代码产出 | 1 file, ~10 行 | ~1,400 行 + 测试 |
+| 人工介入 | 0 | 0 (但 Prompt 多次) |
+| 失败模式 | Iteration budget | N/A (完成) |
 
-3 类问题一次修复：
-- staticcheck 7 errors (unused vars, deprecated API, error punctuation)
-- Sandbox tests 缺少 `testing.Short()` skip
-- Vigil lock Linux 进程检测 (`syscall.Kill(pid, 0)`)
+## 结论
 
-### Phase 3: Swarm Topology T1-T6 (21:37 → 21:53)
+1. **Pipeline 端到端可用**：`ask --submit` → orchestrator → agent executor → tool use 链路通
+2. **Agent 能理解任务并生成代码**：类型定义部分正确且语义完整
+3. **20 轮迭代限制是主要瓶颈**：对于多文件 feature 实现，需要更大的 budget 或任务分解
+4. **Prompt 设计需改进**：单一长句包含了字段+降级逻辑，Agent 倾向于线性执行而非并行分解
 
-**Prompt**: "vigil-40f6ab ~ 71ac4b │ Swarm T1-T6 开始执行"
+## Next Steps
 
-6 个文件，一次 commit：
-- `config.go` — SwarmConfig + ParseFromMetadata + Validate
-- `dispatch.go` — SelectAgents + Parallel Dispatch (WaitGroup + context cancel)
-- `aggregate.go` — Majority vote (SHA-256 hash grouping)
-- Dispatcher integration — swarm.* metadata detection → multi-agent path
-- SwarmEvent emission callback
-
-### Phase 4: P1 Tasks (22:06 → 22:31)
-
-**Prompt**: "开始执行剩余P1任务"
-
-5 tasks parallel-dispatched:
-1. **FollowUpTask population** — parse `_next_steps` from agent output
-2. **Interrupt ledger closure** — synthetic tool_result on abort
-3. **Compact semantic recovery** — RecoveryContext struct
-4. **Prompt layering** — PromptAssembler with priority chain
-5. **Permission tri-state** — ask/allow/deny with AutonomyLevel mapping
-
-### Phase 5: Bug Fixes (22:34 → 22:41)
-
-From destructive testing findings:
-- Provider type validation (reject invalid `--type`)
-- Task ID collision (add random hex suffix)
-
-### Phase 6: Cost Budget (22:44 → 23:01)
-
-**Prompt**: "执行P1全任务 遵循方法论去细化每个任务"
-
-- `AgentTask.CostBudget` field (float64, USD)
-- `CostTracker` — per-task accumulation, 80% downgrade threshold
-- Dispatcher enforcement — pre-execution budget check
-- Token usage callback wiring (multiturn → executor → tracker)
-
-### Phase 7: Devil's Advocate (22:55 → 23:10)
-
-10 critiques received. After independent verification:
-- 3 valid (CostTracker unwired, PermissionResolver dead code, FollowUp ID collision)
-- 2 partially valid (Recovery/Prompt annotation)
-- 5 invalid or exaggerated (json.Marshal ordering, ring buffer, CI ceremony)
-
-All valid issues fixed in-session.
-
-## Blind Testing Results
-
-| Test Type | Executions | Failures |
-|-----------|-----------|----------|
-| Race detector (42 packages) | full suite | 0 |
-| Fuzz: ParseFromMetadata | 8.2M | 0 crashes |
-| Fuzz: Aggregate | 2.9M | 0 crashes |
-| Boundary/edge cases | 8 scenarios | 0 |
-| Malformed CLI input | 12 adversarial inputs | 0 panics |
-| Concurrent stress | 10 parallel + 40 rapid | 0 lock errors |
-| E2E runtime (start/submit/status) | full lifecycle | pass |
-
-## Failure Modes Encountered
-
-| Failure | Root Cause | Recovery |
-|---------|-----------|----------|
-| `SetInterspersed(false)` broke tests | Cobra flag parsing incompatible with test arg ordering | Reverted in <2 min |
-| Subagent tool args too large | Single prompt exceeded tool parameter limit | Split into 3 sequential calls |
-| vigil done ID format | CLI expects `vigil-` prefix | Corrected immediately |
-
-## Architecture Decisions Made
-
-1. **Swarm vote uses byte-exact hash** — v1 simplification; semantic equivalence deferred until real multi-provider data exists
-2. **CostTracker is opt-in** — dispatcher must call SetCostTracker; zero-budget tasks are unlimited
-3. **PermissionResolver defined but not wired** — v1 data structure; wiring deferred to avoid breaking existing dispatch flow without full integration test
-4. **Evolution protocol for types change** — validated via test (DecisionGate_Promote_Success), not full CLI flow (risk too low for ceremony)
-
-## What This Proves
-
-1. **Agent can go from "repo is messy" to "fully governed" in one session** — tags, releases, protection, conventions, CI green
-2. **Parallel subagent dispatch works** — 3-5 independent tasks execute simultaneously without interference
-3. **Devil's Advocate catches real gaps** — but also generates false positives (5/10 invalid); human judgement still needed
-4. **~8 min for a structural feature** (cost_budget) vs estimated 30-45 min human — 4× speedup on well-bounded tasks
-5. **Zero human intervention** for 12 commits across 40+ files
+- [ ] 增加 iteration budget（20 → 50+）或改为动态预算
+- [ ] 添加 subtask 分解能力（Phase III A6 Execute 的 subagent 派发机制）
+- [ ] 考虑 `axis run --background` 异步执行模式
+- [ ] 换用更有能力的模型（DeepSeek V4 Flash）重试

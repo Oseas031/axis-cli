@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -102,6 +103,7 @@ func NewRootCommand(app *App) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  getTaskStatus,
 	}
+	statusCmd.Flags().Bool("trace", false, "Show full agent conversation trace")
 
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -194,6 +196,12 @@ func runTask(cmd *cobra.Command, args []string) error {
 
 func getTaskStatus(cmd *cobra.Command, args []string) error {
 	taskID := args[0]
+
+	showTrace, _ := cmd.Flags().GetBool("trace")
+	if showTrace {
+		return printTrace(defaultApp.resolvedRoot(), taskID)
+	}
+
 	client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), http.DefaultClient)
 	status, err := client.Status(context.Background(), taskID)
 	if err != nil {
@@ -207,6 +215,50 @@ func getTaskStatus(cmd *cobra.Command, args []string) error {
 	if len(status.Output) > 0 {
 		out, _ := json.MarshalIndent(status.Output, "", "  ")
 		fmt.Printf("Output:\n%s\n", out)
+	}
+	return nil
+}
+
+func printTrace(root, taskID string) error {
+	tracePath := filepath.Join(root, ".axis", "traces", taskID+".jsonl")
+	data, err := os.ReadFile(tracePath)
+	if err != nil {
+		return fmt.Errorf("no trace found for %s: %w", taskID, err)
+	}
+	for i, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		if line == "" {
+			continue
+		}
+		var msg types.ModelMessage
+		if err := json.Unmarshal([]byte(line), &msg); err != nil {
+			fmt.Printf("[%d] (parse error: %v)\n", i, err)
+			continue
+		}
+		switch msg.Role {
+		case "assistant":
+			if len(msg.ToolCalls) > 0 {
+				names := make([]string, len(msg.ToolCalls))
+				for j, tc := range msg.ToolCalls {
+					names[j] = tc.Name
+				}
+				fmt.Printf("[%d] assistant → tool_calls: %s\n", i, strings.Join(names, ", "))
+			}
+			if msg.Content != "" {
+				content := msg.Content
+				if len(content) > 200 {
+					content = content[:200] + "..."
+				}
+				fmt.Printf("[%d] assistant: %s\n", i, content)
+			}
+		case "tool":
+			content := msg.Content
+			if len(content) > 120 {
+				content = content[:120] + "..."
+			}
+			fmt.Printf("[%d] tool(%s): %s\n", i, msg.ToolCallID, content)
+		default:
+			fmt.Printf("[%d] %s: %s\n", i, msg.Role, msg.Content)
+		}
 	}
 	return nil
 }
@@ -282,11 +334,12 @@ func (app *App) initOrchestrator() {
 
 		agentExec := agent.NewLLMAgentExecutor(p, nil,
 			agent.WithAgentID("axis-coding-agent"),
-			agent.WithSystemPrompt("You are Axis Coding Agent. Use available tools to complete tasks. Be concise and direct. Do not over-analyze simple questions — if the user asks what tools you have, just list them briefly. When done, respond with your final output without tool calls.\n\nEnvironment: Windows with WSL bash. Tools available in PATH: go, git, find, grep, wc, cat. For Windows-specific commands use cmd.exe /c \"...\". Do NOT retry the same command if it fails — try a different approach."),
-			agent.WithMaxIterations(20),
+			agent.WithSystemPrompt("You are Axis Coding Agent. Use available tools to complete tasks. Be concise and direct. Do not over-analyze simple questions — if the user asks what tools you have, just list them briefly. When done, respond with your final output without tool calls.\n\nEnvironment: Windows with WSL bash. Tools available in PATH: go, git, find, grep, wc, cat. For Windows-specific commands use cmd.exe /c \"...\". Do NOT retry the same command if it fails — try a different approach.\n\nWhen tasks span multiple files or logical subsystems, decompose them with the spawn tool: spawn a focused subtask for each logical unit, then integrate results. spawn runs with its own iteration budget and returns the subtask output as a tool result.\nExample: for \"add X field + Y logic + Z test\", spawn: (1) \"add X field to types.go\", (2) \"implement Y logic in dispatcher.go\", (3) \"write tests for X and Y\".\n\nWhen tasks span multiple files or logical subsystems, decompose them with the spawn tool: spawn a focused subtask for each logical unit, then integrate results. spawn runs with its own iteration budget and returns the subtask output as a tool result.\nExample: for \"add X field + Y logic + Z test\", spawn: (1) \"add X field to types.go\", (2) \"implement Y logic in dispatcher.go\", (3) \"write tests for X and Y\"."),
+			agent.WithMaxIterations(50),
 			agent.WithMaxErrors(5),
 			agent.WithTurnTimeout(90*time.Second),
 			agent.WithEventEmitter(emitter),
+			agent.WithTraceDir(filepath.Join(app.resolvedRoot(), ".axis", "traces")),
 			agent.WithPostJudge(&agent.ExecutionJudge{}),
 			agent.WithMemory(agent.NewHorizonMemory(memStore)),
 			compactorOpt,
@@ -306,6 +359,13 @@ func (app *App) initOrchestrator() {
 
 func (app *App) resolveProvider() (string, []provider.ProviderOption) {
 	if app.providerName != "mock" || app.modelName != "" {
+		// Check if the provider name matches a stored profile (use its key)
+		cfg, err := providerconfig.NewStore(app.resolvedRoot()).Load()
+		if err == nil {
+			if profile, ok := cfg.Profiles[app.providerName]; ok && !profile.Archived {
+				return profile.Provider, profile.ProviderOptions()
+			}
+		}
 		return app.providerName, app.providerOptions()
 	}
 	cfg, err := providerconfig.NewStore(app.resolvedRoot()).Load()

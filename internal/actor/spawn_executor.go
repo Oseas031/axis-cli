@@ -1,4 +1,4 @@
-package actor
+﻿package actor
 
 import (
 	"context"
@@ -16,6 +16,7 @@ type SpawnExecutor struct {
 	tools       *tool.Registry
 	router      *comm.Router
 	WorkerScope []string
+	WorkerMaxTurns int
 }
 
 // SpawnExecutorConfig configures a SpawnExecutor.
@@ -24,6 +25,7 @@ type SpawnExecutorConfig struct {
 	Tools       *tool.Registry
 	Router      *comm.Router
 	WorkerScope []string
+	WorkerMaxTurns int
 }
 
 // NewSpawnExecutor creates a SpawnExecutor.
@@ -46,7 +48,7 @@ type SpawnRequest struct {
 }
 
 // Execute creates a Worker Actor, runs the task, and sends result back to parent.
-func (se *SpawnExecutor) Execute(ctx context.Context, req SpawnRequest) error {
+func (se *SpawnExecutor) Execute(ctx context.Context, req SpawnRequest) (map[string]any, error) {
 	scope := se.WorkerScope
 	if scope == nil {
 		scope = se.defaultWorkerScope()
@@ -57,6 +59,7 @@ func (se *SpawnExecutor) Execute(ctx context.Context, req SpawnRequest) error {
 		Provider: se.provider,
 		Tools:    se.tools,
 		Scope:    scope,
+		MaxTurns: se.WorkerMaxTurns,
 	})
 
 	se.router.Register(worker)
@@ -72,15 +75,15 @@ func (se *SpawnExecutor) Execute(ctx context.Context, req SpawnRequest) error {
 	}
 
 	if err := worker.Receive(ctx, taskMsg); err != nil {
-		return se.sendResult(ctx, req, map[string]any{"error": err.Error()})
+		return nil, err
 	}
 
 	result, ok := worker.GetResult(taskMsg.ID)
 	if !ok {
-		return se.sendResult(ctx, req, map[string]any{"error": "worker produced no result"})
+		return nil, fmt.Errorf("worker produced no result")
 	}
 
-	return se.sendResult(ctx, req, result.Payload)
+	return result.Payload, nil
 }
 
 func (se *SpawnExecutor) sendResult(ctx context.Context, req SpawnRequest, payload map[string]any) error {
@@ -106,3 +109,4 @@ func (se *SpawnExecutor) defaultWorkerScope() []string {
 	}
 	return scope
 }
+

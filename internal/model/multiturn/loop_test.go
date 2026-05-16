@@ -188,3 +188,36 @@ func TestClosePendingToolCalls(t *testing.T) {
 		t.Fatal("synthetic result not correct")
 	}
 }
+
+
+func TestRun_CostGuardAborts(t *testing.T) {
+	// Provider returns tool calls with cost, CostGuard aborts after 2nd call
+	resps := []*provider.ModelResponse{
+		{ToolCalls: []types.ToolCall{{ID: "c1", Name: "bash"}}, CostEstimateUSD: 0.05},
+		{ToolCalls: []types.ToolCall{{ID: "c2", Name: "bash"}}, CostEstimateUSD: 0.06},
+		{Output: map[string]any{"done": true}},
+	}
+	p := &mockProvider{responses: resps}
+
+	totalCost := 0.0
+	res, _ := Run(context.Background(), LoopConfig{
+		Provider:      p,
+		Tools:         reg(&dynamicMockTool{name: "bash"}),
+		MaxIterations: 10,
+		MaxErrors:     3,
+		CostGuard: func(costUSD float64) error {
+			totalCost += costUSD
+			if totalCost >= 0.10 {
+				return fmt.Errorf("[COST_BUDGET_EXCEEDED] budget exceeded")
+			}
+			return nil
+		},
+	}, &provider.ModelRequest{})
+
+	if res.Error == "" {
+		t.Fatal("expected cost guard error")
+	}
+	if p.callCount != 2 {
+		t.Errorf("expected 2 provider calls, got %d", p.callCount)
+	}
+}

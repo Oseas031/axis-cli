@@ -147,3 +147,22 @@ func TestBashTool_Execute_OutputTruncated(t *testing.T) {
 func TestBashTool_ImplementsInterface(t *testing.T) {
 	var _ Tool = NewBashTool()
 }
+
+
+func TestToWSLPath(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{`C:\Users\ASUS\Desktop`, "/mnt/c/Users/ASUS/Desktop"},
+		{`D:\projects\foo`, "/mnt/d/projects/foo"},
+		{"/mnt/c/already/posix", "/mnt/c/already/posix"},
+		{"", ""},
+		{`c:\lower`, "/mnt/c/lower"},
+	}
+	for _, tt := range tests {
+		got := toWSLPath(tt.in)
+		if got != tt.want {
+			t.Errorf("toWSLPath(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}

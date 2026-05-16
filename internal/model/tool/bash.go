@@ -136,13 +136,24 @@ func (t *BashTool) Execute(ctx context.Context, input map[string]any) (map[strin
 	}
 	return map[string]any{
 		"command":          cmdStr,
-		"cwd":              cwd,
+		"cwd":              toWSLPath(cwd),
 		"stdout":           string(output),
 		"exit_code":        exitCode,
 		"duration_ms":      time.Since(start).Milliseconds(),
 		"timed_out":        timedOut,
 		"output_truncated": outputTruncated,
 	}, nil
+}
+
+// toWSLPath converts a Windows path (C:\foo\bar) to a WSL-compatible path (/mnt/c/foo/bar).
+// If the path is already POSIX or empty, it is returned unchanged.
+func toWSLPath(p string) string {
+	if len(p) >= 2 && p[1] == ':' && ((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z')) {
+		drive := strings.ToLower(string(p[0]))
+		rest := strings.ReplaceAll(p[2:], "\\", "/")
+		return "/mnt/" + drive + rest
+	}
+	return p
 }
 
 

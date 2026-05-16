@@ -1,4 +1,4 @@
-package actor
+﻿package actor
 
 import (
 	"context"
@@ -17,10 +17,11 @@ type LLMAdapter struct {
 	id       string
 	provider provider.ModelProvider
 	tools    *tool.Registry
-	scope    []string // allowed tool names (nil = all)
+	scope    []string
 	status   ActorStatus
 	mu       sync.Mutex
 	results  map[string]comm.Message
+	maxTurns int
 }
 
 // LLMAdapterConfig configures an LLMAdapter.
@@ -29,6 +30,7 @@ type LLMAdapterConfig struct {
 	Provider provider.ModelProvider
 	Tools    *tool.Registry
 	Scope    []string
+	MaxTurns int
 }
 
 // NewLLMAdapter creates an Actor backed by an LLM provider.
@@ -40,6 +42,7 @@ func NewLLMAdapter(cfg LLMAdapterConfig) *LLMAdapter {
 		scope:    cfg.Scope,
 		status:   ActorReady,
 		results:  make(map[string]comm.Message),
+		maxTurns: cfg.MaxTurns,
 	}
 }
 
@@ -51,7 +54,6 @@ func (a *LLMAdapter) Status() ActorStatus {
 	return a.status
 }
 
-// CommStatus implements comm.Receiver for Router compatibility.
 func (a *LLMAdapter) CommStatus() comm.ActorStatus {
 	return comm.ActorStatus(a.Status())
 }
@@ -65,7 +67,6 @@ func (a *LLMAdapter) Receive(ctx context.Context, msg comm.Message) error {
 	}
 }
 
-// GetResult retrieves the result for a given message ID.
 func (a *LLMAdapter) GetResult(msgID string) (comm.Message, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -90,7 +91,10 @@ func (a *LLMAdapter) executeTask(ctx context.Context, msg comm.Message) error {
 
 	toolDefs := a.scopedTools()
 	var history []types.ModelMessage
-	maxTurns := 10
+	maxTurns := a.maxTurns
+	if maxTurns <= 0 {
+		maxTurns = 15
+	}
 
 	for turn := 0; turn < maxTurns; turn++ {
 		req := &provider.ModelRequest{

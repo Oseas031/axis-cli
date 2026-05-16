@@ -1,0 +1,95 @@
+{
+  "sources": [
+    {
+      "name": "arXiv CS.AI",
+      "url": "https://rssbackend.arxiv.org/rss/cs.AI",
+      "type": "rss",
+      "category": "llm",
+      "enabled": true
+    },
+    {
+      "name": "arXiv CS.LG",
+      "url": "https://rssbackend.arxiv.org/rss/cs.LG",
+      "type": "rss",
+      "category": "llm",
+      "enabled": true
+    },
+    {
+      "name": "Google DeepMind",
+      "url": "https://deepmind.google/blog/rss.xml",
+      "type": "rss",
+      "category": "llm",
+      "enabled": true
+    },
+    {
+      "name": "Microsoft Research",
+      "url": "https://www.microsoft.com/en-us/research/feed/",
+      "type": "rss",
+      "category": "llm",
+      "enabled": true
+    },
+    {
+      "name": "NVIDIA Research",
+      "url": "https://blogs.nvidia.com/blog/category/nvidia-research/feed/",
+      "type": "rss",
+      "category": "vision",
+      "enabled": true
+    },
+    {
+      "name": "Hacker News",
+      "url": "https://news.ycombinator.com/rss",
+      "type": "rss",
+      "category": "general",
+      "enabled": true
+    },
+    {
+      "name": "Reddit ML",
+      "url": "https://www.reddit.com/r/MachineLearning/.rss",
+      "type": "rss",
+      "category": "llm",
+      "enabled": true
+    },
+    {
+      "name": "BAIR Blog",
+      "url": "https://bair.berkeley.edu/blog/feed.xml",
+      "type": "rss",
+      "category": "llm",
+      "enabled": true
+    }
+  ],
+  "weights": {
+    "category": 0.2,
+    "recency": 0.5,
+    "source": 0.3
+  },
+  "rules": {
+    "max_summary_len": 200,
+    "categories": [
+      "llm",
+      "vision",
+      "rl",
+      "nlp",
+      "audio",
+      "robotics",
+      "general"
+    ]
+  },
+  "schedule": {
+    "enabled": true,
+    "default_interval": "6h",
+    "intervals": {
+      "BAIR Blog": "24h",
+      "Google DeepMind": "6h",
+      "Hacker News": "1h",
+      "Microsoft Research": "6h",
+      "Reddit ML": "1h",
+      "arXiv CS.AI": "12h",
+      "arXiv CS.LG": "12h"
+    },
+    "retry": {
+      "max_attempts": 3,
+      "backoff": "5m"
+    }
+  },
+  "webhooks": []
+}
