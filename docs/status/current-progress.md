@@ -1,46 +1,46 @@
 # Current Progress
 
-**Updated**: 2026-05-15
-**Milestones**: M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Coding Agent P0 ✅ | Hardening ✅ | Real-World Validation ✅
+**Updated**: 2026-05-16
+**Milestones**: M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Coding Agent P0 ✅ | Hardening ✅ | Real-World Validation ✅ | Evolution Isolation ✅
 
 ## Vigil Status
 
 Total: 53 | Completed: 49 | Pending: 25 (3 P1, 17 P2, 4 P3)
 
-## This Week (2026-05-15)
+## This Week (2026-05-16)
 
-### GitHub Governance Overhaul
-- Milestone tags m1-m6 + Release v0.1.0
-- Branch protection (require CI, block force push)
-- Issue templates (bug/feature/task)
-- 250 private files removed from tracking (.claude/.devin/.swarm/)
-- git-conventions.md: "Never Commit" section
+### Evolution Filesystem Isolation (E2E validated)
+- `axis ask --submit` now defaults to Evolution Protocol (isolated workspace)
+- `--direct` flag to bypass isolation for self-iteration testing
+- `ScopedBashTool` — forces cwd to `.axis/evolution/<run>/workspace/`
+- `ScopedFileWriteTool` — restricts allowedDirs to workspace only
+- `NewScopedRegistry` — runtime tool swap for evolution execution
+- `axis evolve promote <run-id>` copies workspace → project root
+- `FeatureEvolution` unlocked by default in orchestrator gate
+- **E2E verified**: Agent file_write rejected to project root, bash cwd isolated, Agent self-adapted
 
-### Swarm Topology (T1-T6)
-- `internal/kernel/swarm/` — config, dispatch, aggregate (6 files)
-- Parallel multi-agent execution with majority vote
-- Dispatcher integration: swarm.* metadata → multi-agent path
-- SwarmEvent emission for observability
+### History Dump (Trace System)
+- `OnTurnCompleted` hook in multiturn loop — emits each ModelMessage
+- Per-task trace files: `.axis/traces/<task-id>.jsonl` (incremental append)
+- `axis status <task-id> --trace` — formatted conversation history viewer
+- Full agent reasoning chain now observable post-mortem
 
-### Agent Infrastructure (5 P1 tasks)
-- FollowUpTask population (parse _next_steps from output)
-- Interrupt ledger closure (synthetic tool_result on abort)
-- Compact semantic recovery (RecoveryContext)
-- Prompt layering (PromptAssembler, priority-based chain)
-- Permission tri-state (ask/allow/deny + AutonomyLevel mapping)
+### CostTracker Integration
+- `CostGuard` callback in multiturn LoopConfig — per-turn cost check
+- LLMAgentExecutor wires `CostTracker` from task budget → CostGuard
+- 80% threshold → `cost_degraded` event; 100% → abort with `COST_BUDGET_EXCEEDED`
+- Provider `CostEstimateUSD` flows through to tracker
 
-### Cost Budget
-- `AgentTask.CostBudget` field (float64, USD, 0=unlimited)
-- `CostTracker` — per-task accumulation, 80% downgrade threshold
-- Token usage callback wired: multiturn → executor → tracker
-- Dispatcher enforcement: pre-execution budget check
+### BashTool Path Fix
+- `toWSLPath()` converts Windows cwd to `/mnt/<drive>/...` in bash output
+- Eliminates Agent path confusion (was wasting 10+ turns per task on path issues)
 
-### CI & Quality
-- staticcheck 7 errors fixed
-- Sandbox tests: testing.Short() skip for CI
-- Vigil lock: Linux process detection fix (syscall.Kill)
-- Provider type validation + task ID collision fix
-- Blind testing: 11M fuzz executions, 0 crashes; race detector clean
+### Iteration Budget Fix
+- Default 20→50 confirmed working (first E2E run failed due to stale binary)
+- `axis.max_iterations` metadata override verified
+
+### Dead Code Cleanup
+- `internal/kernel/budget/` directory deleted (orphaned, zero imports)
 
 ## Capability Summary
 
