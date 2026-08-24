@@ -64,4 +64,5 @@ EXTERNAL/
 .kiro/*
 !.kiro/agents/
 !.kiro/skills/
+.amp/
 .context-summary.md
