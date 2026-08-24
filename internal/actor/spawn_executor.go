@@ -86,18 +86,8 @@ func (se *SpawnExecutor) Execute(ctx context.Context, req SpawnRequest) (map[str
 	return result.Payload, nil
 }
 
-func (se *SpawnExecutor) sendResult(ctx context.Context, req SpawnRequest, payload map[string]any) error {
-	resultMsg := comm.Message{
-		ID:        fmt.Sprintf("result-%s-%d", req.TaskID, time.Now().UnixNano()),
-		From:      fmt.Sprintf("worker-%s", req.TaskID),
-		To:        req.ParentID,
-		Type:      comm.MsgResult,
-		Payload:   payload,
-		Timestamp: time.Now(),
-		ReplyTo:   req.MessageID,
-	}
-	return se.router.Send(ctx, resultMsg)
-}
+// v1: sendResult removed — spawn is currently fire-and-forget; result delivery
+// via mailbox awaits a consumer. TODO: restore when actor-comm needs results.
 
 func (se *SpawnExecutor) defaultWorkerScope() []string {
 	all := se.tools.List()

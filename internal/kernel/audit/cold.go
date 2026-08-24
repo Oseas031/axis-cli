@@ -308,28 +308,3 @@ func (cs *ColdStore) matchesFilter(entry AuditEntry, filter AuditFilter) bool {
 	}
 	return true
 }
-
-// bucketKey returns the month key for a given time.
-func bucketKey(t time.Time) string {
-	return t.Format("2006-01")
-}
-
-// bucketKeyFromEntries returns the month key for a set of entries.
-func bucketKeyFromEntries(entries []AuditEntry) string {
-	if len(entries) == 0 {
-		return time.Now().Format("2006-01")
-	}
-	return entries[0].Timestamp.Format("2006-01")
-}
-
-// mergeEntries merges multiple entry slices into bucket-keyed groups.
-func mergeEntries(entries ...[]AuditEntry) map[string][]AuditEntry {
-	result := make(map[string][]AuditEntry)
-	for _, batch := range entries {
-		for _, entry := range batch {
-			key := bucketKey(entry.Timestamp)
-			result[key] = append(result[key], entry)
-		}
-	}
-	return result
-}

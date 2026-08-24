@@ -2,13 +2,11 @@ package audit
 
 import (
 	"fmt"
-	"sync"
 	"time"
 )
 
 // StorageManager coordinates hot and cold storage tiers.
 type StorageManager struct {
-	mu     sync.RWMutex
 	hot    *HotStore
 	cold   *ColdStore
 	config *Config
