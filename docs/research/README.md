@@ -12,3 +12,4 @@
 | [executable-agentic-memory-2026-05-14](executable-agentic-memory-2026-05-14.md) | 05-14 | 可执行 Agent 记忆 |
 | [context-rot-safety-warning](context-rot-safety-warning.md) | 05-14 | Context Rot 安全警告 |
 | [gemma4-mtp-evaluation-2026-05-14](gemma4-mtp-evaluation-2026-05-14.md) | 05-14 | Gemma4 多任务评估 |
+| [context-recommendation-system-ai-agents-2026-06-15](context-recommendation-system-ai-agents-2026-06-15.md) | 06-15 | 上下文推荐系统在 AI Agent 中的应用：选择/排序/压缩/刷新 |
