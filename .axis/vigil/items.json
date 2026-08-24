@@ -2716,5 +2716,24 @@
     "depends_on": null,
     "created_at": "2026-05-15T23:16:49.9645629+08:00",
     "history": []
+  },
+  {
+    "id": "vigil-a1b2c3",
+    "title": "为axis设计增强的PDF，excel等多模态处理能力",
+    "priority": "P2",
+    "status": "pending",
+    "tags": [
+        "feature",
+        "multimodal",
+        "document-processing"
+    ],
+    "origin": {
+        "type": "manual",
+        "ref": ""
+    },
+    "depends_on": null,
+    "notes": "设计PDF解析、Excel处理等多模态文档处理能力，扩展axis的文档处理功能",
+    "created_at": "2026-06-15T10:00:00+08:00",
+    "history": []
   }
 ]

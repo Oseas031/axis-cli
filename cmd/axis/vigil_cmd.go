@@ -408,7 +408,6 @@ func containsTag(tags []string, tag string) bool {
 	return false
 }
 
-
 func newVigilInstallHookCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "install-hook",
