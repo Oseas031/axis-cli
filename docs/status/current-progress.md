@@ -1,46 +1,34 @@
 # Current Progress
 
-**Updated**: 2026-05-16
-**Milestones**: M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Coding Agent P0 ✅ | Hardening ✅ | Real-World Validation ✅ | Evolution Isolation ✅
+**Updated**: 2026-08-24
+**Milestones**: M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Coding Agent P0 ✅ | Hardening ✅ | Real-World Validation ✅
 
 ## Vigil Status
 
-Total: 53 | Completed: 49 | Pending: 25 (3 P1, 17 P2, 4 P3)
+Total: 114 | Completed: 89 | Pending: 25 (stale entries pending W0 audit reconciliation)
 
-## This Week (2026-05-16)
+## This Week (2026-08-24)
 
-### Evolution Filesystem Isolation (E2E validated)
-- `axis ask --submit` now defaults to Evolution Protocol (isolated workspace)
-- `--direct` flag to bypass isolation for self-iteration testing
-- `ScopedBashTool` — forces cwd to `.axis/evolution/<run>/workspace/`
-- `ScopedFileWriteTool` — restricts allowedDirs to workspace only
-- `NewScopedRegistry` — runtime tool swap for evolution execution
-- `axis evolve promote <run-id>` copies workspace → project root
-- `FeatureEvolution` unlocked by default in orchestrator gate
-- **E2E verified**: Agent file_write rejected to project root, bash cwd isolated, Agent self-adapted
+### June Wave Landed (was uncommitted since 2026-06-15)
+- contextpack rework: chunker/ranker/rule-engine/assemble/consumer/index/model; packet.go removed
+- agent executor interfaces, judgement isolation, tool-trace updates
+- working-memory engine, immediate adapter, kv interface extraction
+- compactor semantic recovery; kernel audit package; swarm boundary/fuzz coverage
+- storeutil shared JSONL/atomic-write utilities; token estimator
+- research: Context Recommendation System survey + spec design.md (req/tasks pending)
 
-### History Dump (Trace System)
-- `OnTurnCompleted` hook in multiturn loop — emits each ModelMessage
-- Per-task trace files: `.axis/traces/<task-id>.jsonl` (incremental append)
-- `axis status <task-id> --trace` — formatted conversation history viewer
-- Full agent reasoning chain now observable post-mortem
+### Windows Half-Open Connection Hardening (this session)
+Root cause: pooled loopback keep-alive conns silently swallowed writes against
+the local runtime / httptest servers → multi-minute indefinite hangs.
+- `control.LocalHTTPClient()` (keep-alives off) + 30s fallback deadline in Client.do
+- provider Execute now honors configured timeout via ctx deadline (was dead config)
+- HTTPClientTool de-keep-alived; provider/tool tests use non-pooled clients
+- Regression tests: TestClientDoFallbackDeadline, TestLocalHTTPClientContract
 
-### CostTracker Integration
-- `CostGuard` callback in multiturn LoopConfig — per-turn cost check
-- LLMAgentExecutor wires `CostTracker` from task budget → CostGuard
-- 80% threshold → `cost_degraded` event; 100% → abort with `COST_BUDGET_EXCEEDED`
-- Provider `CostEstimateUSD` flows through to tracker
-
-### BashTool Path Fix
-- `toWSLPath()` converts Windows cwd to `/mnt/<drive>/...` in bash output
-- Eliminates Agent path confusion (was wasting 10+ turns per task on path issues)
-
-### Iteration Budget Fix
-- Default 20→50 confirmed working (first E2E run failed due to stale binary)
-- `axis.max_iterations` metadata override verified
-
-### Dead Code Cleanup
-- `internal/kernel/budget/` directory deleted (orphaned, zero imports)
+### Hygiene
+- internal/tmp scratch package removed (30 files)
+- personal/interview files moved out of repo; `.amp/` ignored; `nul` deleted
+- 9 bisect-safe commits; gofmt normalized; race clean on kernel/control/memory/multiturn/cmd
 
 ## Capability Summary
 
@@ -79,5 +67,6 @@ Total: 53 | Completed: 49 | Pending: 25 (3 P1, 17 P2, 4 P3)
 
 ## History
 
+- [2026-05-15 Week](history/week-2026-05-15.md) — GitHub governance, swarm T1-T6, agent infra P1s, cost budget, CI quality
 - [Milestone Completions (M1-M6)](history/milestone-completions.md) — all completed task lists
 - [Architecture Diagnosis](history/architecture-diagnosis.md) — 2026-05-11 strategic analysis
