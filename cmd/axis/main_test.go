@@ -81,7 +81,7 @@ func TestGetTaskStatusUsesLocalRuntime(t *testing.T) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	client := control.NewClient(locator, http.DefaultClient)
+	client := control.NewClient(locator, control.LocalHTTPClient())
 	if _, err := client.SubmitTask(context.Background(), &types.AgentTask{TaskID: "status-runtime", ContractID: "default", Input: map[string]any{"message": "hello"}}); err != nil {
 		t.Fatalf("submit task to runtime: %v", err)
 	}
@@ -198,7 +198,7 @@ func TestRunLocalRuntimeWritesTaskEvents(t *testing.T) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	client := control.NewClient(locator, http.DefaultClient)
+	client := control.NewClient(locator, control.LocalHTTPClient())
 	if _, err := client.SubmitTask(context.Background(), &types.AgentTask{TaskID: "event-task", ContractID: "default", Input: map[string]any{"message": "hello"}}); err != nil {
 		t.Fatalf("submit task to runtime: %v", err)
 	}
