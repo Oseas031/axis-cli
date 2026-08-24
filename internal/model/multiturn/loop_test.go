@@ -30,9 +30,11 @@ type mockTool struct {
 	err    error
 }
 
-func (t *mockTool) Name() string                                                    { return t.name }
-func (t *mockTool) Schema() types.ToolDefinition                                    { return types.ToolDefinition{Name: t.name} }
-func (t *mockTool) Execute(_ context.Context, _ map[string]any) (map[string]any, error) { return t.result, t.err }
+func (t *mockTool) Name() string                 { return t.name }
+func (t *mockTool) Schema() types.ToolDefinition { return types.ToolDefinition{Name: t.name} }
+func (t *mockTool) Execute(_ context.Context, _ map[string]any) (map[string]any, error) {
+	return t.result, t.err
+}
 
 func reg(tools ...tool.Tool) *tool.Registry {
 	r := tool.NewRegistry()

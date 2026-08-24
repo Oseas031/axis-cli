@@ -68,7 +68,6 @@ func TestRouter_UnregisteredQueues(t *testing.T) {
 	}
 }
 
-
 type mockLogger struct {
 	events []CommEvent
 }

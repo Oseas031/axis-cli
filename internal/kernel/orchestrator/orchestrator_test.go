@@ -974,7 +974,6 @@ func (p *fileWriteToolCallProvider) Execute(_ context.Context, req *provider.Mod
 	return &provider.ModelResponse{Output: map[string]any{"status": "completed"}}, nil
 }
 
-
 func TestOrchestrator_MarkOrphanedTasksOnStart(t *testing.T) {
 	orch := NewOrchestrator()
 

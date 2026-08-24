@@ -47,7 +47,9 @@ type HistoryCompactor interface {
 // noopCompactor is the default compactor that does nothing.
 type noopCompactor struct{}
 
-func (noopCompactor) Compact(_ context.Context, h []types.ModelMessage) []types.ModelMessage { return h }
+func (noopCompactor) Compact(_ context.Context, h []types.ModelMessage) []types.ModelMessage {
+	return h
+}
 
 // ToolTrace records a single tool invocation for observability.
 type ToolTrace struct {
@@ -68,8 +70,6 @@ func WithEventEmitter(em EventEmitter) LLMAgentOption {
 	return func(e *LLMAgentExecutor) { e.emitter = em }
 }
 
-// LLMAgentExecutor implements AgentExecutor using a real LLM provider
-// with a multi-turn tool-calling loop.
 // LLMAgentExecutor implements AgentExecutor using a real LLM provider
 // with a multi-turn tool-calling loop.
 type LLMAgentExecutor struct {

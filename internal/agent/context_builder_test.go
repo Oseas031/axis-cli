@@ -8,10 +8,30 @@ import (
 	"github.com/axis-cli/axis/internal/types"
 )
 
-func TestNewContextBuilder(t *testing.T) {
+// stateStoreAdapter adapts sharedlayer.MemoryStateStore to TaskStateReader interface.
+type stateStoreAdapter struct {
+	inner *sharedlayer.MemoryStateStore
+}
+
+func (a *stateStoreAdapter) LoadState(taskID string) (types.TaskState, error) {
+	return a.inner.Load(taskID)
+}
+
+func (a *stateStoreAdapter) SaveState(taskID string, state types.TaskState) error {
+	return a.inner.Save(taskID, state)
+}
+
+// newTestContextBuilder creates a ContextBuilder for testing with proper adapters.
+func newTestContextBuilder(rootDir string) (*ContextBuilder, *sharedlayer.MemoryStateStore, *scheduler.SchedulerImpl) {
 	ss := sharedlayer.NewMemoryStateStore()
+	adapter := &stateStoreAdapter{inner: ss}
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/test/root")
+	cb := NewContextBuilder(sched, adapter, rootDir)
+	return cb, ss, sched
+}
+
+func TestNewContextBuilder(t *testing.T) {
+	cb, _, _ := newTestContextBuilder("/test/root")
 
 	if cb == nil {
 		t.Fatal("NewContextBuilder returned nil")
@@ -22,15 +42,13 @@ func TestNewContextBuilder(t *testing.T) {
 	if cb.scheduler == nil {
 		t.Error("scheduler should not be nil")
 	}
-	if cb.stateStore == nil {
-		t.Error("stateStore should not be nil")
+	if cb.stateReader == nil {
+		t.Error("stateReader should not be nil")
 	}
 }
 
 func TestContextBuilder_collectStateSnapshot(t *testing.T) {
-	ss := sharedlayer.NewMemoryStateStore()
-	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/test/root")
+	cb, _, sched := newTestContextBuilder("/test/root")
 
 	// Submit some tasks (scheduler sets all to pending initially)
 	tasks := []*types.AgentTask{
@@ -77,9 +95,7 @@ func TestContextBuilder_collectStateSnapshot(t *testing.T) {
 }
 
 func TestContextBuilder_collectTaskLineage(t *testing.T) {
-	ss := sharedlayer.NewMemoryStateStore()
-	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/test/root")
+	cb, _, sched := newTestContextBuilder("/test/root")
 
 	// Create a dependency chain: task-3 -> task-2 -> task-1
 	tasks := []*types.AgentTask{
@@ -108,7 +124,7 @@ func TestContextBuilder_collectTaskLineage(t *testing.T) {
 func TestContextBuilder_collectTaskLineageWithCycle(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/test/root")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, "/test/root")
 
 	// Create tasks but use state store directly to simulate cycle scenario
 	state := types.TaskState{
@@ -138,7 +154,7 @@ func TestContextBuilder_collectTaskLineageWithCycle(t *testing.T) {
 func TestContextBuilder_collectDocSnapshot(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, ".") // Use current dir
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, ".") // Use current dir
 
 	snapshot, err := cb.collectDocSnapshot()
 	if err != nil {
@@ -164,7 +180,7 @@ func TestContextBuilder_collectDocSnapshot(t *testing.T) {
 func TestContextBuilder_collectCodeSnapshot(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, ".") // Use current dir
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, ".") // Use current dir
 
 	snapshot, err := cb.collectCodeSnapshot()
 	if err != nil {
@@ -201,7 +217,7 @@ func TestBuildSelfContext(t *testing.T) {
 		t.Fatalf("failed to submit task: %v", err)
 	}
 
-	cb := NewContextBuilder(sched, ss, ".")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, ".")
 	ctx, err := cb.BuildSelfContext("task-1")
 
 	if err != nil {
@@ -239,7 +255,7 @@ func TestBuildSelfContext_WithLineage(t *testing.T) {
 		}
 	}
 
-	cb := NewContextBuilder(sched, ss, ".")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, ".")
 	ctx, err := cb.BuildSelfContext("task-3")
 
 	if err != nil {
@@ -257,7 +273,7 @@ func TestBuildSelfContext_WithLineage(t *testing.T) {
 func TestBuildSelfContext_WithNonExistentTask(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, ".")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, ".")
 
 	ctx, err := cb.BuildSelfContext("non-existent-task")
 
@@ -276,7 +292,7 @@ func TestBuildSelfContext_WithNonExistentTask(t *testing.T) {
 func TestTraverseDependencies_WithStateStore(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/test/root")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, "/test/root")
 
 	// Add task directly to state store
 	state := types.TaskState{
@@ -312,7 +328,7 @@ func TestTraverseDependencies_WithStateStore(t *testing.T) {
 func TestReadSpecVersion(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, ".") // Use current dir with docs/current-progress.md
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, ".") // Use current dir with docs/current-progress.md
 
 	version := cb.readSpecVersion()
 
@@ -325,7 +341,7 @@ func TestReadSpecVersion(t *testing.T) {
 func TestCollectDocSnapshot_WithFiles(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, ".") // Use current dir
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, ".") // Use current dir
 
 	snapshot, err := cb.collectDocSnapshot()
 	if err != nil {
@@ -358,7 +374,7 @@ func TestCollectDocSnapshot_WithFiles(t *testing.T) {
 func TestCollectDocSnapshot_NonExistentRoot(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/non/existent/path")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, "/non/existent/path")
 
 	snapshot, err := cb.collectDocSnapshot()
 
@@ -374,7 +390,7 @@ func TestCollectDocSnapshot_NonExistentRoot(t *testing.T) {
 func TestCollectCodeSnapshot_NonExistentRoot(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/non/existent/path")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, "/non/existent/path")
 
 	snapshot, err := cb.collectCodeSnapshot()
 
@@ -390,7 +406,7 @@ func TestCollectCodeSnapshot_NonExistentRoot(t *testing.T) {
 func TestTraverseDependencies_WithNestedDeps(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/test/root")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, "/test/root")
 
 	// Add a task with nested dependencies
 	state := types.TaskState{
@@ -440,7 +456,7 @@ func TestTraverseDependencies_WithNestedDeps(t *testing.T) {
 func TestReadSpecVersion_NonExistentFile(t *testing.T) {
 	ss := sharedlayer.NewMemoryStateStore()
 	sched := scheduler.NewScheduler(ss, &mockLifecycle{running: true})
-	cb := NewContextBuilder(sched, ss, "/non/existent")
+	cb := NewContextBuilder(sched, &stateStoreAdapter{inner: ss}, "/non/existent")
 
 	version := cb.readSpecVersion()
 

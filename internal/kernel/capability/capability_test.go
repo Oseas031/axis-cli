@@ -8,7 +8,7 @@ type mockCap struct {
 	desc    string
 }
 
-func (m *mockCap) CapName() string        { return m.name }
+func (m *mockCap) CapName() string         { return m.name }
 func (m *mockCap) CapType() CapabilityType { return m.capType }
 func (m *mockCap) CapDescription() string  { return m.desc }
 

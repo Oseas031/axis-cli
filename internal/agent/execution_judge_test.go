@@ -135,7 +135,6 @@ func TestExecutionJudge_PassesWriteWithBash(t *testing.T) {
 	}
 }
 
-
 func TestExecutionJudge_FailsWhenGoTestFails(t *testing.T) {
 	j := &ExecutionJudge{}
 	result := &AgentExecutionResult{
@@ -144,7 +143,7 @@ func TestExecutionJudge_FailsWhenGoTestFails(t *testing.T) {
 			"_tool_traces": []ToolTrace{
 				{Name: "file_read", Output: `{"content":"..."}`},
 				{Name: "file_write", Output: `{"success":true}`},
-				{Name: "bash", Output: `{"command":"go test ./internal/tmp/ -run TestAdd -count=1","exit_code":1,"stdout":"--- FAIL: TestAdd (0.00s)\nFAIL"}`},
+				{Name: "bash", Output: `{"command":"go test ./internal/types/ -run TestAgentError_Error -count=1","exit_code":1,"stdout":"--- FAIL: TestAdd (0.00s)\nFAIL"}`},
 			},
 		},
 	}
@@ -165,7 +164,7 @@ func TestExecutionJudge_PassesWhenGoTestPasses(t *testing.T) {
 			"text": "Fixed the bug and verified with go test. All tests pass now.",
 			"_tool_traces": []ToolTrace{
 				{Name: "file_write", Output: `{"success":true}`},
-				{Name: "bash", Output: `{"command":"go test ./internal/tmp/ -run TestAdd -count=1","exit_code":0,"stdout":"ok  github.com/axis-cli/axis/internal/tmp\nPASS"}`},
+				{Name: "bash", Output: `{"command":"go test ./internal/types/ -run TestAgentError_Error -count=1","exit_code":0,"stdout":"ok  github.com/axis-cli/axis/internal/types\nPASS"}`},
 			},
 		},
 	}

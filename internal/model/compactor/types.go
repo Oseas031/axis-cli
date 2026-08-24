@@ -12,7 +12,7 @@ import (
 
 // OffloadEntry represents a single offloaded tool result stored in offload.jsonl.
 type OffloadEntry struct {
-	Version    int       `json:"v"`              // Schema version. Current: 1.
+	Version    int       `json:"v"` // Schema version. Current: 1.
 	Timestamp  time.Time `json:"timestamp"`
 	ToolCallID string    `json:"tool_call_id"`
 	ToolName   string    `json:"tool_name"`

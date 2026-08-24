@@ -1,11 +1,13 @@
 package compactor
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/axis-cli/axis/internal/storeutil"
+	"github.com/axis-cli/axis/internal/types"
 )
 
 // Store manages offloaded tool results on disk.
@@ -73,31 +75,10 @@ func (s *Store) ReadRef(refPath string) (string, error) {
 
 func (s *Store) appendEntry(entry *OffloadEntry) error {
 	path := filepath.Join(s.dataDir, "offload.jsonl")
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		return fmt.Errorf("compactor: open jsonl: %w", err)
-	}
-	defer f.Close()
-
-	data, err := json.Marshal(entry)
-	if err != nil {
-		return fmt.Errorf("compactor: marshal entry: %w", err)
-	}
-	data = append(data, '\n')
-	_, err = f.Write(data)
-	return err
+	return storeutil.AppendJSONL(path, entry, storeutil.DefaultJSONLOptions())
 }
 
-// estimateTokens provides a rough token count: CJK chars / 1.5 + other / 4.
+// estimateTokens returns a rough token count using the unified types estimator.
 func estimateTokens(s string) int {
-	cjk := 0
-	other := 0
-	for _, r := range s {
-		if r >= 0x4E00 && r <= 0x9FFF || r >= 0x3000 && r <= 0x303F {
-			cjk++
-		} else {
-			other++
-		}
-	}
-	return int(float64(cjk)/1.5) + other/4
+	return types.EstimateTokens(s)
 }

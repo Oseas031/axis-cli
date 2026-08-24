@@ -89,7 +89,7 @@ func TestJudgementResult_Recalculate(t *testing.T) {
 				{CriteriaName: "t1", Passed: true, Score: 0.8},
 				{CriteriaName: "t2", Passed: false, Score: 0.3},
 			},
-			expectedScore:  0.55, // Average of all items: (0.8+0.3)/2
+			expectedScore:  0.55,  // Average of all items: (0.8+0.3)/2
 			expectedPassed: false, // Strict: all must pass
 		},
 		{

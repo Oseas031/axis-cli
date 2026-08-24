@@ -625,7 +625,6 @@ func TestRuleEngine_EdgeCases(t *testing.T) {
 	}
 }
 
-
 func TestRuleEngine_CustomConfig(t *testing.T) {
 	config := RuleConfig{
 		UpgradeMinTasks:      5,

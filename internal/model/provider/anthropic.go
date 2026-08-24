@@ -84,6 +84,14 @@ type anthropicResponse struct {
 // Execute calls the Anthropic Messages API.
 func (p *AnthropicProvider) Execute(ctx context.Context, req *ModelRequest) (*ModelResponse, error) {
 	start := time.Now()
+	// Honor configured timeout even when callers pass a deadline-less ctx.
+	if p.config.timeout > 0 {
+		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, p.config.timeout)
+			defer cancel()
+		}
+	}
 	baseURL := p.config.baseURL
 	if baseURL == "" {
 		baseURL = "https://api.anthropic.com"

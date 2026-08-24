@@ -83,9 +83,9 @@ func BuildContractExecutor(cfg ContractExecutorDeps) *contractexec.ContractExecu
 	principlesStore := horizon.NewStore(project.MemoryDir(cfg.Root))
 
 	return contractexec.NewContractExecutorWithConfig(contractexec.ExecutorConfig{
-		Provider:     cfg.Provider,
-		ToolRegistry: cfg.ToolRegistry,
-		SkillsLoader: skillsPromptLoader,
+		Provider:         cfg.Provider,
+		ToolRegistry:     cfg.ToolRegistry,
+		SkillsLoader:     skillsPromptLoader,
 		PrinciplesLoader: principlesStore,
 		CompactionPipeline: &contractexec.ThreeLayerCompaction{
 			Micro:  &contractexec.ToolResultCompaction{KeepRecent: 3},

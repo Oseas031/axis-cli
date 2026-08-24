@@ -11,7 +11,7 @@ import (
 
 // Engine is the filesystem-backed implementation of Working Memory.
 type Engine struct {
-	kv      *kv.Engine
+	kv      kv.Store
 	rootDir string
 }
 
@@ -22,6 +22,12 @@ func Open(rootDir string) (*Engine, error) {
 		return nil, fmt.Errorf("working: open kv: %w", err)
 	}
 	return &Engine{kv: kvEng, rootDir: rootDir}, nil
+}
+
+// NewEngine creates a Working Memory engine with an injected KV store.
+// This enables testing with mock implementations.
+func NewEngine(store kv.Store, rootDir string) *Engine {
+	return &Engine{kv: store, rootDir: rootDir}
 }
 
 // Close closes the engine.
@@ -93,7 +99,7 @@ func (e *Engine) Recall(ctx context.Context, query string, limit int) ([]PacketH
 	}
 
 	// Build document corpus: each packet is a document
-	documents := make(map[string]string)   // docID → text
+	documents := make(map[string]string)    // docID → text
 	packetMap := make(map[string]packetRef) // docID → packet reference
 
 	for it.Next() {

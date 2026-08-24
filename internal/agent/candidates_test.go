@@ -63,7 +63,6 @@ func TestPartition_AllDifferent(t *testing.T) {
 	}
 }
 
-
 func TestValidateDiversity_NoneAlwaysPasses(t *testing.T) {
 	pool := &CandidatePool{
 		Candidates: []Candidate{{ID: "1", Source: "gpt4"}},

@@ -13,10 +13,10 @@ type IsolatedJudgeInput struct {
 
 // ExecutionSummary retains minimal process signal without full transcript.
 type ExecutionSummary struct {
-	Attempts       int      `json:"attempts"`
+	Attempts        int      `json:"attempts"`
 	ErrorCategories []string `json:"error_categories"`
-	TotalDuration  string   `json:"total_duration"`
-	ToolsUsed      []string `json:"tools_used"`
+	TotalDuration   string   `json:"total_duration"`
+	ToolsUsed       []string `json:"tools_used"`
 }
 
 // Artifact represents a single output artifact produced by execution.

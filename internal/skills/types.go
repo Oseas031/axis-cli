@@ -42,9 +42,9 @@ type SubFile struct {
 
 // Skill is the full skill content returned by Load.
 type Skill struct {
-	Meta     SkillMeta `json:"meta"`
-	Content  string    `json:"content"`
-	Path     string    `json:"path"`
+	Meta     SkillMeta  `json:"meta"`
+	Content  string     `json:"content"`
+	Path     string     `json:"path"`
 	SubFiles []SubFile  `json:"sub_files,omitempty"`
 	LoadedAt time.Time  `json:"loaded_at"`
 	Refs     []SkillRef `json:"refs,omitempty"`

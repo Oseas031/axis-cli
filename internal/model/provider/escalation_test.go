@@ -7,8 +7,8 @@ import (
 )
 
 type mockProvider struct {
-	resp *ModelResponse
-	err  error
+	resp  *ModelResponse
+	err   error
 	calls int
 }
 

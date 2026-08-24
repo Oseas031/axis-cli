@@ -145,7 +145,6 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
-
 // DreamSuccess replays recent successful task events, clusters them by
 // task type/pattern, and distills recurring success patterns into principles.
 // Trigger: same task type succeeds ≥ 3 times.

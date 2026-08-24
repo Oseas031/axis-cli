@@ -64,7 +64,6 @@ func TestParseSkillMetadata_EmptyFields(t *testing.T) {
 	}
 }
 
-
 func TestParseSkillMetadata_WithSource(t *testing.T) {
 	input := "---\nname: tdd\ndescription: Test-driven development\nsource: mattpocock/skills\nsource_version: 2026-05-15\n---\n# TDD\n\nBody."
 

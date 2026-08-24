@@ -7,9 +7,21 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/axis-cli/axis/internal/types"
 )
+
+// testHTTPClient is the standard client for httptest-based provider tests.
+// Keep-alives are disabled: pooled loopback conns go half-open on Windows and
+// silently swallow requests (observed as multi-minute roundTrip hangs).
+// The hard timeout is a backstop against silent peers.
+func testHTTPClient() *http.Client {
+	return &http.Client{
+		Timeout:   15 * time.Second,
+		Transport: &http.Transport{DisableKeepAlives: true},
+	}
+}
 
 func TestOpenAIProvider_Execute_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -77,9 +89,9 @@ func TestOpenAIProvider_Execute_Success(t *testing.T) {
 		model:      "gpt-4",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newOpenAIProvider(cfg)
 
@@ -198,9 +210,9 @@ func TestOpenAIProvider_Execute_WithTools(t *testing.T) {
 		model:      "gpt-4",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newOpenAIProvider(cfg)
 
@@ -290,9 +302,9 @@ func TestOpenAIProvider_Execute_WithHistory(t *testing.T) {
 		model:      "gpt-4",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newOpenAIProvider(cfg)
 
@@ -325,9 +337,9 @@ func TestOpenAIProvider_Execute_APIError(t *testing.T) {
 		model:      "gpt-4",
 		apiKey:     "invalid-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newOpenAIProvider(cfg)
 
@@ -351,9 +363,9 @@ func TestOpenAIProvider_Execute_InvalidResponse(t *testing.T) {
 		model:      "gpt-4",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newOpenAIProvider(cfg)
 
@@ -423,7 +435,7 @@ func TestOpenAIProvider_Execute_HistoryIncludesToolCallID(t *testing.T) {
 
 	cfg := &providerConfig{
 		model: "gpt-4", apiKey: "test-key", baseURL: server.URL,
-		timeout: 30, maxRetries: 3, httpClient: server.Client(),
+		timeout: 30 * time.Second, maxRetries: 3, httpClient: testHTTPClient(),
 	}
 	p := newOpenAIProvider(cfg)
 
@@ -529,7 +541,7 @@ func TestOpenAIProvider_Execute_GeneratesSyntheticIDForEmptyToolCallID(t *testin
 
 	cfg := &providerConfig{
 		model: "gpt-4", apiKey: "test-key", baseURL: server.URL,
-		timeout: 30, maxRetries: 3, httpClient: server.Client(),
+		timeout: 30 * time.Second, maxRetries: 3, httpClient: testHTTPClient(),
 	}
 	p := newOpenAIProvider(cfg)
 	req := &ModelRequest{
@@ -592,9 +604,9 @@ func TestOpenAIProvider_Execute_EmptyChoices(t *testing.T) {
 		model:      "gpt-4",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newOpenAIProvider(cfg)
 

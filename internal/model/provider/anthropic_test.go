@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/axis-cli/axis/internal/types"
 )
@@ -42,9 +43,9 @@ func TestAnthropicProvider_Execute_Success(t *testing.T) {
 		model:      "claude-sonnet-4-5",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newAnthropicProvider(cfg)
 
@@ -91,9 +92,9 @@ func TestAnthropicProvider_Execute_WithTools(t *testing.T) {
 		model:      "claude-sonnet-4-5",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newAnthropicProvider(cfg)
 
@@ -143,9 +144,9 @@ func TestAnthropicProvider_Execute_WithHistory(t *testing.T) {
 		model:      "claude-sonnet-4-5",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newAnthropicProvider(cfg)
 
@@ -191,9 +192,9 @@ func TestAnthropicProvider_Execute_ToolSchemaIncludesProperties(t *testing.T) {
 		model:      "claude-sonnet-4-5",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newAnthropicProvider(cfg)
 
@@ -260,9 +261,9 @@ func TestAnthropicProvider_Execute_ToolUseResponseParsed(t *testing.T) {
 		model:      "claude-sonnet-4-5",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newAnthropicProvider(cfg)
 
@@ -299,9 +300,9 @@ func TestAnthropicProvider_Execute_APIError(t *testing.T) {
 		model:      "claude-sonnet-4-5",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newAnthropicProvider(cfg)
 
@@ -325,9 +326,9 @@ func TestAnthropicProvider_Execute_InvalidResponse(t *testing.T) {
 		model:      "claude-sonnet-4-5",
 		apiKey:     "test-key",
 		baseURL:    server.URL,
-		timeout:    30,
+		timeout:    30 * time.Second,
 		maxRetries: 3,
-		httpClient: server.Client(),
+		httpClient: testHTTPClient(),
 	}
 	p := newAnthropicProvider(cfg)
 

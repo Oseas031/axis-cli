@@ -1,4 +1,4 @@
-﻿// Package orchestrator provides task orchestration and coordination.
+// Package orchestrator provides task orchestration and coordination.
 package orchestrator
 
 import (
@@ -17,8 +17,8 @@ import (
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	"github.com/axis-cli/axis/internal/evolution"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
-	dispatcher "github.com/axis-cli/axis/internal/kernel/dispatcher"
 	"github.com/axis-cli/axis/internal/kernel/capability"
+	dispatcher "github.com/axis-cli/axis/internal/kernel/dispatcher"
 	"github.com/axis-cli/axis/internal/kernel/featuregate"
 	"github.com/axis-cli/axis/internal/kernel/lifecycle"
 	"github.com/axis-cli/axis/internal/kernel/scheduler"
@@ -161,7 +161,6 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	if orch.gate == nil {
 		orch.gate = featuregate.NewGate()
 	}
-	orch.gate.Unlock(featuregate.FeatureEvolution)
 	orch.dispatcher.SetFeatureGate(orch.gate)
 
 	// Wire capability registry
@@ -198,9 +197,12 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 					Isolation: isolation,
 					ParentID:  "orchestrator",
 					MessageID: fmt.Sprintf("spawn-%s-%d", taskID, time.Now().UnixNano()),
-						})
+				})
 				if err != nil {
 					return map[string]any{"status": "failed", "error": err.Error()}, nil
+				}
+				if result == nil {
+					return map[string]any{"status": "completed", "task_id": taskID, "message": "subtask completed"}, nil
 				}
 				return result, nil
 			})
@@ -361,4 +363,3 @@ func (o *Orchestrator) GetDependencyGraph() map[string][]string {
 func (o *Orchestrator) ResolveCall(callID string, output map[string]any) error {
 	return o.humanExecutor.ResolveCall(callID, output, nil)
 }
-

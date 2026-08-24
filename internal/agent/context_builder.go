@@ -7,23 +7,23 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/axis-cli/axis/internal/kernel/sharedlayer"
 	"github.com/axis-cli/axis/internal/types"
 )
 
 // ContextBuilder builds SelfContext by collecting task state, code structure, and documentation.
 type ContextBuilder struct {
-	scheduler  SchedulerProvider
-	stateStore sharedlayer.StateStore
-	rootDir    string
+	scheduler   SchedulerProvider
+	stateReader TaskStateReader
+	rootDir     string
 }
 
 // NewContextBuilder creates a new ContextBuilder.
-func NewContextBuilder(scheduler SchedulerProvider, stateStore sharedlayer.StateStore, rootDir string) *ContextBuilder {
+// It accepts interfaces for dependency injection, enabling testing and decoupling.
+func NewContextBuilder(scheduler SchedulerProvider, stateReader TaskStateReader, rootDir string) *ContextBuilder {
 	return &ContextBuilder{
-		scheduler:  scheduler,
-		stateStore: stateStore,
-		rootDir:    rootDir,
+		scheduler:   scheduler,
+		stateReader: stateReader,
+		rootDir:     rootDir,
 	}
 }
 
@@ -73,8 +73,8 @@ func (cb *ContextBuilder) traverseDependencies(ctx *SelfContext, taskID string, 
 	}
 	visited[taskID] = true
 
-	// Load the task from state store to get its dependencies
-	state, err := cb.stateStore.Load(taskID)
+	// Load the task from state reader to get its dependencies
+	state, err := cb.stateReader.LoadState(taskID)
 	if err != nil {
 		// Task not found in state store, try scheduler
 		tasks := cb.scheduler.GetAllTasks()

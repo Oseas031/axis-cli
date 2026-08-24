@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/axis-cli/axis/internal/storeutil"
 )
 
 // FileStore persists readiness records as a single JSON file under
@@ -49,7 +51,7 @@ func (s *FileStore) LoadAll() (map[string]ReadinessRecord, error) {
 	return records, nil
 }
 
-// SaveAll atomically writes all records to disk using a temp file + rename.
+// SaveAll atomically writes all records to disk using storeutil.AtomicReplace.
 func (s *FileStore) SaveAll(records map[string]ReadinessRecord) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -68,8 +70,7 @@ func (s *FileStore) SaveAll(records map[string]ReadinessRecord) error {
 	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write readiness store temp: %w", err)
 	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
+	if err := storeutil.AtomicReplace(tmp, path); err != nil {
 		return fmt.Errorf("failed to commit readiness store: %w", err)
 	}
 	return nil

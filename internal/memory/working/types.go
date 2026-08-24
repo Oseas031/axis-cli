@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/axis-cli/axis/internal/contextpack/model"
 )
 
 var (
@@ -52,66 +54,43 @@ type WorkingSetItem struct {
 
 // PacketHit represents a single packet retrieved by Recall.
 type PacketHit struct {
-	BundleID  string  `json:"bundle_id"`
-	PacketID  string  `json:"packet_id"`
-	Type      string  `json:"type"`
-	Source    string  `json:"source"`
-	Summary   string  `json:"summary"`
-	Relevance float64 `json:"relevance"`
+	BundleID  string           `json:"bundle_id"`
+	PacketID  string           `json:"packet_id"`
+	Type      model.PacketType `json:"type"`
+	Source    string           `json:"source"`
+	Summary   string           `json:"summary"`
+	Relevance float64          `json:"relevance"`
 }
 
 // WorkingBundle is the self-describing JSON value stored in the KV engine.
+// It uses model types to avoid duplication.
 type WorkingBundle struct {
-	BundleID     string          `json:"bundle_id"`
-	TaskID       string          `json:"task_id"`
-	ContractID   string          `json:"contract_id"`
-	Goal         string          `json:"goal"`
-	Packets      []ContextPacket `json:"packets"`
-	Trace        AssemblyTrace   `json:"trace"`
-	Budget       ContextBudget   `json:"budget"`
-	RetainedAt   time.Time       `json:"retained_at"`
-	AccessCount  int             `json:"access_count"`
-	Reason       string          `json:"reason"`
-	SourceDigest string          `json:"source_digest"`
+	BundleID     string                `json:"bundle_id"`
+	TaskID       string                `json:"task_id"`
+	ContractID   string                `json:"contract_id"`
+	Goal         string                `json:"goal"`
+	Packets      []model.ContextPacket `json:"packets"`
+	Trace        model.AssemblyTrace   `json:"trace"`
+	Budget       model.ContextBudget   `json:"budget"`
+	RetainedAt   time.Time             `json:"retained_at"`
+	AccessCount  int                   `json:"access_count"`
+	Reason       string                `json:"reason"`
+	SourceDigest string                `json:"source_digest"`
 }
 
-// ContextPacket mirrors the contextpack packet model.
-type ContextPacket struct {
-	ID        string  `json:"id"`
-	Type      string  `json:"type"`
-	Source    string  `json:"source"`
-	Summary   string  `json:"summary"`
-	Content   string  `json:"content,omitempty"`
-	Relevance float64 `json:"relevance"`
-	Reason    string  `json:"reason"`
-}
+// ContextPacket is an alias for model.ContextPacket for backward compatibility.
+type ContextPacket = model.ContextPacket
 
-// AssemblyTrace mirrors the contextpack trace model.
-type AssemblyTrace struct {
-	Selected []TraceItem `json:"selected"`
-	Excluded []TraceItem `json:"excluded"`
-	Notes    []string    `json:"notes"`
-}
+// AssemblyTrace is an alias for model.AssemblyTrace for backward compatibility.
+type AssemblyTrace = model.AssemblyTrace
 
-// TraceItem is a single trace entry.
-type TraceItem struct {
-	ID        string  `json:"id"`
-	Source    string  `json:"source"`
-	Relevance float64 `json:"relevance"`
-	Reason    string  `json:"reason"`
-}
+// TraceItem is an alias for model.TraceItem for backward compatibility.
+type TraceItem = model.TraceItem
 
-// ContextBudget mirrors the contextpack budget model.
-type ContextBudget struct {
-	MaxPackets int  `json:"max_packets"`
-	MaxBytes   int  `json:"max_bytes"`
-	UsedBytes  int  `json:"used_bytes"`
-	Truncated  bool `json:"truncated"`
-}
+// ContextBudget is an alias for model.ContextBudget for backward compatibility.
+type ContextBudget = model.ContextBudget
 
 // makeBundleKey returns the canonical KV key for a bundle.
 func makeBundleKey(bundleID string) string {
 	return bundleKeyPrefix + bundleID
 }
-
-

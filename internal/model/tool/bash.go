@@ -156,7 +156,6 @@ func toWSLPath(p string) string {
 	return p
 }
 
-
 // enrichedEnv returns the current environment with additional tool paths appended.
 // On Windows/WSL, this ensures go, git, cmd.exe etc. are discoverable.
 func enrichedEnv() []string {

@@ -8,16 +8,10 @@ import (
 	"github.com/axis-cli/axis/internal/types"
 )
 
-// EstimateTokens estimates token count using 4-chars-per-token heuristic.
+// EstimateTokens estimates token count for a list of messages using
+// the unified types.EstimateTokens heuristic.
 func EstimateTokens(messages []types.ModelMessage) int {
-	total := 0
-	for _, msg := range messages {
-		total += len(msg.Content)/4 + 4
-		for _, tc := range msg.ToolCalls {
-			total += len(tc.Name)/4 + 10
-		}
-	}
-	return total
+	return types.EstimateMessages(messages)
 }
 
 // CompactionStrategy compacts message history to reduce token count.

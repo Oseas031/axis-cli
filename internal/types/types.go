@@ -152,6 +152,7 @@ const (
 	ErrDependencyNotReady   ErrorCode = "DEPENDENCY_NOT_READY"
 	ErrContractNotFound     ErrorCode = "CONTRACT_NOT_FOUND"
 	ErrCostBudgetExceeded   ErrorCode = "COST_BUDGET_EXCEEDED"
+	ErrTokenBudgetExhausted ErrorCode = "TOKEN_BUDGET_EXHAUSTED"
 	ErrContractInputInvalid ErrorCode = "CONTRACT_INPUT_INVALID"
 	ErrTaskTimeout          ErrorCode = "TASK_TIMEOUT"
 	ErrTaskRetryExhausted   ErrorCode = "TASK_RETRY_EXHAUSTED"

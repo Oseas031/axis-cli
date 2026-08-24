@@ -109,7 +109,13 @@ func (t *HTTPClientTool) Execute(ctx context.Context, input map[string]any) (map
 		}
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	// v1: keep-alives disabled — pooled loopback conns go half-open on Windows
+	// dev machines and silently swallow writes (30s+ hangs observed).
+	// TODO: revisit with connection health probing if throughput ever matters.
+	client := &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: &http.Transport{DisableKeepAlives: true},
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return map[string]any{"error": "request failed: " + err.Error()}, nil

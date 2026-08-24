@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/axis-cli/axis/internal/storeutil"
 )
 
 // EvolutionRoot is the default project-local directory for evolution runs.
@@ -115,22 +117,7 @@ func (s *Store) AppendDecision(runID string, decision EvolutionDecision) error {
 		return fmt.Errorf("run %s not found", runID)
 	}
 	path := filepath.Join(runDir, "decisions.jsonl")
-	data, err := json.Marshal(decision)
-	if err != nil {
-		return fmt.Errorf("marshal decision: %w", err)
-	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("open decisions ledger: %w", err)
-	}
-	defer f.Close()
-	if _, err := f.Write(data); err != nil {
-		return fmt.Errorf("write decision: %w", err)
-	}
-	if _, err := f.WriteString("\n"); err != nil {
-		return fmt.Errorf("write newline: %w", err)
-	}
-	return nil
+	return storeutil.AppendJSONL(path, decision, storeutil.DefaultJSONLOptions())
 }
 
 // ReadDecision reads the latest decision record for a run.
@@ -163,31 +150,9 @@ func (s *Store) ReadDecision(runID string) (*EvolutionDecision, error) {
 	return &decision, nil
 }
 
-// writeJSON atomically writes a JSON file by writing to a temp file and renaming.
+// writeJSON atomically writes a JSON file using storeutil.AtomicWriteJSON.
 func (s *Store) writeJSON(path string, v any) error {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return err
-	}
-	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, "*.tmp")
-	if err != nil {
-		return fmt.Errorf("create temp file: %w", err)
-	}
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmp.Name())
-		return fmt.Errorf("write temp file: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmp.Name())
-		return fmt.Errorf("close temp file: %w", err)
-	}
-	if err := os.Rename(tmp.Name(), path); err != nil {
-		os.Remove(tmp.Name())
-		return fmt.Errorf("rename temp file: %w", err)
-	}
-	return nil
+	return storeutil.AtomicWriteJSON(path, v)
 }
 
 // GenerateRunID creates a unique run ID based on timestamp.

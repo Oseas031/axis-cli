@@ -82,7 +82,6 @@ func TestToBashPathUsesDetectedDrivePrefix(t *testing.T) {
 	}
 }
 
-
 func TestParseStatusLine_IgnoresJSONBody(t *testing.T) {
 	// Regression: parseStatusLine used LastIndex which matched "status": in JSON output
 	multiLine := "Task sim-123 status: completed\nOutput:\n{\n  \"status\": \"completed\"\n}"

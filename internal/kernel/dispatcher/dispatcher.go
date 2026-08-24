@@ -1,12 +1,10 @@
-﻿// Package dispatcher provides task dispatching to executors.
+// Package dispatcher provides task dispatching to executors.
 package dispatcher
 
 import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -16,10 +14,10 @@ import (
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	"github.com/axis-cli/axis/internal/evolution"
 	humanexec "github.com/axis-cli/axis/internal/human/executor"
+	"github.com/axis-cli/axis/internal/kernel/budget"
 	"github.com/axis-cli/axis/internal/kernel/capability"
 	"github.com/axis-cli/axis/internal/kernel/featuregate"
 	"github.com/axis-cli/axis/internal/kernel/swarm"
-	"github.com/axis-cli/axis/internal/model/tool"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -41,17 +39,18 @@ type Dispatcher interface {
 
 // DispatcherImpl implements task dispatching
 type DispatcherImpl struct {
-	contractExecutor contractexec.ContractExecutor
-	humanExecutor    humanexec.HumanExecutor
-	agentExecutor    agent.AgentExecutor
-	capRegistry      *capability.CapabilityRegistry
-	gate             *featuregate.Gate
-	evolutionStore   *evolution.Store
-	projectRoot      string
-	timeout          time.Duration
-	autonomyResolver func(task *types.AgentTask) agent.AutonomyLevel
-	auditLog         []AuditEntry
-	auditMu          sync.RWMutex
+	contractExecutor     contractexec.ContractExecutor
+	humanExecutor        humanexec.HumanExecutor
+	agentExecutor        agent.AgentExecutor
+	capRegistry          *capability.CapabilityRegistry
+	gate                 *featuregate.Gate
+	evolutionStore       *evolution.Store
+	projectRoot          string
+	timeout              time.Duration
+	autonomyResolver     func(task *types.AgentTask) agent.AutonomyLevel
+	auditLog             []AuditEntry
+	auditMu              sync.RWMutex
+	costTracker          *budget.CostTracker
 	auditFn              func(taskID, event, detail string)
 	followUpFn           func(tasks []*types.AgentTask)
 	candidatePoolEnabled bool
@@ -141,6 +140,11 @@ func (d *DispatcherImpl) SetProviderNames(names []string) {
 // SetFeatureGate sets the feature gate for pre-execution checks.
 func (d *DispatcherImpl) SetFeatureGate(g *featuregate.Gate) {
 	d.gate = g
+}
+
+// SetCostTracker sets the cost tracker for budget enforcement.
+func (d *DispatcherImpl) SetCostTracker(ct *budget.CostTracker) {
+	d.costTracker = ct
 }
 
 // SetEvolutionStore sets the evolution store for evolution protocol routing.
@@ -357,12 +361,12 @@ func (d *DispatcherImpl) dispatchSwarm(ctx context.Context, task *types.AgentTas
 
 // SwarmEvent represents a swarm.executed event for the event log.
 type SwarmEvent struct {
-	Type      string            `json:"type"`
-	TaskID    string            `json:"task_id"`
-	Topology  SwarmTopologyInfo `json:"topology"`
-	Agents    []SwarmAgentInfo  `json:"agents"`
-	Confidence float64          `json:"confidence"`
-	Unanimous bool              `json:"unanimous"`
+	Type       string            `json:"type"`
+	TaskID     string            `json:"task_id"`
+	Topology   SwarmTopologyInfo `json:"topology"`
+	Agents     []SwarmAgentInfo  `json:"agents"`
+	Confidence float64           `json:"confidence"`
+	Unanimous  bool              `json:"unanimous"`
 }
 
 // SwarmTopologyInfo describes the topology used.
@@ -423,6 +427,19 @@ func (d *DispatcherImpl) executeTask(ctx context.Context, task *types.AgentTask)
 			Error:     err.Error(),
 			Completed: time.Now(),
 		}, err
+	}
+
+	// Cost budget enforcement
+	if d.costTracker != nil && task.CostBudget > 0 {
+		if err := d.costTracker.CheckBudget(task.TaskID, task.CostBudget); err != nil {
+			d.audit(task.TaskID, "cost_budget_exceeded", err.Error())
+			return &types.TaskResult{
+				TaskID:    task.TaskID,
+				Status:    types.TaskStatusFailed,
+				Error:     err.Error(),
+				Completed: time.Now(),
+			}, err
+		}
 	}
 
 	// Swarm topology detection
@@ -604,20 +621,6 @@ func (d *DispatcherImpl) executeViaEvolution(ctx context.Context, task *types.Ag
 	task.Metadata["evolution.workspace"] = run.WorkspacePath
 
 	d.audit(task.TaskID, "evolution_start", runID)
-
-	// Create isolated workspace and scope tools
-	workspacePath := filepath.Join(run.WorkspacePath, "workspace")
-	_ = os.MkdirAll(workspacePath, 0o755)
-	task.Metadata["evolution.workspace_path"] = workspacePath
-
-	if exec, ok := d.agentExecutor.(*agent.LLMAgentExecutor); ok {
-		origTools := exec.Tools()
-		if origTools != nil {
-			scopedTools := tool.NewScopedRegistry(origTools, workspacePath)
-			exec.SetToolRegistry(scopedTools)
-			defer exec.SetToolRegistry(origTools)
-		}
-	}
 
 	result, err := d.executeTaskNormal(ctx, task)
 

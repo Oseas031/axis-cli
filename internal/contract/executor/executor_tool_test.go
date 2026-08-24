@@ -445,7 +445,6 @@ func TestContractExecutor_Execute_CircuitBreaker_UnregisteredToolCounts(t *testi
 	}
 }
 
-
 func TestContractExecutor_Execute_ScopeAllowed(t *testing.T) {
 	reg := tool.NewRegistry()
 	reg.Register(&fixedTool{

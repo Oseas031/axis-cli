@@ -104,6 +104,14 @@ type openaiToolFunction struct {
 // Execute calls the OpenAI Chat Completions API.
 func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*ModelResponse, error) {
 	start := time.Now()
+	// Honor configured timeout even when callers pass a deadline-less ctx.
+	if p.config.timeout > 0 {
+		if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, p.config.timeout)
+			defer cancel()
+		}
+	}
 	baseURL := p.config.baseURL
 	if baseURL == "" {
 		baseURL = "https://api.openai.com"

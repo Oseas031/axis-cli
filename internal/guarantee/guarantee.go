@@ -5,7 +5,7 @@ type Level int
 
 const (
 	LevelHard Level = iota // 违反 = 系统 bug，必须修复
-	LevelSoft             // 违反 = 降级，记录但不中断
+	LevelSoft              // 违反 = 降级，记录但不中断
 )
 
 // Guarantee 是一个可验证的系统承诺

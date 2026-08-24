@@ -697,7 +697,6 @@ func (p *capturingModelProvider) Execute(ctx context.Context, req *provider.Mode
 	return &provider.ModelResponse{Output: map[string]any{"status": "ok"}}, nil
 }
 
-
 func TestDispatcher_AutonomyResolver(t *testing.T) {
 	contractExec := contractexec.NewContractExecutor()
 	humanExec := humanexec.NewHumanExecutor()
@@ -726,7 +725,7 @@ func TestDispatcher_AutonomyResolver(t *testing.T) {
 		Input:  map[string]any{"input": "test"},
 		Metadata: map[string]string{
 			types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent,
-			"autonomy_level":             "high",
+			"autonomy_level":              "high",
 		},
 		Status: types.TaskStatusPending,
 	}
@@ -756,7 +755,6 @@ func TestDispatcher_AutonomyResolver(t *testing.T) {
 		t.Fatalf("expected AutonomyLevelFull, got %v", agentExec.request.Autonomy)
 	}
 }
-
 
 func TestDispatcher_AuditLog(t *testing.T) {
 	contractExec := contractexec.NewContractExecutor()

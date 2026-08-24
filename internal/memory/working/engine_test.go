@@ -181,7 +181,6 @@ func timeNow() time.Time {
 	return time.Now().UTC()
 }
 
-
 func TestRecall_BM25Ranking(t *testing.T) {
 	dir := t.TempDir()
 	eng, err := Open(dir)
@@ -305,7 +304,6 @@ func TestRecall_CJKQuery(t *testing.T) {
 		t.Fatalf("expected b-cn, got %s", hits[0].BundleID)
 	}
 }
-
 
 func TestRecall_BM25BigramPrecision(t *testing.T) {
 	// Verify bigram matching is more precise than unigram-only:

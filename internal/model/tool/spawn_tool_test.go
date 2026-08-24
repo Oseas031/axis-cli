@@ -151,7 +151,6 @@ func TestSpawnTool_SharedArtifacts(t *testing.T) {
 	}
 }
 
-
 func TestDevilsAdvocatePolicy(t *testing.T) {
 	p := DevilsAdvocatePolicy()
 

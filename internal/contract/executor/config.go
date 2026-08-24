@@ -34,14 +34,14 @@ func NewContractExecutorWithConfig(cfg ExecutorConfig) *ContractExecutorImpl {
 		maxTurns = 10
 	}
 	return &ContractExecutorImpl{
-		contracts:              make(map[string]*types.AgentContract),
-		provider:               cfg.Provider,
-		toolRegistry:           cfg.ToolRegistry,
-		skillsLoader:           cfg.SkillsLoader,
-		principlesLoader:       cfg.PrinciplesLoader,
-		compactionPipeline:     cfg.CompactionPipeline,
-		allowedScopes:          cfg.AllowedScopes,
+		contracts:               make(map[string]*types.AgentContract),
+		provider:                cfg.Provider,
+		toolRegistry:            cfg.ToolRegistry,
+		skillsLoader:            cfg.SkillsLoader,
+		principlesLoader:        cfg.PrinciplesLoader,
+		compactionPipeline:      cfg.CompactionPipeline,
+		allowedScopes:           cfg.AllowedScopes,
 		circuitBreakerThreshold: cbThreshold,
-		maxTurns:               maxTurns,
+		maxTurns:                maxTurns,
 	}
 }

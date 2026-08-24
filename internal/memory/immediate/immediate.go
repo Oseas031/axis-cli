@@ -7,6 +7,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"unicode/utf8"
+
+	"github.com/axis-cli/axis/internal/contextpack"
+	"github.com/axis-cli/axis/internal/types"
 )
 
 // ImmediateContext represents the complete situational context of a single
@@ -29,12 +32,12 @@ type WorkingSetSnapshot struct {
 
 // RetainedBundleSummary represents a file or context packet in the working set.
 type RetainedBundleSummary struct {
-	BundleID    string // optional; empty for standalone file entries
-	Type        string // e.g. "spec", "code", "tool", "memory"
-	Source      string // filepath.ToSlash() normalized path
-	Summary     string // UTF-8 safe head truncation, max 1024 bytes (P0)
-	ContentHash string // SHA-256 truncated to 128 bit (32 hex chars)
-	FileChanged bool   // true if hash differs from last seen in .seen file
+	BundleID    string                 // optional; empty for standalone file entries
+	Type        contextpack.PacketType // e.g. "spec", "code", "tool", "memory"
+	Source      string                 // filepath.ToSlash() normalized path
+	Summary     string                 // UTF-8 safe head truncation, max 1024 bytes (P0)
+	ContentHash string                 // SHA-256 truncated to 128 bit (32 hex chars)
+	FileChanged bool                   // true if hash differs from last seen in .seen file
 	PacketCount int
 }
 
@@ -67,25 +70,9 @@ type ContractSnapshot struct {
 const summaryMaxBytes = 1024
 
 // EstimateTokens returns a language-aware token approximation.
-//
-//	ASCII letters/digits/punctuation: 1 rune ≈ 0.25 token
-//	CJK unified ideographs:           1 rune ≈ 1.0 token
-//	Other runes:                      1 rune ≈ 0.5 token
-//
-// This is deliberately conservative for safety margins.
+// Delegates to the unified types.EstimateTokens implementation.
 func EstimateTokens(s string) int {
-	tokens := 0
-	for _, r := range s {
-		switch {
-		case r >= ' ' && r <= '~': // ASCII printable
-			tokens += 1 // will be divided by 4 below
-		case r >= '\u4e00' && r <= '\u9fff': // CJK
-			tokens += 4 // 1.0 token per rune after division
-		default:
-			tokens += 2 // 0.5 token per rune after division
-		}
-	}
-	return tokens / 4
+	return types.EstimateTokens(s)
 }
 
 // TruncateSummary returns the first up-to-1024 UTF-8 bytes of content,
