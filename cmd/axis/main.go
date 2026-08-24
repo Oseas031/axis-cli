@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -146,7 +145,7 @@ func runTask(cmd *cobra.Command, args []string) error {
 			input = map[string]any{"message": args[0]}
 		}
 		task := &types.AgentTask{TaskID: args[0], ContractID: "default", Input: input, Status: types.TaskStatusPending}
-		client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), http.DefaultClient)
+		client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), control.LocalHTTPClient())
 		if _, err := client.SubmitTask(context.Background(), task); err != nil {
 			return fmt.Errorf("failed to submit to runtime (is 'axis start' running?): %w", err)
 		}
@@ -202,7 +201,7 @@ func getTaskStatus(cmd *cobra.Command, args []string) error {
 		return printTrace(defaultApp.resolvedRoot(), taskID)
 	}
 
-	client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), http.DefaultClient)
+	client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), control.LocalHTTPClient())
 	status, err := client.Status(context.Background(), taskID)
 	if err != nil {
 		return fmt.Errorf("failed to get task %s status: %w", taskID, err)
@@ -328,7 +327,7 @@ func (app *App) initOrchestrator() {
 			wmOpt = agent.WithWorkingMemory(agent.NewWorkingMemoryRecaller(wmEngine, 5))
 			immOpt = agent.WithImmediateMemory(agent.NewImmediateMemoryAdapter(app.resolvedRoot(), wmEngine, 4000))
 		} else {
-			wmOpt = func(e *agent.LLMAgentExecutor) {} // noop
+			wmOpt = func(e *agent.LLMAgentExecutor) {}  // noop
 			immOpt = func(e *agent.LLMAgentExecutor) {} // noop
 		}
 
@@ -490,7 +489,6 @@ func defaultContract() *types.AgentContract {
 	}
 }
 
-
 // eventLogEmitter adapts control.TaskEventLog to agent.EventEmitter.
 type eventLogEmitter struct {
 	log *control.TaskEventLog
@@ -504,7 +502,6 @@ func (e *eventLogEmitter) Emit(taskID, eventType, message string) {
 		Message:   message,
 	})
 }
-
 
 func initDefaultGuarantees() *guarantee.Registry {
 	r := guarantee.NewRegistry()
