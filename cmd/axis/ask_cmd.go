@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 
 	"github.com/axis-cli/axis/internal/contextpack"
@@ -80,7 +79,7 @@ func newAskCommand() *cobra.Command {
 						return err
 					}
 				}
-				client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), http.DefaultClient)
+				client := control.NewClient(control.NewRuntimeLocator(defaultApp.resolvedRoot()), control.LocalHTTPClient())
 				if _, err := client.SubmitTask(context.Background(), result.Task); err != nil {
 					return fmt.Errorf("failed to submit task: %w", err)
 				}

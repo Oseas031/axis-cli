@@ -161,6 +161,23 @@ func TestClientUsesTimeout(t *testing.T) {
 	}
 }
 
+// TestLocalHTTPClientContract pins the local control-plane client contract:
+// keep-alives must stay disabled so pooled half-open connections can never
+// swallow a request (Windows hang regression), and a timeout must exist.
+func TestLocalHTTPClientContract(t *testing.T) {
+	client := LocalHTTPClient()
+	if client.Timeout <= 0 {
+		t.Fatal("LocalHTTPClient must impose a timeout")
+	}
+	tr, ok := client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("expected *http.Transport, got %T", client.Transport)
+	}
+	if !tr.DisableKeepAlives {
+		t.Fatal("keep-alives must be disabled for the local control plane")
+	}
+}
+
 func locatorWithRecord(t *testing.T, record RuntimeRecord) *RuntimeLocator {
 	t.Helper()
 	root := t.TempDir()
@@ -170,6 +187,35 @@ func locatorWithRecord(t *testing.T, record RuntimeRecord) *RuntimeLocator {
 		t.Fatalf("save locator: %v", err)
 	}
 	return locator
+}
+
+// TestClientDoFallbackDeadline guards against infinite hangs: when neither the
+// caller's ctx nor the httpClient imposes a deadline, do() must apply
+// fallbackRequestTimeout. Regression: a stale locator record pointing at a
+// recycled port (silent peer) hung requests forever with http.DefaultClient.
+func TestClientDoFallbackDeadline(t *testing.T) {
+	old := fallbackRequestTimeout
+	fallbackRequestTimeout = 200 * time.Millisecond
+	t.Cleanup(func() { fallbackRequestTimeout = old })
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	client := NewClient(locatorWithRecord(t, RuntimeRecord{Protocol: "http", Address: server.URL, ProjectRoot: t.TempDir(), StartedAt: time.Now().UTC()}), &http.Client{})
+	start := time.Now()
+	_, err := client.Status(context.Background(), "task-1")
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("expected deadline-exceeded error from silent server")
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got %v", err)
+	}
+	if elapsed > 5*time.Second {
+		t.Fatalf("fallback deadline not applied, blocked for %v", elapsed)
+	}
 }
 
 func serverURL(r *http.Request) string {

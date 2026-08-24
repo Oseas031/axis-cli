@@ -109,7 +109,9 @@ func TestAskCommand_SubmitUsesLocalRuntime(t *testing.T) {
 		t.Fatalf("expected submit confirmation, got %q", out.String())
 	}
 
-	client := control.NewClient(locator, http.DefaultClient)
+	// LocalHTTPClient disables keep-alives: pooled conns go half-open against
+	// this server on Windows and silently swallow subsequent requests.
+	client := control.NewClient(locator, control.LocalHTTPClient())
 	status, err := client.Status(context.Background(), "ask-runtime-submit")
 	if err != nil {
 		t.Fatalf("expected runtime status: %v", err)

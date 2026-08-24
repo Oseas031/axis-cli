@@ -17,6 +17,12 @@ import (
 
 var ErrRuntimeNotFound = errors.New("local Axis runtime not found")
 
+// fallbackRequestTimeout bounds requests when neither ctx nor httpClient impose
+// a deadline. Without it, a stale locator record pointing at a recycled port
+// blocks forever on a silent peer.
+// v1: package-level var so tests can shorten it. TODO: inject via Client option.
+var fallbackRequestTimeout = 30 * time.Second
+
 type ClientError struct {
 	Code    string
 	Message string
@@ -33,6 +39,18 @@ func (e *ClientError) Error() string {
 
 func (e *ClientError) Is(target error) bool {
 	return target == ErrRuntimeNotFound && e.Code == "runtime_not_found"
+}
+
+// LocalHTTPClient returns an http.Client tuned for the local control plane.
+// Keep-alives are disabled: the runtime server arms a short per-request
+// ReadTimeout and may close idle connections while a pooled client still
+// considers them reusable. On Windows such half-open connections silently
+// swallow writes and hang subsequent requests forever.
+// v1: no connection reuse. TODO: revisit pooling if remote runtimes ever exist.
+func LocalHTTPClient() *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.DisableKeepAlives = true
+	return &http.Client{Timeout: 30 * time.Second, Transport: transport}
 }
 
 type Client struct {
@@ -81,6 +99,11 @@ func (c *Client) do(ctx context.Context, method string, path string, body any, o
 			return err
 		}
 		reqBody = bytes.NewReader(data)
+	}
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline && c.httpClient.Timeout == 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, fallbackRequestTimeout)
+		defer cancel()
 	}
 	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
