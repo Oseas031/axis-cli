@@ -517,7 +517,7 @@ func serveSkillsList(w http.ResponseWriter, dir string) {
 // parseSkillFrontmatter extracts YAML frontmatter from SKILL.md content.
 // Inline implementation — axis-gui does not import internal/ packages.
 func parseSkillFrontmatter(content string) *struct {
-	Name, Description, Version string
+	Name, Description, Version     string
 	Tags, DependsOn, ConflictsWith []string
 } {
 	const delim = "---"
@@ -533,7 +533,7 @@ func parseSkillFrontmatter(content string) *struct {
 	}
 	yamlBlock := rest[:idx]
 	meta := &struct {
-		Name, Description, Version string
+		Name, Description, Version     string
 		Tags, DependsOn, ConflictsWith []string
 	}{}
 	for _, line := range strings.Split(yamlBlock, "\n") {
