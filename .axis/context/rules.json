@@ -1,0 +1,75 @@
+{
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "natural-language-scheduling",
+      "keywords": ["ask", "natural language", "prompt", "intent", "scheduling", "自然语言", "意图"],
+      "relevance": 0.92,
+      "context": "nl-scheduling-spec",
+      "description": "Natural language scheduling specification"
+    },
+    {
+      "id": "model-provider",
+      "keywords": ["provider", "model", "deepseek", "minimax", "openai", "api key", "profile", "模型", "提供者"],
+      "relevance": 0.90,
+      "context": "model-provider-spec",
+      "description": "Model provider configuration"
+    },
+    {
+      "id": "interactive-shell",
+      "keywords": ["shell", "interactive", "repl", "交互", "终端"],
+      "relevance": 0.88,
+      "context": "interactive-shell-spec",
+      "description": "Interactive shell specification"
+    },
+    {
+      "id": "adaptive-context-assembly",
+      "keywords": ["context", "assembly", "bundle", "packet", "adaptive", "上下文", "装配"],
+      "relevance": 0.95,
+      "context": "adaptive-context-spec",
+      "description": "Adaptive context assembly specification"
+    },
+    {
+      "id": "dag-scheduling",
+      "keywords": ["scheduler", "dag", "dependency", "dependencies", "ready", "调度", "依赖"],
+      "relevance": 0.86,
+      "context": "dag-scheduling-arch",
+      "description": "DAG scheduling architecture"
+    },
+    {
+      "id": "axis-up",
+      "keywords": ["axis-up", "onboarding", "first run", "start", "check", "demo", "fix", "初始化"],
+      "relevance": 0.84,
+      "context": "axis-up-tool",
+      "description": "Axis-up onboarding tool"
+    },
+    {
+      "id": "vigil-tracking",
+      "keywords": ["vigil", "todo", "task", "追踪", "进度", "work tracking"],
+      "relevance": 0.88,
+      "context": "vigil-spec",
+      "description": "Vigil work tracking system"
+    },
+    {
+      "id": "memory-system",
+      "keywords": ["memory", "记忆", "recall", "horizon", "working memory"],
+      "relevance": 0.90,
+      "context": "memory-spec",
+      "description": "Memory system specification"
+    },
+    {
+      "id": "skills-system",
+      "keywords": ["skill", "技能", "load", "on-demand", "按需加载"],
+      "relevance": 0.86,
+      "context": "skills-spec",
+      "description": "Skills system specification"
+    },
+    {
+      "id": "evolution-protocol",
+      "keywords": ["evolution", "演化", "promote", "discard", "staged"],
+      "relevance": 0.89,
+      "context": "evolution-spec",
+      "description": "Staged evolution protocol"
+    }
+  ]
+}

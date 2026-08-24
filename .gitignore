@@ -38,6 +38,10 @@ $GITHUB_ENV
 .axis/*
 !.axis/vigil/
 !.axis/skills/
+# Context selection rules are curated config (not derived data) — track them.
+!.axis/context/
+.axis/context/*
+!.axis/context/rules.json
 
 # Third-party agent runtime state (claude-flow daemon, etc.)
 .claude-flow/
