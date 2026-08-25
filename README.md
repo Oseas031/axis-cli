@@ -1,10 +1,9 @@
 ﻿# Axis
 
-> Infrastructure for Objectification — providing the conditions for intent to become objective existence through AI, without prescribing the path of transformation.
+> Single-operator AI coding control tower & agent reliability lab. Submit coding tasks across providers with cost budgets, permission ladders, and judge verification; run multi-candidate experiments and export the data.
 
-Axis is not a task scheduler, nor an LLM wrapper framework. Axis is **Objectification infrastructure**: the substrate that enables human intent (and eventually Agent intent) to be transformed into objective, verifiable, evolvable artifacts — code, documents, systems — through the dialectical process of Construct (对象化), Constraint (规定性), and Judge (扬弃).
+Axis is not a task scheduler, nor an LLM wrapper framework. Axis is **Objectification infrastructure**: the substrate that enables human intent (and eventually Agent intent) to be transformed into objective, verifiable, evolvable artifacts — code, documents, systems — through the dialectical process of Construct (建构), Constraint (规定性), and Judge (判定).
 
-**[Chinese version / 中文版](docs/zh/ROOT-README.md)**
 
 ## Core Thesis
 
