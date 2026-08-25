@@ -525,3 +525,7 @@ If a helper becomes reusable domain behavior, move it out of CLI.
 ---
 
 > 本文档属于 CLAUDE.md §13.1 渐进条款，可被 ≥3 次实践反馈修正或扬弃。
+
+## Simplification marking
+
+- 删除导出符号/收缩 API 时，在被删位置留一行 // v1: <what> removed — <reason>; TODO: <restore-condition>，便于未来考古与恢复。

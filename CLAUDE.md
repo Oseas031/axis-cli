@@ -1,7 +1,7 @@
 # AXIS AGENT 宪法 (v2.0 — 2026-08-25 精简版)
 
 > **启动协议**：读完本文件 → 需要产出变更/决策时先输出一行 Phase 声明 → 再执行。
-> 本文件是唯一权威。展开细节在 `docs/architecture/`（参考，非约束）。
+> 本文件是唯一权威。`docs/architecture/` 为展开细节——除本文件 §3–§6 明确绑定者（必读清单、BOUNDARY、语义边界）外仅供参考。
 
 项目：**Axis** — 单操作者的 AI 编码中枢 + Agent 可靠性实验台。
 核心命题：**更多上下文、更多行动、零控制、可控演化**。
@@ -18,7 +18,7 @@
 - 不跳过 Phase II 直接写码；执行失败退 II，方向错误退 I
 - 大任务（多文件/>50 行）委派 subagent；主上下文必须验收（build+test+抽查），不盲信
 - III 结束必答反馈闭环：暴露了什么不足？需要改规则吗？没有就显式声明"无规则更新"
-- 重大产出（新增 ≥2 文件或 ≥3 模块）后派反调 subagent 唱反调；主上下文必须逐条回应
+- 重大产出（新增 ≥2 文件 / ≥3 模块 / 导出类型 ≥3，或用户说"唱反调/grill/critique"）后派反调 subagent（见 .kiro/skills/devils-advocate/），主上下文逐条回应
 - 短指令先展开意图再执行；不确定就问
 - 工作追踪用 vigil；新会话先 `axis vigil resume`
 - 文档日常维护走 RDM 豁免（见 §2.1）
@@ -33,7 +33,7 @@
 4. 禁止新增 Agent 自主权而不经 staged-evolution protocol
 5. 禁止 push-based context injection（contextpack 只做 preview，opt-in）
 6. 禁止无命名空间的 metadata key（前缀：`context.*` `tool.*` `sla.*` `evolution.*` `intent.*` `provider.*` `axis.*`）
-7. 禁止输出 secrets——永不 log/打印 API key、token、credentials
+7. 禁止输出 secrets——永不 log/打印 API key、token、private key、credentials
 
 ## 2. 编码前检查
 
@@ -43,6 +43,7 @@
 - [ ] 改 `internal/kernel/` `cmd/axis/` `internal/contextpack/` `internal/agent/` `internal/memory/` 前读相邻 BOUNDARY.md
 - [ ] Windows 一等公民：path/filepath、优雅关闭降级、快照读共享文件
 - [ ] 公共函数入口做 nil/空/边界防御；并发体每个 goroutine 有退出路径
+- [ ] 禁 busy-poll 与重复 close channel；scheduler/orchestrator 启动时将孤儿 Running 任务标记 abandoned
 - [ ] I/O 与可取消操作首参 `ctx context.Context`；不硬编码 timeout/port/retry
 
 ### 2.1 RDM 豁免
@@ -102,7 +103,7 @@ staticcheck ./...                     # 本地装：go install honnef.co/go/tool
 - commit message 引用 scope/milestone 标签；禁 "fix typo"/裸 "wip" 进 main
 - 每个提交 bisect-safe（独立可编译）
 - 永不暂存 `*.exe` `*.test` `coverage.out` `dist/` `.cache/`
-- 集成测试加 `testing.Short()` skip
+- 集成测试加 `testing.Short()` skip；过渡条款：非 short 集成 CI job 建立前，`-short` 即唯一门禁（失效条件：CI 增加 integration job）
 
 ## 10. 工程实践（精选硬规则）
 
@@ -117,7 +118,7 @@ staticcheck ./...                     # 本地装：go install honnef.co/go/tool
 
 ## 11. 演化原则（永久条款）
 
-稳定表面，可替换内部；安全默认（dry-run/preview/redaction/explicit submit）；设计即可审计；小 contract 优于大 control plane；渐进演化（先确定性后自适应）；**审计而非审批是信任机制**——建议信息（memory/context preview）永不自动升级为权威信息。
+稳定表面，可替换内部；安全默认（dry-run/preview/redaction/validation/explicit submit）；设计即可审计；小 contract 优于大 control plane；渐进演化（先确定性后自适应）；**审计而非审批是信任机制**——建议信息（memory/context preview）永不自动升级为权威信息。
 
 ## 12. 命名与结构
 
@@ -125,7 +126,7 @@ Spec 状态：Draft → Planned → In Progress → Completed | Paused | Depreca
 
 ## 13. 治理
 
-条款分三类：**永久**（§0 结构/§1/§11，修改需论证前提失效）、**渐进**（其余，≥3 次实践证据可改）、**过渡**（声明失效条件）。冲突仲裁：永久 > 渐进 > 过渡。理论-实践矛盾按《实践论》处置：超前→标记 aspirational；束缚（绕过 ≥3 次）→重写；突破（新模式连续 ≥3 次成功）→提炼上浮。
+条款分三类：**永久**（三阶段结构+Phase 门禁+§1+§11，修改需论证前提失效）、**渐进**（其余，≥3 次实践证据可改）、**过渡**（声明失效条件）。冲突仲裁：永久 > 渐进 > 过渡。理论-实践矛盾按《实践论》处置：超前→标记 aspirational；束缚（绕过 ≥3 次）→重写；突破（新模式连续 ≥3 次成功）→提炼上浮。
 
 ## 14. 前端（过渡条款）
 

@@ -724,5 +724,23 @@
         "reason": "stale after 7 days"
       }
     ]
+  },
+  {
+    "id": "vigil-15ddbf",
+    "title": "精兵简政落地：删死代码1491L+zh镜像+宪法v2.0；定位=A+B",
+    "priority": "P1",
+    "status": "pending",
+    "tags": [
+      "simplification",
+      "positioning"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "后续候选: CandidatePool接线(B需要)/README showcase/specs合并评估",
+    "created_at": "2026-08-25T09:55:05.3988582+08:00",
+    "history": []
   }
 ]

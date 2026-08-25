@@ -84,3 +84,7 @@ feat(vigil): core data layer vigil:vigil-b7c vigil:vigil-d2e
 
 §0 rule #13 指向本文件。§15 External Tools Reference 列出 vigil。
 详细设计见 `docs/specs/vigil/`。
+
+## Done-marking discipline
+
+- 标记 integration/wiring 类 item 为 done 前，必须 grep 验证真实调用点存在（import ≠ 接线）。

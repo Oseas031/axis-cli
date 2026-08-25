@@ -9,6 +9,12 @@ Total: 114 | Completed: 89 | Pending: 25 (stale entries pending W0 audit reconci
 
 ## This Week (2026-08-24)
 
+### Streamlining (2026-08-25, positioning locked: A+B)
+- Removed dead subsystems: kernel/audit, safego, contextpack shims (-1491 LOC)
+- Removed docs/zh mirror (7k lines); 9 stale docs marked historical
+- Constitution v1.3 (407L) → v2.0 slim charter; README honest positioning
+- Windows half-open conn hardening shipped; CI green (staticcheck now local-gated)
+
 ### June Wave Landed (was uncommitted since 2026-06-15)
 - contextpack rework: chunker/ranker/rule-engine/assemble/consumer/index/model; packet.go removed
 - agent executor interfaces, judgement isolation, tool-trace updates

@@ -99,3 +99,8 @@ The following must never be tracked in git — enforced by `.gitignore`:
 | WIP/temp commits on `main` | Breaks bisect-safety |
 | `git push --force` to `main` | Destructive, non-recoverable |
 | Committing `.exe`, `.out`, `coverage.out`, `dist/`, `.cache/`, editor temp files | Build artifacts pollute history |
+
+## Push discipline
+
+- Push to main 后必须监控 CI（gh run watch），失败立即修复或回滚，不留红 main。
+- 每次推送的 commit 集合应 bisect-safe（独立可编译）。
