@@ -1,3 +1,5 @@
+> 历史快照：定格于编写时点，记录当时状态，非现行承诺。现行状态见 docs/status/current-progress.md
+
 # Axis Agent Validation Report — 2026-05-14
 
 ## Executive Summary

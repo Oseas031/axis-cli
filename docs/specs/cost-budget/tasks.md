@@ -1,3 +1,4 @@
+> 状态：Completed（功能已随 2026-05 cost-budget 波次落地，任务清单留档）
 # Cost Budget: Tasks
 
 > 实现 requirements.md

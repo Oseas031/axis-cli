@@ -1,3 +1,4 @@
+> 状态：Draft（方向性设计，requirements/tasks 待定位明确后补齐）
 # Context Recommendation System — Design Document
 
 > 实现 docs/architecture/agent-native-first-principles.md Context 提升行动质量原则
