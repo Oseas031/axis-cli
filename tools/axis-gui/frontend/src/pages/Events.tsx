@@ -45,31 +45,37 @@ export default function Events() {
   }, [events, autoScroll])
 
   return (
-    <div className="space-y-3 h-full flex flex-col">
-      <div className="flex items-center justify-between">
-        <h2 className="font-title text-lg font-semibold">Events</h2>
+    <div className="space-y-2 h-full flex flex-col">
+      <header className="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h1 className="font-mono text-sm font-semibold text-zinc-100 uppercase tracking-wider">Events</h1>
         <button
+          type="button"
           onClick={() => setAutoScroll(!autoScroll)}
-          className={`text-xs px-2 py-0.5 rounded border ${
-            autoScroll ? 'border-emerald-700 text-emerald-400' : 'border-zinc-700 text-zinc-400'
+          aria-pressed={autoScroll}
+          className={`font-mono text-[11px] px-2 py-0.5 rounded-sm border ${
+            autoScroll
+              ? 'border-emerald-800 bg-emerald-950/30 text-emerald-400'
+              : 'border-zinc-700 bg-zinc-900 text-zinc-400'
           }`}
         >
           {autoScroll ? '自动滚动: 开' : '自动滚动: 关'}
         </button>
-      </div>
+      </header>
 
       <div
         ref={containerRef}
-        className="flex-1 min-h-0 overflow-auto rounded border border-zinc-800 bg-zinc-900 p-2 font-mono text-[11px] leading-relaxed"
+        role="log"
+        aria-live="off"
+        className="flex-1 min-h-0 overflow-auto border border-zinc-800 bg-zinc-900/60 p-2 font-mono text-[11px] leading-relaxed"
       >
         {events.length === 0 ? (
           <div className="text-zinc-600">暂无事件</div>
         ) : (
           events.map((e, i) => (
-            <div key={i} className="hover:bg-zinc-800/30 px-1 rounded">
+            <div key={i} className="hover:bg-zinc-800/40 px-1">
               {e.timestamp && <span className="text-emerald-500">{e.timestamp}</span>}
               {e.timestamp && <span className="text-zinc-700"> | </span>}
-              <span className="text-zinc-400">{e.raw}</span>
+              <span className="text-zinc-400 break-all">{e.raw}</span>
             </div>
           ))
         )}

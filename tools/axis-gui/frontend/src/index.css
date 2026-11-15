@@ -2,14 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+  --axis-bg: #09090b;
+  --axis-surface: #18181b;
+  --axis-border: #27272a;
+  --axis-text: #e4e4e7;
+  --axis-muted: #71717a;
+  --axis-accent: #10b981;
+  --axis-warn: #f59e0b;
+  --axis-danger: #ef4444;
+  scrollbar-color: #3f3f46 #09090b;
+  scrollbar-width: thin;
+}
+
 body {
-  font-family: 'Noto Sans SC', 'Poppins', sans-serif;
+  background-color: var(--axis-bg);
+  color: var(--axis-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei UI', sans-serif;
 }
 
-.font-title {
-  font-family: 'Poppins', sans-serif;
+.font-mono,
+code,
+pre {
+  font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 50;
+  background: var(--axis-surface);
+  color: var(--axis-text);
+  border: 1px solid var(--axis-accent);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+:focus-visible {
+  outline: 1px solid var(--axis-accent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

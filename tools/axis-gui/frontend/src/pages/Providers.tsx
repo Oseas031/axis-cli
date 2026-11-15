@@ -25,35 +25,50 @@ export default function Providers() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="text-xs text-zinc-500">加载中...</div>
-
-  if (!providers || Object.keys(providers).length === 0) {
-    return (
-      <div className="space-y-3">
-        <h2 className="font-title text-lg font-semibold">Providers</h2>
-        <div className="text-sm text-zinc-500">No providers configured</div>
-      </div>
-    )
-  }
+  if (loading) return <div className="text-xs font-mono text-zinc-500">加载中...</div>
 
   return (
     <div className="space-y-3">
-      <h2 className="font-title text-lg font-semibold">Providers</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {Object.entries(providers).map(([name, p]) => (
-          <div key={name} className={`rounded border p-3 ${p.active ? 'border-emerald-800 bg-emerald-950/20' : 'border-zinc-800 bg-zinc-900'}`}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-zinc-200">{name}</span>
-              {p.active && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-900/50 text-emerald-400">active</span>}
-            </div>
-            <div className="text-xs text-zinc-500 space-y-0.5">
-              <div>类型: <span className="text-zinc-400">{p.type}</span></div>
-              <div>模型: <span className="text-zinc-400 font-mono">{p.model}</span></div>
-              <div>API Key: <span className="text-zinc-400 font-mono">{maskKey(p.api_key)}</span></div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <header className="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h1 className="font-mono text-sm font-semibold text-zinc-100 uppercase tracking-wider">Providers</h1>
+        <span className="font-mono text-[11px] text-zinc-500">
+          {providers ? `${Object.keys(providers).length} profiles` : '0 profiles'}
+        </span>
+      </header>
+
+      {!providers || Object.keys(providers).length === 0 ? (
+        <div className="text-xs font-mono text-zinc-500 border border-zinc-800 bg-zinc-900/40 p-3">
+          No providers configured
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {Object.entries(providers).map(([name, p]) => (
+            <section
+              key={name}
+              className={`border p-3 ${
+                p.active ? 'border-emerald-800 bg-emerald-950/15' : 'border-zinc-800 bg-zinc-900/40'
+              }`}
+            >
+              <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-zinc-800/80">
+                <span className="font-mono text-xs font-medium text-zinc-100">{name}</span>
+                {p.active && (
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm border border-emerald-800/70 bg-emerald-950/40 text-emerald-400">
+                    active
+                  </span>
+                )}
+              </div>
+              <dl className="grid grid-cols-[64px_1fr] gap-y-1 text-xs">
+                <dt className="text-zinc-500 font-mono">类型</dt>
+                <dd className="text-zinc-300 font-mono">{p.type}</dd>
+                <dt className="text-zinc-500 font-mono">模型</dt>
+                <dd className="text-zinc-300 font-mono truncate">{p.model}</dd>
+                <dt className="text-zinc-500 font-mono">Key</dt>
+                <dd className="text-zinc-400 font-mono">{maskKey(p.api_key)}</dd>
+              </dl>
+            </section>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

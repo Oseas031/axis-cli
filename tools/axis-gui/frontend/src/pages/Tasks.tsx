@@ -35,44 +35,56 @@ export default function Tasks() {
 
   return (
     <div className="space-y-3">
-      <h2 className="font-title text-lg font-semibold">Tasks</h2>
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
+        <h1 className="font-mono text-sm font-semibold text-zinc-100 uppercase tracking-wider">Tasks</h1>
+        <div className="flex items-center gap-2">
+          <label htmlFor="task-filter" className="sr-only">按 task_id 筛选</label>
+          <input
+            id="task-filter"
+            type="text"
+            placeholder="按 task_id 筛选..."
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            className="w-56 px-2 py-1 text-xs font-mono rounded-sm border border-zinc-700 bg-zinc-900 text-zinc-200 placeholder-zinc-600 focus:border-zinc-500"
+          />
+        </div>
+      </header>
 
-      <input
-        type="text"
-        placeholder="按 task_id 筛选..."
-        value={filter}
-        onChange={e => setFilter(e.target.value)}
-        className="w-full max-w-xs px-2 py-1 text-xs rounded border border-zinc-700 bg-zinc-900 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-      />
-
-      <div className="rounded border border-zinc-800 bg-zinc-900 overflow-hidden">
-        <table className="w-full text-xs">
+      <div className="border border-zinc-800 bg-zinc-900/40 overflow-x-auto">
+        <table className="w-full text-xs border-collapse">
+          <caption className="sr-only">Axis 任务事件流水表</caption>
           <thead>
-            <tr className="border-b border-zinc-800 text-zinc-500">
-              <th className="text-left px-3 py-1.5 font-medium">task_id</th>
-              <th className="text-left px-3 py-1.5 font-medium">event_type</th>
-              <th className="text-left px-3 py-1.5 font-medium">status</th>
-              <th className="text-left px-3 py-1.5 font-medium">created_at</th>
-              <th className="text-left px-3 py-1.5 font-medium">message</th>
+            <tr className="border-b border-zinc-800 bg-zinc-900 text-zinc-500 font-mono text-[11px]">
+              <th scope="col" className="text-left px-3 py-1.5 font-medium">task_id</th>
+              <th scope="col" className="text-left px-3 py-1.5 font-medium">event_type</th>
+              <th scope="col" className="text-left px-3 py-1.5 font-medium">status</th>
+              <th scope="col" className="text-left px-3 py-1.5 font-medium">created_at</th>
+              <th scope="col" className="text-left px-3 py-1.5 font-medium">message</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-zinc-800/50">
             {filtered.length === 0 ? (
-              <tr><td colSpan={5} className="px-3 py-4 text-center text-zinc-600">暂无任务事件</td></tr>
+              <tr>
+                <td colSpan={5} className="px-3 py-4 text-center text-zinc-600 font-mono">暂无任务事件</td>
+              </tr>
             ) : (
               filtered.map((t, i) => (
-                <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
-                  <td className="px-3 py-1.5 font-mono text-zinc-300">{t.task_id}</td>
-                  <td className="px-3 py-1.5 text-zinc-400">{t.event_type}</td>
-                  <td className="px-3 py-1.5">
-                    <span className={`px-1 rounded text-[10px] ${
-                      t.status === 'completed' ? 'bg-emerald-900/50 text-emerald-400' :
-                      t.status === 'failed' ? 'bg-red-900/50 text-red-400' :
-                      'bg-zinc-800 text-zinc-400'
-                    }`}>{t.status}</span>
+                <tr key={i} className="hover:bg-zinc-800/30">
+                  <td className="px-3 py-1.5 font-mono text-zinc-200 whitespace-nowrap">{t.task_id}</td>
+                  <td className="px-3 py-1.5 font-mono text-zinc-400 whitespace-nowrap">{t.event_type}</td>
+                  <td className="px-3 py-1.5 whitespace-nowrap">
+                    <span className={`px-1.5 py-0.5 rounded-sm font-mono text-[10px] border ${
+                      t.status === 'completed'
+                        ? 'border-emerald-800/70 bg-emerald-950/40 text-emerald-400'
+                        : t.status === 'failed'
+                          ? 'border-red-800/70 bg-red-950/40 text-red-400'
+                          : 'border-zinc-700 bg-zinc-800 text-zinc-400'
+                    }`}>
+                      {t.status}
+                    </span>
                   </td>
-                  <td className="px-3 py-1.5 text-zinc-500">{t.created_at}</td>
-                  <td className="px-3 py-1.5 text-zinc-500 max-w-xs truncate">{t.message || '-'}</td>
+                  <td className="px-3 py-1.5 font-mono text-zinc-500 whitespace-nowrap">{t.created_at}</td>
+                  <td className="px-3 py-1.5 text-zinc-400 max-w-xs truncate">{t.message || '-'}</td>
                 </tr>
               ))
             )}

@@ -48,62 +48,76 @@ export default function Dashboard() {
     : null
 
   return (
-    <div className="space-y-4">
-      <h2 className="font-title text-lg font-semibold">Dashboard</h2>
+    <div className="space-y-3">
+      <header className="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h1 className="font-mono text-sm font-semibold text-zinc-100 uppercase tracking-wider">Dashboard</h1>
+        <span className="font-mono text-[11px] text-zinc-500">
+          {runtime?.connected ? 'RUNTIME: ONLINE' : 'RUNTIME: OFFLINE'}
+        </span>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Runtime Status */}
-        <div className="rounded border border-zinc-800 bg-zinc-900 p-3">
-          <div className="text-xs text-zinc-500 mb-1">运行时状态</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 border border-zinc-800 bg-zinc-900/50 divide-y md:divide-y-0 md:divide-x divide-zinc-800">
+        <section className="p-3">
+          <div className="font-mono text-[11px] text-zinc-500 uppercase mb-1">运行时状态</div>
           <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${runtime?.connected ? 'bg-emerald-500' : 'bg-red-500'}`} />
-            <span className="text-sm font-medium">{runtime?.connected ? 'Connected' : 'Disconnected'}</span>
+            <span
+              aria-hidden="true"
+              className={`w-2 h-2 rounded-sm ${runtime?.connected ? 'bg-emerald-500' : 'bg-red-500'}`}
+            />
+            <span className="font-mono text-xs font-medium text-zinc-100">
+              {runtime?.connected ? 'Connected' : 'Disconnected'}
+            </span>
           </div>
-          {runtime?.address && <div className="text-xs text-zinc-500 mt-1 font-mono">{runtime.address}</div>}
-          {runtime?.hint && <div className="text-xs text-zinc-400 mt-1">{runtime.hint}</div>}
-        </div>
+          {runtime?.address && <div className="text-[11px] text-zinc-400 mt-1 font-mono">{runtime.address}</div>}
+          {runtime?.hint && <div className="text-[11px] text-zinc-500 mt-1">{runtime.hint}</div>}
+        </section>
 
-        {/* Active Provider */}
-        <div className="rounded border border-zinc-800 bg-zinc-900 p-3">
-          <div className="text-xs text-zinc-500 mb-1">当前 Provider</div>
+        <section className="p-3">
+          <div className="font-mono text-[11px] text-zinc-500 uppercase mb-1">当前 Provider</div>
           {activeProvider ? (
             <div>
-              <div className="text-sm font-medium">{activeProvider[0]}</div>
-              <div className="text-xs text-zinc-500">{activeProvider[1].type} / {activeProvider[1].model}</div>
+              <div className="font-mono text-xs font-medium text-zinc-100">{activeProvider[0]}</div>
+              <div className="font-mono text-[11px] text-zinc-400 mt-1">
+                {activeProvider[1].type} / {activeProvider[1].model}
+              </div>
             </div>
           ) : (
-            <div className="text-sm text-zinc-500">无活跃 Provider</div>
+            <div className="text-xs text-zinc-500">无活跃 Provider</div>
           )}
-        </div>
+        </section>
 
-        {/* Task Count */}
-        <div className="rounded border border-zinc-800 bg-zinc-900 p-3">
-          <div className="text-xs text-zinc-500 mb-1">最近任务</div>
-          <div className="text-sm font-medium">{tasks.length} 条事件</div>
-        </div>
+        <section className="p-3">
+          <div className="font-mono text-[11px] text-zinc-500 uppercase mb-1">最近任务</div>
+          <div className="font-mono text-xs font-medium text-zinc-100">{tasks.length} 条事件</div>
+        </section>
       </div>
 
-      {/* Recent Tasks */}
-      <div className="rounded border border-zinc-800 bg-zinc-900 p-3">
-        <div className="text-xs text-zinc-500 mb-2">最近任务事件</div>
+      <section className="border border-zinc-800 bg-zinc-900/40">
+        <div className="px-3 py-1.5 border-b border-zinc-800 font-mono text-[11px] text-zinc-400 uppercase">
+          最近任务事件
+        </div>
         {tasks.length === 0 ? (
-          <div className="text-xs text-zinc-600">暂无任务</div>
+          <div className="px-3 py-3 text-xs text-zinc-600 font-mono">暂无任务</div>
         ) : (
-          <div className="space-y-1">
+          <ul className="divide-y divide-zinc-800/60">
             {tasks.map((t, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs">
-                <span className="font-mono text-zinc-400 w-28 truncate">{t.task_id}</span>
-                <span className="text-zinc-500">{t.event_type}</span>
-                <span className={`px-1 rounded text-[10px] ${
-                  t.status === 'completed' ? 'bg-emerald-900/50 text-emerald-400' :
-                  t.status === 'failed' ? 'bg-red-900/50 text-red-400' :
-                  'bg-zinc-800 text-zinc-400'
-                }`}>{t.status}</span>
-              </div>
+              <li key={i} className="px-3 py-1.5 flex items-center gap-3 text-xs">
+                <span className="font-mono text-zinc-300 w-36 truncate">{t.task_id}</span>
+                <span className="font-mono text-zinc-500 flex-1 truncate">{t.event_type}</span>
+                <span className={`px-1.5 py-0.5 rounded-sm font-mono text-[10px] border ${
+                  t.status === 'completed'
+                    ? 'border-emerald-800/70 bg-emerald-950/40 text-emerald-400'
+                    : t.status === 'failed'
+                      ? 'border-red-800/70 bg-red-950/40 text-red-400'
+                      : 'border-zinc-700 bg-zinc-800 text-zinc-400'
+                }`}>
+                  {t.status}
+                </span>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
     </div>
   )
 }
