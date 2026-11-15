@@ -24,6 +24,10 @@ func newLocalHTTPServer(handler http.Handler) *http.Server {
 }
 
 func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) error {
+	return runLocalRuntimeWithUI(ctx, root, out, port, false)
+}
+
+func runLocalRuntimeWithUI(ctx context.Context, root string, out io.Writer, port int, withUI bool) error {
 	// Single-writer discipline: refuse when a healthy runtime already owns
 	// this project root (design.md D2). Prevents mailbox double-write races.
 	if err := ensureNoLiveRuntime(root); err != nil {
@@ -103,6 +107,12 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) 
 	server := control.NewServerWithEventLog(runtimeOrch, record, eventLog)
 	if g := getHumanGate(); g != nil {
 		server.SetInboxAPI(inboxAPIBridge{g: g})
+	}
+	if withUI {
+		server.SetUIEnabled(true)
+		if out != nil {
+			fmt.Fprintf(out, "Observatory UI available at %s/ui/\n", record.Address)
+		}
 	}
 
 	httpServer := newLocalHTTPServer(server.Handler())

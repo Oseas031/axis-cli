@@ -111,6 +111,7 @@ func NewRootCommand(app *App) *cobra.Command {
 		RunE:  startOrchestrator,
 	}
 	startCmd.Flags().Int("port", 0, "Fixed port for the control server (0 = random)")
+	startCmd.Flags().Bool("ui", false, "Serve built-in read-only Observatory UI at /ui/")
 
 	shellCmd := &cobra.Command{
 		Use:   "shell",
@@ -283,7 +284,8 @@ func startOrchestrator(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Orchestrator started. Press Ctrl+C to stop.")
 	port, _ := cmd.Flags().GetInt("port")
-	return runLocalRuntime(ctx, defaultApp.resolvedRoot(), cmd.OutOrStdout(), port)
+	withUI, _ := cmd.Flags().GetBool("ui")
+	return runLocalRuntimeWithUI(ctx, defaultApp.resolvedRoot(), cmd.OutOrStdout(), port, withUI)
 }
 
 func initOrchestrator() {

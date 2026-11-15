@@ -122,7 +122,9 @@ func buildConfigDump(app *App) (*configDump, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), runtimeProbeTimeout)
 		if _, herr := client.Health(ctx); herr == nil {
 			dump.RuntimeLive = true
-			if rec.Protocol != "" && rec.Address != "" {
+			if rec.Address != "" && (len(rec.Address) > 7 && (rec.Address[:7] == "http://" || (len(rec.Address) > 8 && rec.Address[:8] == "https://"))) {
+				dump.RuntimeURL = rec.Address
+			} else if rec.Protocol != "" && rec.Address != "" {
 				dump.RuntimeURL = fmt.Sprintf("%s://%s", rec.Protocol, rec.Address)
 			} else {
 				dump.RuntimeURL = rec.Address

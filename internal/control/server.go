@@ -28,10 +28,11 @@ type InboxAPI interface {
 }
 
 type Server struct {
-	runtime Runtime
-	record  RuntimeRecord
-	events  *TaskEventLog
-	inbox   InboxAPI
+	runtime   Runtime
+	record    RuntimeRecord
+	events    *TaskEventLog
+	inbox     InboxAPI
+	uiEnabled bool
 }
 
 func NewServer(runtime Runtime, record RuntimeRecord) *Server {
@@ -52,6 +53,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/v1/tasks/", s.handleTaskStatus)
 	mux.HandleFunc("/v1/inbox", s.handleInboxList)
 	mux.HandleFunc("/v1/inbox/", s.handleInboxRespond)
+	if s.uiEnabled {
+		mux.HandleFunc("/ui", s.handleUI)
+		mux.HandleFunc("/ui/", s.handleUI)
+		mux.HandleFunc("/v1/events", s.handleEventsList)
+	}
 	return mux
 }
 

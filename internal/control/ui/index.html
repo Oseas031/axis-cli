@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>AXIS // OBS</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09090b;
+      --surface: #18181b;
+      --border: #27272a;
+      --text: #e4e4e7;
+      --muted: #71717a;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      scrollbar-color: #3f3f46 #09090b;
+      scrollbar-width: thin;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 16px; display: grid; gap: 12px; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border); padding-bottom: 8px;
+    }
+    h1 { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+    .meta { color: var(--muted); font-size: 11px; }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      border: 1px solid var(--border); background: var(--surface);
+    }
+    .cell { padding: 10px 12px; border-right: 1px solid var(--border); }
+    .cell:last-child { border-right: 0; }
+    .label { color: var(--muted); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+    .panel { border: 1px solid var(--border); background: rgba(24,24,27,.45); }
+    .panel-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 10px; border-bottom: 1px solid var(--border);
+      font-size: 11px; color: #a1a1aa; text-transform: uppercase;
+    }
+    .badge {
+      display: inline-block; padding: 1px 6px; font-size: 10px;
+      border: 1px solid var(--border); border-radius: 2px;
+    }
+    .ok { color: var(--ok); border-color: rgba(16,185,129,.45); background: rgba(16,185,129,.08); }
+    .warn { color: var(--warn); border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.08); }
+    .err { color: var(--err); border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.08); }
+    button {
+      background: #27272a; color: var(--text); border: 1px solid #3f3f46;
+      border-radius: 2px; padding: 3px 10px; font-size: 11px; cursor: pointer;
+    }
+    button:hover { background: #3f3f46; }
+    button:focus-visible, input:focus-visible { outline: 1px solid var(--ok); outline-offset: 1px; }
+    input {
+      background: var(--bg); color: var(--text); border: 1px solid #3f3f46;
+      border-radius: 2px; padding: 4px 8px; font-size: 11px; flex: 1;
+    }
+    .item { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .item:last-child { border-bottom: 0; }
+    .item.pending { border-left: 2px solid var(--warn); background: rgba(245,158,11,.04); }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--muted); font-weight: 500; background: var(--surface); }
+    td.msg { white-space: normal; max-width: 420px; color: #a1a1aa; }
+    .empty { padding: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="mono">AXIS // SINGLE-BINARY OBSERVATORY</h1>
+      <div class="row">
+        <span id="rt-badge" class="badge mono">checking...</span>
+        <button id="refresh-btn" type="button" class="mono">refresh</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="grid" style="margin-bottom: 12px;">
+        <section class="cell">
+          <div class="label mono">Runtime</div>
+          <div id="rt-addr" class="mono">-</div>
+          <div id="rt-root" class="meta mono" style="margin-top:2px; word-break:break-all;">-</div>
+        </section>
+        <section class="cell">
+          <div class="label mono">Inbox Pending</div>
+          <div id="inbox-count" class="mono">0</div>
+        </section>
+        <section class="cell">
+          <div class="label mono">Recent Events</div>
+          <div id="events-count" class="mono">0</div>
+        </section>
+      </div>
+
+      <section class="panel" style="margin-bottom: 12px;">
+        <div class="panel-head mono">
+          <span>Human Inbox (CAS Gate)</span>
+          <span id="inbox-err" role="alert" style="color:var(--err);"></span>
+        </div>
+        <div id="inbox-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head mono"><span>Recent Task Events</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" class="mono">task_id</th>
+                <th scope="col" class="mono">event_type</th>
+                <th scope="col" class="mono">status</th>
+                <th scope="col" class="mono">timestamp</th>
+                <th scope="col" class="mono">message</th>
+              </tr>
+            </thead>
+            <tbody id="events-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    const $ = id => document.getElementById(id);
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function statusClass(s) {
+      if (s === 'completed') return 'ok';
+      if (s === 'pending' || s === 'waiting_human') return 'warn';
+      if (s === 'failed' || s === 'degraded') return 'err';
+      return '';
+    }
+
+    async function respond(callId, body) {
+      $('inbox-err').textContent = '';
+      try {
+        const res = await fetch('/v1/inbox/' + encodeURIComponent(callId) + '/respond', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          $('inbox-err').textContent = d.message || d.error || ('HTTP ' + res.status);
+        }
+      } catch (e) {
+        $('inbox-err').textContent = 'network error';
+      }
+      await refresh();
+    }
+
+    function renderInbox(records) {
+      const list = $('inbox-list');
+      const pendingCount = records.filter(r => r.status === 'pending').length;
+      $('inbox-count').textContent = pendingCount + ' pending / ' + records.length + ' total';
+      if (!records.length) {
+        list.innerHTML = '<div class="empty mono">No human requests.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      for (const rec of records) {
+        const req = rec.message?.payload?.request || {};
+        const pending = rec.status === 'pending';
+        const div = document.createElement('div');
+        div.className = 'item' + (pending ? ' pending' : '');
+        div.innerHTML = `
+          <div class="row">
+            <span class="mono">${esc(rec.message?.id)}</span>
+            <span class="badge mono ${statusClass(rec.status)}">${esc(rec.status)}</span>
+          </div>
+          <div style="margin-top:4px;">
+            <span class="badge mono" style="margin-right:6px;">${esc(req.kind || 'info')}</span>
+            <span>${esc(req.prompt || '(no prompt)')}</span>
+          </div>
+          ${req.task_id ? `<div class="meta mono" style="margin-top:2px;">task: ${esc(req.task_id)}</div>` : ''}
+        `;
+        if (pending) {
+          const act = document.createElement('div');
+          act.className = 'actions';
+          if (Array.isArray(req.options) && req.options.length > 0) {
+            for (const opt of req.options) {
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'mono';
+              btn.textContent = opt;
+              btn.onclick = () => respond(rec.message.id, { choice: opt });
+              act.appendChild(btn);
+            }
+          } else {
+            const form = document.createElement('form');
+            form.style.display = 'flex';
+            form.style.gap = '6px';
+            form.style.width = '100%';
+            const input = document.createElement('input');
+            input.placeholder = 'your answer...';
+            input.className = 'mono';
+            const btn = document.createElement('button');
+            btn.type = 'submit';
+            btn.className = 'mono';
+            btn.textContent = 'send';
+            form.onsubmit = e => {
+              e.preventDefault();
+              if (input.value.trim()) respond(rec.message.id, { text: input.value });
+            };
+            form.append(input, btn);
+            act.appendChild(form);
+          }
+          div.appendChild(act);
+        }
+        list.appendChild(div);
+      }
+    }
+
+    function renderEvents(events) {
+      $('events-count').textContent = String(events.length);
+      const body = $('events-body');
+      if (!events.length) {
+        body.innerHTML = '<tr><td colspan="5" class="empty mono">No events recorded.</td></tr>';
+        return;
+      }
+      body.innerHTML = events.slice().reverse().map(ev => `
+        <tr>
+          <td class="mono">${esc(ev.task_id)}</td>
+          <td class="mono">${esc(ev.event_type)}</td>
+          <td><span class="badge mono ${statusClass(ev.status)}">${esc(ev.status)}</span></td>
+          <td class="mono meta">${esc(ev.timestamp || ev.created_at || '-')}</td>
+          <td class="msg">${esc(ev.message || '-')}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function refresh() {
+      try {
+        const h = await fetch('/v1/health').then(r => r.json());
+        $('rt-badge').textContent = 'ONLINE';
+        $('rt-badge').className = 'badge mono ok';
+        $('rt-addr').textContent = h.address || '-';
+        $('rt-root').textContent = h.project_root || '-';
+      } catch {
+        $('rt-badge').textContent = 'OFFLINE';
+        $('rt-badge').className = 'badge mono err';
+      }
+      try {
+        const inb = await fetch('/v1/inbox').then(r => r.json());
+        renderInbox(inb.records || []);
+      } catch {}
+      try {
+        const ev = await fetch('/v1/events').then(r => r.json());
+        renderEvents(ev.events || []);
+      } catch {}
+    }
+
+    $('refresh-btn').onclick = refresh;
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>
