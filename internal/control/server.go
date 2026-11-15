@@ -161,6 +161,27 @@ func (s *Server) handleTaskStatus(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
 		return
 	}
+	if strings.HasSuffix(r.URL.Path, "/worktree/cleanup") && s.uiEnabled {
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")
+			return
+		}
+		taskID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, prefix), "/worktree/cleanup")
+		if taskID == "" || strings.Contains(taskID, "/") {
+			writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
+			return
+		}
+		root := s.record.ProjectRoot
+		if root == "" {
+			root = "."
+		}
+		if err := cleanupTaskWorktree(root, taskID); err != nil {
+			writeError(w, http.StatusInternalServerError, "cleanup_failed", err.Error(), "")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"task_id": taskID, "cleaned": true})
+		return
+	}
 	if strings.HasSuffix(r.URL.Path, "/cancel") {
 		if r.Method != http.MethodPost {
 			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")

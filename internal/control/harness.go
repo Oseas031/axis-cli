@@ -68,7 +68,71 @@ func NewHarnessManager(root string, events *TaskEventLog) *HarnessManager {
 		Builtin:     true,
 	}
 	_ = m.loadFromDisk()
+	_ = m.loadSnapshotsFromDisk()
 	return m
+}
+
+type persistedTaskSnapshot struct {
+	Task   *types.AgentTask  `json:"task"`
+	Result *types.TaskResult `json:"result,omitempty"`
+}
+
+func (m *HarnessManager) tasksDir() string {
+	return filepath.Join(m.root, ".axis", "tasks")
+}
+
+func (m *HarnessManager) snapshotPath(taskID string) string {
+	return filepath.Join(m.tasksDir(), sanitizePathToken(taskID)+".json")
+}
+
+func (m *HarnessManager) saveSnapshot(task *types.AgentTask, result *types.TaskResult) {
+	if task == nil || task.TaskID == "" {
+		return
+	}
+	dir := m.tasksDir()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return
+	}
+	data, err := json.MarshalIndent(persistedTaskSnapshot{Task: task, Result: result}, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(m.snapshotPath(task.TaskID), data, 0o600)
+}
+
+func (m *HarnessManager) loadSnapshotsFromDisk() error {
+	entries, err := os.ReadDir(m.tasksDir())
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(m.tasksDir(), entry.Name()))
+		if err != nil {
+			continue
+		}
+		var snap persistedTaskSnapshot
+		if json.Unmarshal(data, &snap) != nil || snap.Task == nil || snap.Task.TaskID == "" {
+			continue
+		}
+		if snap.Task.Status == types.TaskStatusPending || snap.Task.Status == types.TaskStatusRunning {
+			snap.Task.Status = types.TaskStatusFailed
+			if snap.Result == nil {
+				snap.Result = &types.TaskResult{
+					TaskID: snap.Task.TaskID,
+					Status: types.TaskStatusFailed,
+					Error:  "interrupted by runtime restart",
+				}
+			}
+		}
+		m.tasks[snap.Task.TaskID] = &managedTask{task: snap.Task, result: snap.Result}
+	}
+	return nil
 }
 
 func (m *HarnessManager) configPath() string {
@@ -268,6 +332,7 @@ func (m *HarnessManager) SubmitCLI(spec HarnessSpec, task *types.AgentTask) erro
 	}
 	m.tasks[cp.TaskID] = &managedTask{task: &cp, cancel: cancel}
 	m.mu.Unlock()
+	m.saveSnapshot(&cp, nil)
 
 	go m.runCLITask(ctx, cancel, spec, cp.TaskID)
 	return nil
@@ -291,7 +356,7 @@ func (m *HarnessManager) runCLITask(ctx context.Context, cancel context.CancelFu
 	}
 	if ctx.Err() != nil {
 		m.mu.Unlock()
-		m.finishCLITask(taskID, mt.task.Metadata["agent_id"], spec, time.Now().UTC(), "", "", ctx.Err())
+		m.finishCLITask(taskID, mt.task.Metadata["agent_id"], spec, time.Now().UTC(), "", "", "", ctx.Err())
 		return
 	}
 	started := time.Now().UTC()
@@ -300,7 +365,33 @@ func (m *HarnessManager) runCLITask(ctx context.Context, cancel context.CancelFu
 	prompt := extractTaskPrompt(mt.task.Input)
 	agentID := mt.task.Metadata["agent_id"]
 	workdir := mt.task.Metadata["workdir"]
+	isolate := mt.task.Metadata["isolate"] == "true"
 	m.mu.Unlock()
+
+	isolatedWT := ""
+	if isolate && workdir == "" {
+		if wtPath, wtErr := prepareTaskWorktree(m.root, taskID); wtErr == nil {
+			isolatedWT = wtPath
+			workdir = wtPath
+			m.appendEvent(TaskEvent{
+				TaskID:    taskID,
+				EventType: "worktree_created",
+				Actor:     "harness-manager",
+				AgentID:   agentID,
+				Status:    string(types.TaskStatusRunning),
+				Message:   wtPath,
+			})
+		} else {
+			m.appendEvent(TaskEvent{
+				TaskID:    taskID,
+				EventType: "worktree_skipped",
+				Actor:     "harness-manager",
+				AgentID:   agentID,
+				Status:    string(types.TaskStatusRunning),
+				Message:   wtErr.Error(),
+			})
+		}
+	}
 
 	m.appendEvent(TaskEvent{
 		TaskID:    taskID,
@@ -319,11 +410,15 @@ func (m *HarnessManager) runCLITask(ctx context.Context, cancel context.CancelFu
 	} else {
 		cmd.Dir = m.root
 	}
-	cmd.Env = append(os.Environ(),
+	env := append(os.Environ(),
 		"AXIS_TASK_ID="+taskID,
 		"AXIS_HARNESS_ID="+spec.ID,
 		"AXIS_PROJECT_ROOT="+m.root,
 	)
+	if isolatedWT != "" {
+		env = append(env, "AXIS_WORKTREE="+isolatedWT)
+	}
+	cmd.Env = env
 
 	if !usedPlaceholder && prompt != "" {
 		cmd.Stdin = strings.NewReader(prompt)
@@ -331,17 +426,17 @@ func (m *HarnessManager) runCLITask(ctx context.Context, cancel context.CancelFu
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.finishCLITask(taskID, agentID, spec, started, "", "", err)
+		m.finishCLITask(taskID, agentID, spec, started, "", "", isolatedWT, err)
 		return
 	}
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		m.finishCLITask(taskID, agentID, spec, started, "", "", err)
+		m.finishCLITask(taskID, agentID, spec, started, "", "", isolatedWT, err)
 		return
 	}
 
 	if err := cmd.Start(); err != nil {
-		m.finishCLITask(taskID, agentID, spec, started, "", "", err)
+		m.finishCLITask(taskID, agentID, spec, started, "", "", isolatedWT, err)
 		return
 	}
 
@@ -359,7 +454,7 @@ func (m *HarnessManager) runCLITask(ctx context.Context, cancel context.CancelFu
 	wg.Wait()
 
 	waitErr := cmd.Wait()
-	m.finishCLITask(taskID, agentID, spec, started, outBuf.String(), errBuf.String(), waitErr)
+	m.finishCLITask(taskID, agentID, spec, started, outBuf.String(), errBuf.String(), isolatedWT, waitErr)
 }
 
 func (m *HarnessManager) streamPipe(r io.Reader, buf *strings.Builder, taskID, agentID, evType string) {
@@ -387,7 +482,7 @@ func (m *HarnessManager) streamPipe(r io.Reader, buf *strings.Builder, taskID, a
 	}
 }
 
-func (m *HarnessManager) finishCLITask(taskID, agentID string, spec HarnessSpec, started time.Time, stdout, stderr string, runErr error) {
+func (m *HarnessManager) finishCLITask(taskID, agentID string, spec HarnessSpec, started time.Time, stdout, stderr, isolatedWT string, runErr error) {
 	completed := time.Now().UTC()
 	durationMs := completed.Sub(started).Milliseconds()
 	status := types.TaskStatusCompleted
@@ -406,6 +501,9 @@ func (m *HarnessManager) finishCLITask(taskID, agentID string, spec HarnessSpec,
 		"duration_ms": durationMs,
 		"stdout":      strings.TrimSpace(stdout),
 	}
+	if isolatedWT != "" {
+		trace["worktree"] = isolatedWT
+	}
 	if strings.TrimSpace(stderr) != "" {
 		trace["stderr"] = strings.TrimSpace(stderr)
 	}
@@ -418,7 +516,15 @@ func (m *HarnessManager) finishCLITask(taskID, agentID string, spec HarnessSpec,
 		"harness":      spec.ID,
 		"_tool_traces": []any{trace},
 	}
+	if isolatedWT != "" {
+		output["worktree"] = isolatedWT
+		if diffText := captureWorktreeDiff(isolatedWT); diffText != "" {
+			output["diff"] = diffText
+		}
+	}
 
+	var snapTask *types.AgentTask
+	var snapResult *types.TaskResult
 	m.mu.Lock()
 	if mt, ok := m.tasks[taskID]; ok && mt.task != nil {
 		mt.task.Status = status
@@ -430,8 +536,14 @@ func (m *HarnessManager) finishCLITask(taskID, agentID string, spec HarnessSpec,
 			Error:     errMsg,
 			Completed: completed,
 		}
+		cp := *mt.task
+		snapTask = &cp
+		snapResult = mt.result
 	}
 	m.mu.Unlock()
+	if snapTask != nil {
+		m.saveSnapshot(snapTask, snapResult)
+	}
 
 	evType := "completed"
 	msg := fmt.Sprintf("harness %s completed in %dms", spec.ID, durationMs)

@@ -682,6 +682,10 @@
               <div class="composer-left">
                 <label for="harnessSelect">harness:</label>
                 <select id="harnessSelect" aria-label="Target harness"></select>
+                <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input id="isolateChk" type="checkbox" style="width:auto;margin:0;">
+                  <span data-i18n="isolateLabel">isolate worktree</span>
+                </label>
                 <label for="taskIdInput">task_id:</label>
                 <input id="taskIdInput" type="text" placeholder="auto (ui-...)">
               </div>
@@ -787,7 +791,12 @@
         alertSubmitFailed: '提交任务失败：',
         alertCancelFailed: '停止任务失败：',
         stopBtn: '停止',
-        presetsLabel: '预设:'
+        presetsLabel: '预设:',
+        isolateLabel: '隔离工作区',
+        workspaceDiff: '工作区变更 Diff',
+        cleanWorktree: '清理 Worktree',
+        approvalRequired: '需要人工审批',
+        secretInputHint: '掩码安全输入'
       },
       'en': {
         langToggle: '中文',
@@ -843,7 +852,12 @@
         alertSubmitFailed: 'Submit failed: ',
         alertCancelFailed: 'Stop failed: ',
         stopBtn: 'Stop',
-        presetsLabel: 'Presets:'
+        presetsLabel: 'Presets:',
+        isolateLabel: 'isolate worktree',
+        workspaceDiff: 'WORKSPACE DIFF',
+        cleanWorktree: 'Clean Worktree',
+        approvalRequired: 'APPROVAL REQUIRED',
+        secretInputHint: 'Masked secret input'
       }
     };
 
@@ -1101,7 +1115,7 @@
 
       const finalText = typeof out.text === 'string' && out.text !== ''
         ? out.text
-        : (Object.keys(out).filter((k) => k !== '_tool_traces' && k !== 'harness').length ? JSON.stringify(out, null, 2) : '');
+        : (Object.keys(out).filter((k) => k !== '_tool_traces' && k !== 'harness' && k !== 'diff' && k !== 'worktree').length ? JSON.stringify(out, null, 2) : '');
       if (finalText) {
         blocks.push(`
           <div class="turn-block assistant">
@@ -1114,6 +1128,48 @@
         `);
       }
 
+      if (typeof out.diff === 'string' && out.diff.trim() !== '') {
+        blocks.push(`
+          <div class="turn-block">
+            <div class="turn-label">
+              <span>${esc(t('workspaceDiff'))}${out.worktree ? ' · ' + esc(out.worktree) : ''}</span>
+              <button id="btnCleanWT" type="button" class="btn" style="padding:1px 7px;font-size:10px;">${esc(t('cleanWorktree'))}</button>
+            </div>
+            <div class="turn-body mono" style="max-height:280px;overflow:auto;">${esc(out.diff)}</div>
+          </div>
+        `);
+      }
+
+      const inlinePending = (state.inbox || []).filter((r) => {
+        if (r.status !== 'pending') return false;
+        const req = (r.message && r.message.payload && r.message.payload.request) || {};
+        return !req.task_id || req.task_id === state.selectedTaskId;
+      });
+      inlinePending.forEach((r) => {
+        const req = (r.message && r.message.payload && r.message.payload.request) || {};
+        const question = req.question || req.Question || r.message?.summary || '';
+        const opts = Array.isArray(req.options) ? req.options : [];
+        const callId = r.call_id || r.message?.id || '';
+        const isSecret = Boolean(req.secret || req.input_type === 'password' || /api[_-]?key|token|secret|password/i.test(question));
+        const optsHTML = opts.length
+          ? `<div class="inbox-options">${opts.map((opt) => `<button type="button" class="btn inline-inbox-opt" data-call-id="${esc(callId)}" data-choice="${esc(opt.key || opt)}">${esc(opt.label || opt.key || opt)}</button>`).join('')}</div>`
+          : '';
+        blocks.push(`
+          <div class="inbox-card pending">
+            <div class="inbox-meta">
+              <span style="color:var(--warn);font-weight:600;">${esc(t('approvalRequired'))} · ${esc(callId)}</span>
+              <span>${isSecret ? esc(t('secretInputHint')) : 'pending'}</span>
+            </div>
+            <div class="inbox-question">${esc(question)}</div>
+            ${optsHTML}
+            <div class="inbox-reply-row">
+              <input type="${isSecret ? 'password' : 'text'}" placeholder="${esc(t('replyPlaceholder'))}" data-inline-input="${esc(callId)}" autocomplete="off">
+              <button type="button" class="btn primary inline-inbox-send" data-call-id="${esc(callId)}">${esc(t('replySend'))}</button>
+            </div>
+          </div>
+        `);
+      });
+
       if (!blocks.length) {
         blocks.push(`<div class="empty-state"><h2>${esc(t('noDetail'))}</h2><p>${esc(t('waitingStatus'))}</p></div>`);
       }
@@ -1122,6 +1178,29 @@
       if (stopBtn) {
         stopBtn.addEventListener('click', () => cancelTask(state.selectedTaskId));
       }
+      const cleanWtBtn = el('btnCleanWT');
+      if (cleanWtBtn) {
+        cleanWtBtn.addEventListener('click', async () => {
+          try {
+            await fetchJSON(`/v1/tasks/${encodeURIComponent(state.selectedTaskId)}/worktree/cleanup`, { method: 'POST' });
+            cleanWtBtn.disabled = true;
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      }
+      tl.querySelectorAll('.inline-inbox-opt').forEach((btn) => {
+        btn.addEventListener('click', () => respondInbox(btn.dataset.callId, { choice: btn.dataset.choice }));
+      });
+      tl.querySelectorAll('.inline-inbox-send').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const input = tl.querySelector(`input[data-inline-input="${CSS.escape(btn.dataset.callId)}"]`);
+          const text = input ? input.value.trim() : '';
+          if (!text) return;
+          input.value = '';
+          respondInbox(btn.dataset.callId, { text });
+        });
+      });
       const handoffBtn = el('btnHandoff');
       if (handoffBtn && finalText) {
         handoffBtn.addEventListener('click', () => {
@@ -1319,6 +1398,10 @@
       const customId = el('taskIdInput').value.trim();
       const taskId = customId || ('ui-' + Date.now());
       const harness = el('harnessSelect').value || 'axis-native';
+      const meta = { harness, agent_id: harness };
+      if (el('isolateChk') && el('isolateChk').checked) {
+        meta.isolate = 'true';
+      }
 
       state.submitting = true;
       el('btnSubmit').disabled = true;
@@ -1331,7 +1414,7 @@
               task_id: taskId,
               contract_id: 'default',
               input: { prompt },
-              metadata: { harness, agent_id: harness }
+              metadata: meta
             }
           })
         });
