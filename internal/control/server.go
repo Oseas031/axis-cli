@@ -33,6 +33,7 @@ type Server struct {
 	events    *TaskEventLog
 	inbox     InboxAPI
 	uiEnabled bool
+	uiInfo    UIInfo
 }
 
 func NewServer(runtime Runtime, record RuntimeRecord) *Server {
@@ -57,6 +58,8 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("/ui", s.handleUI)
 		mux.HandleFunc("/ui/", s.handleUI)
 		mux.HandleFunc("/v1/events", s.handleEventsList)
+		mux.HandleFunc("/v1/events/stream", s.handleEventsStream)
+		mux.HandleFunc("/v1/ui/info", s.handleUIInfo)
 	}
 	return mux
 }
@@ -92,6 +95,10 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet && s.uiEnabled {
+		s.handleTasksList(w, r)
+		return
+	}
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")
 		return

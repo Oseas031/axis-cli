@@ -114,6 +114,17 @@ func runLocalRuntimeWithOpts(ctx context.Context, root string, out io.Writer, po
 	}
 	if withUI {
 		server.SetUIEnabled(true)
+		if dump, err := buildConfigDump(defaultApp); err == nil && dump != nil {
+			server.SetUIInfo(control.UIInfo{
+				Provider:        dump.Provider,
+				ProfileName:     dump.ProfileName,
+				Model:           dump.Model,
+				RuntimeProfile:  dump.RuntimeProfile,
+				FallbackProfile: dump.FallbackProfile,
+				HasAPIKey:       dump.HasAPIKey,
+				ProjectRoot:     dump.ProjectRoot,
+			})
+		}
 		if out != nil {
 			fmt.Fprintf(out, "Observatory UI available at %s/ui/\n", record.Address)
 		}

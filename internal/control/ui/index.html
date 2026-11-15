@@ -1,350 +1,993 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark" />
-  <title>AXIS // OBS</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AXIS // SINGLE-BINARY OBSERVATORY</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #09090b;
-      --surface: #18181b;
-      --border: #27272a;
-      --text: #e4e4e7;
-      --muted: #71717a;
-      --ok: #10b981;
-      --warn: #f59e0b;
-      --err: #ef4444;
-      scrollbar-color: #3f3f46 #09090b;
-      scrollbar-width: thin;
+      --bg: #0b0e12;
+      --bg-elev: #11161d;
+      --bg-panel: #151b23;
+      --bg-hover: #1b232e;
+      --border: #25303d;
+      --border-strong: #344354;
+      --text: #e6edf3;
+      --text-muted: #8b98a7;
+      --text-dim: #647180;
+      --accent: #38bdf8;
+      --accent-dim: rgba(56, 189, 248, 0.12);
+      --ok: #34d399;
+      --ok-dim: rgba(52, 211, 153, 0.14);
+      --warn: #fbbf24;
+      --warn-dim: rgba(251, 191, 36, 0.14);
+      --err: #f87171;
+      --err-dim: rgba(248, 113, 113, 0.14);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
+
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.5; }
+    button, input, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .app {
+      display: grid;
+      grid-template-rows: 46px 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Top Header */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 14px;
+      background: var(--bg-elev);
+      border-bottom: 1px solid var(--border);
+      min-width: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
       font-size: 12px;
-      line-height: 1.5;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
     }
-    .mono { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
-    .wrap { max-width: 1120px; margin: 0 auto; padding: 16px; display: grid; gap: 12px; }
-    header {
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid var(--border); padding-bottom: 8px;
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      flex-shrink: 0;
     }
-    h1 { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
-    .meta { color: var(--muted); font-size: 11px; }
-    .grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      border: 1px solid var(--border); background: var(--surface);
+    .status-dot.ok { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+    .status-dot.warn { background: var(--warn); }
+    .status-dot.err { background: var(--err); }
+
+    .meta-strip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      min-width: 0;
     }
-    .cell { padding: 10px 12px; border-right: 1px solid var(--border); }
-    .cell:last-child { border-right: 0; }
-    .label { color: var(--muted); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
-    .panel { border: 1px solid var(--border); background: rgba(24,24,27,.45); }
-    .panel-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 10px; border-bottom: 1px solid var(--border);
-      font-size: 11px; color: #a1a1aa; text-transform: uppercase;
+    .meta-strip::-webkit-scrollbar { display: none; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
     }
+    .chip b { color: var(--text); font-weight: 600; }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-panel);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+    .btn.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+    .btn.primary:hover { background: rgba(56, 189, 248, 0.22); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .badge {
-      display: inline-block; padding: 1px 6px; font-size: 10px;
-      border: 1px solid var(--border); border-radius: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--bg);
+      color: var(--text-muted);
     }
-    .ok { color: var(--ok); border-color: rgba(16,185,129,.45); background: rgba(16,185,129,.08); }
-    .warn { color: var(--warn); border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.08); }
-    .err { color: var(--err); border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.08); }
-    button {
-      background: #27272a; color: var(--text); border: 1px solid #3f3f46;
-      border-radius: 2px; padding: 3px 10px; font-size: 11px; cursor: pointer;
+    .badge.alert { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(251, 191, 36, 0.4); }
+
+    /* Workspace Grid */
+    .workspace {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
     }
-    button:hover { background: #3f3f46; }
-    button:focus-visible, input:focus-visible { outline: 1px solid var(--ok); outline-offset: 1px; }
-    input {
-      background: var(--bg); color: var(--text); border: 1px solid #3f3f46;
-      border-radius: 2px; padding: 4px 8px; font-size: 11px; flex: 1;
+
+    /* Left Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-elev);
+      border-right: 1px solid var(--border);
+      min-height: 0;
     }
-    .item { padding: 10px 12px; border-bottom: 1px solid var(--border); }
-    .item:last-child { border-bottom: 0; }
-    .item.pending { border-left: 2px solid var(--warn); background: rgba(245,158,11,.04); }
-    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    th { color: var(--muted); font-weight: 500; background: var(--surface); }
-    td.msg { white-space: normal; max-width: 420px; color: #a1a1aa; }
-    .empty { padding: 12px; color: var(--muted); }
+    .sidebar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .task-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .task-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .task-item:hover { background: var(--bg-hover); }
+    .task-item.active { background: var(--bg-panel); border-color: var(--border-strong); }
+    .task-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .task-id {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .task-time { color: var(--text-dim); font-size: 10px; flex-shrink: 0; }
+    .task-preview {
+      color: var(--text-muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Main Panel */
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: var(--bg);
+    }
+    .task-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elev);
+      min-height: 44px;
+    }
+    .task-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .task-title {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pill {
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+    }
+    .pill.completed { color: var(--ok); background: var(--ok-dim); border-color: rgba(52, 211, 153, 0.35); }
+    .pill.running, .pill.pending { color: var(--warn); background: var(--warn-dim); border-color: rgba(251, 191, 36, 0.35); }
+    .pill.failed { color: var(--err); background: var(--err-dim); border-color: rgba(248, 113, 113, 0.35); }
+
+    .timeline {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .empty-state {
+      margin: auto;
+      max-width: 480px;
+      text-align: center;
+      color: var(--text-muted);
+      padding: 24px;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+    }
+    .empty-state h2 { margin: 0 0 8px; font-size: 14px; font-family: var(--mono); color: var(--text); }
+
+    .turn-block {
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--bg-elev);
+      overflow: hidden;
+    }
+    .turn-block.user { border-left: 3px solid var(--accent); }
+    .turn-block.assistant { border-left: 3px solid var(--ok); }
+    .turn-block.error { border-left: 3px solid var(--err); background: rgba(248, 113, 113, 0.05); }
+    .turn-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-panel);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .turn-body {
+      padding: 12px 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .turn-body.mono { font-family: var(--mono); font-size: 12px; }
+
+    /* Tool Trajectory */
+    .trace-group {
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--bg-elev);
+    }
+    .trace-group-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .trace-list { display: flex; flex-direction: column; }
+    details.trace-step {
+      border-bottom: 1px solid var(--border);
+    }
+    details.trace-step:last-child { border-bottom: none; }
+    details.trace-step summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      list-style: none;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    details.trace-step summary:hover { background: var(--bg-hover); }
+    details.trace-step summary::-webkit-details-marker { display: none; }
+    .trace-name { display: flex; align-items: center; gap: 8px; color: var(--text); font-weight: 600; }
+    .trace-meta { color: var(--text-dim); font-size: 11px; }
+    .trace-detail {
+      padding: 8px 12px 12px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    /* Composer */
+    .composer {
+      border-top: 1px solid var(--border);
+      background: var(--bg-elev);
+      padding: 10px 16px 12px;
+    }
+    .composer-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid var(--border-strong);
+      border-radius: 5px;
+      background: var(--bg);
+      padding: 8px 10px;
+    }
+    .composer-box:focus-within { border-color: var(--accent); }
+    .composer textarea {
+      width: 100%;
+      min-height: 54px;
+      max-height: 180px;
+      resize: vertical;
+      border: none;
+      background: transparent;
+      outline: none;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .composer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .composer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .composer-left input {
+      width: 150px;
+      padding: 3px 7px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-elev);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+    }
+
+    /* Inbox Drawer */
+    .drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 390px;
+      max-width: 100%;
+      background: var(--bg-elev);
+      border-left: 1px solid var(--border-strong);
+      display: none;
+      flex-direction: column;
+      z-index: 20;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.45);
+    }
+    .drawer.open { display: flex; }
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .inbox-card {
+      border: 1px solid var(--border-strong);
+      border-radius: 5px;
+      background: var(--bg-panel);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .inbox-card.pending { border-left: 3px solid var(--warn); }
+    .inbox-meta {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .inbox-question { font-size: 13px; color: var(--text); white-space: pre-wrap; }
+    .inbox-options { display: flex; flex-wrap: wrap; gap: 6px; }
+    .inbox-reply-row { display: flex; gap: 6px; }
+    .inbox-reply-row input {
+      flex: 1;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 12px;
+    }
+
+    /* Raw Events Drawer Footer */
+    .events-bar {
+      border-top: 1px solid var(--border);
+      background: var(--bg-elev);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .events-bar summary {
+      padding: 6px 16px;
+      cursor: pointer;
+      color: var(--text-muted);
+      user-select: none;
+    }
+    .events-list {
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 6px 16px 10px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+    }
+    .ev-row { display: flex; gap: 10px; padding: 2px 0; border-bottom: 1px solid rgba(37, 48, 61, 0.4); }
+    .ev-ts { color: var(--text-dim); flex-shrink: 0; }
+    .ev-type { color: var(--accent); min-width: 110px; flex-shrink: 0; }
+
+    @media (max-width: 820px) {
+      .workspace { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .meta-strip { display: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1 class="mono">AXIS // SINGLE-BINARY OBSERVATORY</h1>
-      <div class="row">
-        <span id="rt-badge" class="badge mono">checking...</span>
-        <button id="refresh-btn" type="button" class="mono">refresh</button>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span id="connDot" class="status-dot" title="Runtime / SSE status"></span>
+        <span>AXIS // SINGLE-BINARY OBSERVATORY</span>
+      </div>
+      <div id="metaStrip" class="meta-strip" aria-label="Runtime configuration"></div>
+      <div class="top-actions">
+        <button id="btnNewTask" class="btn" type="button">+ New Task</button>
+        <button id="btnInbox" class="btn" type="button">
+          Inbox <span id="inboxBadge" class="badge">0</span>
+        </button>
       </div>
     </header>
 
-    <main>
-      <div class="grid" style="margin-bottom: 12px;">
-        <section class="cell">
-          <div class="label mono">Runtime</div>
-          <div id="rt-addr" class="mono">-</div>
-          <div id="rt-root" class="meta mono" style="margin-top:2px; word-break:break-all;">-</div>
-        </section>
-        <section class="cell">
-          <div class="label mono">Inbox Pending</div>
-          <div id="inbox-count" class="mono">0</div>
-        </section>
-        <section class="cell">
-          <div class="label mono">Recent Events</div>
-          <div id="events-count" class="mono">0</div>
-        </section>
-      </div>
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Task sessions">
+        <div class="sidebar-head">
+          <span>Tasks</span>
+          <span id="taskCount">0</span>
+        </div>
+        <div id="taskList" class="task-list"></div>
+      </aside>
 
-      <section class="panel" style="margin-bottom: 12px;">
-        <div class="panel-head mono">
-          <span>Submit Task (Agent)</span>
-          <span id="submit-status" class="meta"></span>
+      <main class="main">
+        <div class="task-header">
+          <div class="task-header-left">
+            <span id="activeTaskTitle" class="task-title">Select or submit a task</span>
+            <span id="activeTaskPill" class="pill" style="display:none"></span>
+          </div>
+          <div id="activeTaskMeta" class="trace-meta"></div>
         </div>
-        <div class="item">
-          <form id="task-form" style="display:flex; gap:6px; align-items:center;">
-            <label for="task-prompt" style="position:absolute;left:-9999px;">Task prompt</label>
-            <input id="task-prompt" class="mono" placeholder="输入任务指令（例如：Read go.mod and summarize）..." />
-            <button id="task-submit-btn" type="submit" class="mono">run</button>
-          </form>
-          <pre id="task-output" class="mono" style="display:none; margin:8px 0 0; padding:8px; background:var(--bg); border:1px solid var(--border); white-space:pre-wrap; word-break:break-word; font-size:11px; max-height:220px; overflow:auto;"></pre>
-        </div>
-      </section>
 
-      <section class="panel" style="margin-bottom: 12px;">
-        <div class="panel-head mono">
-          <span>Human Inbox (CAS Gate)</span>
-          <span id="inbox-err" role="alert" style="color:var(--err);"></span>
+        <div id="timeline" class="timeline">
+          <div class="empty-state">
+            <h2>Axis Local Agent Workbench</h2>
+            <p>Submit a prompt below or choose an existing task from the left sidebar to inspect tool trajectories, outputs, and human approval requests.</p>
+          </div>
         </div>
-        <div id="inbox-list"></div>
-      </section>
 
-      <section class="panel">
-        <div class="panel-head mono"><span>Recent Task Events</span></div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col" class="mono">task_id</th>
-                <th scope="col" class="mono">event_type</th>
-                <th scope="col" class="mono">status</th>
-                <th scope="col" class="mono">timestamp</th>
-                <th scope="col" class="mono">message</th>
-              </tr>
-            </thead>
-            <tbody id="events-body"></tbody>
-          </table>
+        <section class="composer" aria-label="Task prompt composer">
+          <div class="composer-box">
+            <textarea id="promptInput" placeholder="输入任务指令... (Enter 发送，Shift+Enter 换行)"></textarea>
+            <div class="composer-bar">
+              <div class="composer-left">
+                <label for="taskIdInput">task_id:</label>
+                <input id="taskIdInput" type="text" placeholder="auto (ui-...)">
+              </div>
+              <button id="btnSubmit" class="btn primary" type="button">Send Task</button>
+            </div>
+          </div>
+        </section>
+
+        <details class="events-bar">
+          <summary>Event Stream (<span id="evCount">0</span>)</summary>
+          <div id="eventsList" class="events-list"></div>
+        </details>
+      </main>
+
+      <aside id="inboxDrawer" class="drawer" aria-label="Human approval inbox">
+        <div class="drawer-head">
+          <span>Human Inbox</span>
+          <button id="btnCloseInbox" class="btn" type="button">Close</button>
         </div>
-      </section>
-    </main>
+        <div id="inboxList" class="drawer-body"></div>
+      </aside>
+    </div>
   </div>
 
-  <script type="module">
-    const $ = id => document.getElementById(id);
+  <script>
+    const state = {
+      tasks: [],
+      selectedTaskId: null,
+      selectedDetail: null,
+      events: [],
+      inbox: [],
+      uiInfo: null,
+      sseConnected: false,
+      submitting: false
+    };
+
+    const el = (id) => document.getElementById(id);
 
     function esc(s) {
-      return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
-    function statusClass(s) {
-      if (s === 'completed') return 'ok';
-      if (s === 'pending' || s === 'waiting_human') return 'warn';
-      if (s === 'failed' || s === 'degraded') return 'err';
-      return '';
+    function fmtTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
-    async function respond(callId, body) {
-      $('inbox-err').textContent = '';
+    function pillClass(status) {
+      if (status === 'completed') return 'completed';
+      if (status === 'failed') return 'failed';
+      return 'running';
+    }
+
+    async function fetchJSON(url, opts) {
+      const res = await fetch(url, opts);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+      return data;
+    }
+
+    function renderMetaStrip() {
+      const info = state.uiInfo || {};
+      const items = [];
+      if (info.profile_name) items.push(`profile <b>${esc(info.profile_name)}</b>`);
+      if (info.provider) items.push(`provider <b>${esc(info.provider)}</b>`);
+      if (info.model) items.push(`model <b>${esc(info.model)}</b>`);
+      if (info.runtime_profile) items.push(`mode <b>${esc(info.runtime_profile)}</b>`);
+      if (info.fallback_profile) items.push(`fallback <b>${esc(info.fallback_profile)}</b>`);
+      el('metaStrip').innerHTML = items.map((html) => `<span class="chip">${html}</span>`).join('');
+    }
+
+    function renderConnDot(ok) {
+      const dot = el('connDot');
+      dot.className = 'status-dot ' + (ok ? 'ok' : 'warn');
+    }
+
+    function renderTaskList() {
+      el('taskCount').textContent = String(state.tasks.length);
+      const list = el('taskList');
+      if (!state.tasks.length) {
+        list.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:12px;">No tasks yet.</div>';
+        return;
+      }
+      list.innerHTML = state.tasks.map((t) => {
+        const active = t.task_id === state.selectedTaskId ? ' active' : '';
+        const dotCls = t.status === 'completed' ? 'ok' : (t.status === 'failed' ? 'err' : 'warn');
+        const preview = t.prompt || '(no prompt preview)';
+        return `
+          <button type="button" class="task-item${active}" data-task-id="${esc(t.task_id)}">
+            <div class="task-item-top">
+              <span class="task-id"><span class="status-dot ${dotCls}"></span>${esc(t.task_id)}</span>
+              <span class="task-time">${esc(fmtTime(t.created_at))}</span>
+            </div>
+            <div class="task-preview">${esc(preview)}</div>
+          </button>
+        `;
+      }).join('');
+      list.querySelectorAll('.task-item').forEach((btn) => {
+        btn.addEventListener('click', () => selectTask(btn.dataset.taskId));
+      });
+    }
+
+    function renderTimeline() {
+      const titleEl = el('activeTaskTitle');
+      const pillEl = el('activeTaskPill');
+      const metaEl = el('activeTaskMeta');
+      const tl = el('timeline');
+
+      if (!state.selectedTaskId) {
+        titleEl.textContent = 'New Task';
+        pillEl.style.display = 'none';
+        metaEl.textContent = '';
+        tl.innerHTML = `
+          <div class="empty-state">
+            <h2>Axis Local Agent Workbench</h2>
+            <p>Submit a prompt below or choose an existing task from the left sidebar to inspect tool trajectories, outputs, and human approval requests.</p>
+          </div>`;
+        return;
+      }
+
+      const summary = state.tasks.find((t) => t.task_id === state.selectedTaskId) || {};
+      const detail = state.selectedDetail || {};
+      const status = detail.status || summary.status || 'pending';
+
+      titleEl.textContent = state.selectedTaskId;
+      pillEl.style.display = 'inline-block';
+      pillEl.className = 'pill ' + pillClass(status);
+      pillEl.textContent = status;
+      metaEl.textContent = summary.created_at ? ('created ' + fmtTime(summary.created_at)) : '';
+
+      const blocks = [];
+      const promptText = summary.prompt || (summary.input ? JSON.stringify(summary.input, null, 2) : '');
+      if (promptText) {
+        blocks.push(`
+          <div class="turn-block user">
+            <div class="turn-label"><span>USER PROMPT</span><span>${esc(fmtTime(summary.created_at))}</span></div>
+            <div class="turn-body">${esc(promptText)}</div>
+          </div>
+        `);
+      }
+
+      const out = detail.output || {};
+      const traces = Array.isArray(out._tool_traces) ? out._tool_traces : [];
+      if (traces.length) {
+        const stepsHTML = traces.map((tr, idx) => {
+          const name = tr.tool || tr.name || tr.ToolName || ('step-' + (idx + 1));
+          const dur = tr.duration_ms != null ? `${tr.duration_ms}ms` : (tr.duration || '');
+          const okLabel = tr.error ? 'error' : 'ok';
+          const payload = JSON.stringify(tr, null, 2);
+          return `
+            <details class="trace-step">
+              <summary>
+                <span class="trace-name"><span>#${idx + 1}</span><span>${esc(name)}</span></span>
+                <span class="trace-meta">${esc(okLabel)}${dur ? ' · ' + esc(dur) : ''}</span>
+              </summary>
+              <div class="trace-detail">${esc(payload)}</div>
+            </details>
+          `;
+        }).join('');
+        blocks.push(`
+          <div class="trace-group">
+            <div class="trace-group-head"><span>TOOL TRAJECTORY</span><span>${traces.length} step(s)</span></div>
+            <div class="trace-list">${stepsHTML}</div>
+          </div>
+        `);
+      }
+
+      if (status === 'pending' || status === 'running') {
+        blocks.push(`
+          <div class="turn-block">
+            <div class="turn-label"><span>RUNTIME</span><span>${esc(status)}</span></div>
+            <div class="turn-body mono">Executing task... live updates via SSE.</div>
+          </div>
+        `);
+      }
+
+      if (detail.error) {
+        blocks.push(`
+          <div class="turn-block error">
+            <div class="turn-label"><span>ERROR</span><span>failed</span></div>
+            <div class="turn-body mono">${esc(detail.error)}</div>
+          </div>
+        `);
+      }
+
+      const finalText = typeof out.text === 'string' && out.text !== ''
+        ? out.text
+        : (Object.keys(out).filter((k) => k !== '_tool_traces').length ? JSON.stringify(out, null, 2) : '');
+      if (finalText) {
+        blocks.push(`
+          <div class="turn-block assistant">
+            <div class="turn-label"><span>AGENT OUTPUT</span><span>${esc(status)}</span></div>
+            <div class="turn-body">${esc(finalText)}</div>
+          </div>
+        `);
+      }
+
+      if (!blocks.length) {
+        blocks.push('<div class="empty-state"><h2>No detail recorded yet</h2><p>Waiting for runtime status...</p></div>');
+      }
+      tl.innerHTML = blocks.join('');
+    }
+
+    function renderInbox() {
+      const records = state.inbox || [];
+      const pending = records.filter((r) => r.status === 'pending');
+      const badge = el('inboxBadge');
+      badge.textContent = String(pending.length);
+      badge.className = 'badge' + (pending.length > 0 ? ' alert' : '');
+
+      const list = el('inboxList');
+      if (!records.length) {
+        list.innerHTML = '<div style="color:var(--text-dim);font-size:12px;">Inbox is empty.</div>';
+        return;
+      }
+      list.innerHTML = records.map((r) => {
+        const req = (r.message && r.message.payload && r.message.payload.request) || {};
+        const question = req.question || req.Question || r.message?.summary || JSON.stringify(r.message?.payload || {});
+        const opts = Array.isArray(req.options) ? req.options : [];
+        const isPending = r.status === 'pending';
+        const callId = r.call_id || r.message?.id || '';
+        const optsHTML = isPending && opts.length
+          ? `<div class="inbox-options">${opts.map((opt) => `<button type="button" class="btn inbox-opt" data-call-id="${esc(callId)}" data-choice="${esc(opt.key || opt)}">${esc(opt.label || opt.key || opt)}</button>`).join('')}</div>`
+          : '';
+        const replyHTML = isPending
+          ? `<div class="inbox-reply-row"><input type="text" placeholder="Reply text..." data-call-input="${esc(callId)}"><button type="button" class="btn primary inbox-send" data-call-id="${esc(callId)}">Send</button></div>`
+          : `<div style="font-family:var(--mono);font-size:11px;color:var(--ok);">status: ${esc(r.status)}</div>`;
+        return `
+          <div class="inbox-card ${isPending ? 'pending' : ''}">
+            <div class="inbox-meta"><span>${esc(callId)}</span><span>${esc(r.status)}</span></div>
+            <div class="inbox-question">${esc(question)}</div>
+            ${optsHTML}
+            ${replyHTML}
+          </div>
+        `;
+      }).join('');
+
+      list.querySelectorAll('.inbox-opt').forEach((btn) => {
+        btn.addEventListener('click', () => respondInbox(btn.dataset.callId, { choice: btn.dataset.choice }));
+      });
+      list.querySelectorAll('.inbox-send').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const input = list.querySelector(`input[data-call-input="${CSS.escape(btn.dataset.callId)}"]`);
+          const text = input ? input.value.trim() : '';
+          if (!text) return;
+          respondInbox(btn.dataset.callId, { text });
+        });
+      });
+    }
+
+    function renderEvents() {
+      el('evCount').textContent = String(state.events.length);
+      const rows = state.events.slice(-40).reverse().map((ev) => `
+        <div class="ev-row">
+          <span class="ev-ts">${esc(fmtTime(ev.created_at || ev.timestamp))}</span>
+          <span class="ev-type">${esc(ev.event_type || 'event')}</span>
+          <span>${esc(ev.task_id || '')} ${esc(ev.status ? '[' + ev.status + ']' : '')} ${esc(ev.message || '')}</span>
+        </div>
+      `).join('');
+      el('eventsList').innerHTML = rows || '<div style="color:var(--text-dim);">No events yet.</div>';
+    }
+
+    async function loadUIInfo() {
       try {
-        const res = await fetch('/v1/inbox/' + encodeURIComponent(callId) + '/respond', {
+        state.uiInfo = await fetchJSON('/v1/ui/info');
+        renderMetaStrip();
+      } catch (_) {}
+    }
+
+    async function loadTasks() {
+      try {
+        const data = await fetchJSON('/v1/tasks');
+        state.tasks = Array.isArray(data.tasks) ? data.tasks : [];
+        if (!state.selectedTaskId && state.tasks.length) {
+          state.selectedTaskId = state.tasks[0].task_id;
+        }
+        renderTaskList();
+      } catch (_) {}
+    }
+
+    async function loadSelectedDetail() {
+      if (!state.selectedTaskId) {
+        state.selectedDetail = null;
+        renderTimeline();
+        return;
+      }
+      try {
+        state.selectedDetail = await fetchJSON(`/v1/tasks/${encodeURIComponent(state.selectedTaskId)}/status`);
+      } catch (_) {
+        state.selectedDetail = null;
+      }
+      renderTimeline();
+    }
+
+    async function selectTask(taskId) {
+      state.selectedTaskId = taskId;
+      renderTaskList();
+      await loadSelectedDetail();
+    }
+
+    async function loadInbox() {
+      try {
+        const data = await fetchJSON('/v1/inbox');
+        state.inbox = Array.isArray(data.records) ? data.records : [];
+        renderInbox();
+      } catch (_) {}
+    }
+
+    async function loadEvents() {
+      try {
+        const data = await fetchJSON('/v1/events');
+        state.events = Array.isArray(data.events) ? data.events : [];
+        renderEvents();
+      } catch (_) {}
+    }
+
+    async function respondInbox(callID, body) {
+      try {
+        await fetchJSON(`/v1/inbox/${encodeURIComponent(callID)}/respond`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify(body)
         });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          $('inbox-err').textContent = d.message || d.error || ('HTTP ' + res.status);
-        }
-      } catch (e) {
-        $('inbox-err').textContent = 'network error';
-      }
-      await refresh();
-    }
-
-    function renderInbox(records) {
-      const list = $('inbox-list');
-      const pendingCount = records.filter(r => r.status === 'pending').length;
-      $('inbox-count').textContent = pendingCount + ' pending / ' + records.length + ' total';
-      if (!records.length) {
-        list.innerHTML = '<div class="empty mono">No human requests.</div>';
-        return;
-      }
-      list.innerHTML = '';
-      for (const rec of records) {
-        const req = rec.message?.payload?.request || {};
-        const pending = rec.status === 'pending';
-        const div = document.createElement('div');
-        div.className = 'item' + (pending ? ' pending' : '');
-        div.innerHTML = `
-          <div class="row">
-            <span class="mono">${esc(rec.message?.id)}</span>
-            <span class="badge mono ${statusClass(rec.status)}">${esc(rec.status)}</span>
-          </div>
-          <div style="margin-top:4px;">
-            <span class="badge mono" style="margin-right:6px;">${esc(req.kind || 'info')}</span>
-            <span>${esc(req.prompt || '(no prompt)')}</span>
-          </div>
-          ${req.task_id ? `<div class="meta mono" style="margin-top:2px;">task: ${esc(req.task_id)}</div>` : ''}
-        `;
-        if (pending) {
-          const act = document.createElement('div');
-          act.className = 'actions';
-          if (Array.isArray(req.options) && req.options.length > 0) {
-            for (const opt of req.options) {
-              const btn = document.createElement('button');
-              btn.type = 'button';
-              btn.className = 'mono';
-              btn.textContent = opt;
-              btn.onclick = () => respond(rec.message.id, { choice: opt });
-              act.appendChild(btn);
-            }
-          } else {
-            const form = document.createElement('form');
-            form.style.display = 'flex';
-            form.style.gap = '6px';
-            form.style.width = '100%';
-            const input = document.createElement('input');
-            input.placeholder = 'your answer...';
-            input.className = 'mono';
-            const btn = document.createElement('button');
-            btn.type = 'submit';
-            btn.className = 'mono';
-            btn.textContent = 'send';
-            form.onsubmit = e => {
-              e.preventDefault();
-              if (input.value.trim()) respond(rec.message.id, { text: input.value });
-            };
-            form.append(input, btn);
-            act.appendChild(form);
-          }
-          div.appendChild(act);
-        }
-        list.appendChild(div);
+        await loadInbox();
+        await loadTasks();
+        await loadSelectedDetail();
+      } catch (err) {
+        alert('Inbox respond failed: ' + err.message);
       }
     }
 
-    function renderEvents(events) {
-      $('events-count').textContent = String(events.length);
-      const body = $('events-body');
-      if (!events.length) {
-        body.innerHTML = '<tr><td colspan="5" class="empty mono">No events recorded.</td></tr>';
-        return;
-      }
-      body.innerHTML = events.slice().reverse().map(ev => `
-        <tr>
-          <td class="mono">${esc(ev.task_id)}</td>
-          <td class="mono">${esc(ev.event_type)}</td>
-          <td><span class="badge mono ${statusClass(ev.status)}">${esc(ev.status)}</span></td>
-          <td class="mono meta">${esc(ev.timestamp || ev.created_at || '-')}</td>
-          <td class="msg">${esc(ev.message || '-')}</td>
-        </tr>
-      `).join('');
-    }
+    async function submitTask() {
+      if (state.submitting) return;
+      const prompt = el('promptInput').value.trim();
+      if (!prompt) return;
+      const customId = el('taskIdInput').value.trim();
+      const taskId = customId || ('ui-' + Date.now());
 
-    async function refresh() {
+      state.submitting = true;
+      el('btnSubmit').disabled = true;
       try {
-        const h = await fetch('/v1/health').then(r => r.json());
-        $('rt-badge').textContent = 'ONLINE';
-        $('rt-badge').className = 'badge mono ok';
-        $('rt-addr').textContent = h.address || '-';
-        $('rt-root').textContent = h.project_root || '-';
-      } catch {
-        $('rt-badge').textContent = 'OFFLINE';
-        $('rt-badge').className = 'badge mono err';
-      }
-      try {
-        const inb = await fetch('/v1/inbox').then(r => r.json());
-        renderInbox(inb.records || []);
-      } catch {}
-      try {
-        const ev = await fetch('/v1/events').then(r => r.json());
-        renderEvents(ev.events || []);
-      } catch {}
-    }
-
-    async function submitPrompt(promptText) {
-      const st = $('submit-status');
-      const out = $('task-output');
-      const btn = $('task-submit-btn');
-      const taskId = 'ui-' + Date.now();
-      btn.disabled = true;
-      st.textContent = 'submitting ' + taskId + '...';
-      out.style.display = 'block';
-      out.textContent = 'Running ' + taskId + '...';
-      try {
-        const res = await fetch('/v1/tasks', {
+        await fetchJSON('/v1/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             task: {
               task_id: taskId,
               contract_id: 'default',
-              input: { message: promptText, goal: promptText },
-              status: 'pending',
-              metadata: { executor_type: 'agent' }
+              input: { prompt }
             }
           })
         });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          st.textContent = 'submit failed';
-          out.textContent = d.message || d.error || ('HTTP ' + res.status);
-          btn.disabled = false;
-          return;
-        }
-        st.textContent = 'running ' + taskId;
-        for (let i = 0; i < 90; i++) {
-          await new Promise(r => setTimeout(r, 1000));
-          const s = await fetch('/v1/tasks/' + encodeURIComponent(taskId) + '/status').then(r => r.json()).catch(() => null);
-          if (!s) continue;
-          if (s.status === 'completed' || s.status === 'failed') {
-            st.textContent = taskId + ': ' + s.status;
-            const text = s.output?.text || s.output?.result || s.error || JSON.stringify(s.output || s, null, 2);
-            out.textContent = text;
-            btn.disabled = false;
-            await refresh();
-            return;
-          }
-        }
-        st.textContent = taskId + ': timeout';
-      } catch {
-        st.textContent = 'network error';
+        el('promptInput').value = '';
+        el('taskIdInput').value = '';
+        state.selectedTaskId = taskId;
+        await loadTasks();
+        await loadSelectedDetail();
+      } catch (err) {
+        alert('Submit failed: ' + err.message);
+      } finally {
+        state.submitting = false;
+        el('btnSubmit').disabled = false;
       }
-      btn.disabled = false;
     }
 
-    $('task-form').onsubmit = e => {
-      e.preventDefault();
-      const input = $('task-prompt');
-      const text = input.value.trim();
-      if (!text) return;
-      input.value = '';
-      submitPrompt(text);
-    };
+    function connectSSE() {
+      const es = new EventSource('/v1/events/stream');
+      es.addEventListener('ready', () => {
+        state.sseConnected = true;
+        renderConnDot(true);
+      });
+      es.addEventListener('task_event', async (msg) => {
+        try {
+          const ev = JSON.parse(msg.data);
+          state.events.push(ev);
+          if (state.events.length > 100) state.events = state.events.slice(-100);
+          renderEvents();
+          await loadTasks();
+          if (ev.task_id && ev.task_id === state.selectedTaskId) {
+            await loadSelectedDetail();
+          }
+          if ((ev.event_type || '').includes('inbox') || (ev.event_type || '').includes('human')) {
+            await loadInbox();
+          }
+        } catch (_) {}
+      });
+      es.onerror = () => {
+        state.sseConnected = false;
+        renderConnDot(false);
+      };
+    }
 
-    $('refresh-btn').onclick = refresh;
-    refresh();
-    setInterval(refresh, 5000);
+    // UI Bindings
+    el('btnSubmit').addEventListener('click', submitTask);
+    el('promptInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitTask();
+      }
+    });
+    el('btnNewTask').addEventListener('click', () => {
+      state.selectedTaskId = null;
+      state.selectedDetail = null;
+      renderTaskList();
+      renderTimeline();
+      el('promptInput').focus();
+    });
+    el('btnInbox').addEventListener('click', () => {
+      el('inboxDrawer').classList.toggle('open');
+      loadInbox();
+    });
+    el('btnCloseInbox').addEventListener('click', () => {
+      el('inboxDrawer').classList.remove('open');
+    });
+
+    // Periodic lightweight sync only when active task is still running or inbox check is needed
+    setInterval(async () => {
+      if (state.selectedTaskId && state.selectedDetail &&
+          (state.selectedDetail.status === 'pending' || state.selectedDetail.status === 'running')) {
+        await loadSelectedDetail();
+        await loadTasks();
+      }
+      await loadInbox();
+    }, 2500);
+
+    (async function init() {
+      await Promise.all([loadUIInfo(), loadTasks(), loadInbox(), loadEvents()]);
+      await loadSelectedDetail();
+      connectSSE();
+    })();
   </script>
 </body>
 </html>
