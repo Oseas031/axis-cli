@@ -28,6 +28,10 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) 
 }
 
 func runLocalRuntimeWithUI(ctx context.Context, root string, out io.Writer, port int, withUI bool) error {
+	return runLocalRuntimeWithOpts(ctx, root, out, port, withUI, nil)
+}
+
+func runLocalRuntimeWithOpts(ctx context.Context, root string, out io.Writer, port int, withUI bool, onReady func(addr string)) error {
 	// Single-writer discipline: refuse when a healthy runtime already owns
 	// this project root (design.md D2). Prevents mailbox double-write races.
 	if err := ensureNoLiveRuntime(root); err != nil {
@@ -120,6 +124,9 @@ func runLocalRuntimeWithUI(ctx context.Context, root string, out io.Writer, port
 	go func() {
 		serveErr <- httpServer.Serve(listener)
 	}()
+	if onReady != nil {
+		onReady(record.Address)
+	}
 
 	select {
 	case <-ctx.Done():

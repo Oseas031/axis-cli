@@ -1,60 +1,65 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"os/signal"
 	"runtime"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
 
 func newGUICommand() *cobra.Command {
 	var port int
+	var noOpen bool
 	cmd := &cobra.Command{
-		Use:   "gui",
-		Short: "Launch the Axis GUI (observation dashboard)",
+		Use:     "gui",
+		Aliases: []string{"web"},
+		Short:   "Start Axis runtime and built-in Observatory UI together",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			guiExe := findGUIExe()
-			if guiExe == "" {
-				return fmt.Errorf("axis-gui executable not found; build it with: cd tools/axis-gui && go build -o axis-gui.exe")
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			sigChan := make(chan os.Signal, 1)
+			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+			defer signal.Stop(sigChan)
+
+			go func() {
+				<-sigChan
+				fmt.Fprintln(cmd.ErrOrStderr(), "\nShutting down gracefully...")
+				cancel()
+			}()
+
+			onReady := func(addr string) {
+				uiURL := addr + "/ui/"
+				if !noOpen {
+					if err := openBrowser(uiURL); err != nil {
+						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: could not open browser automatically: %v\n", err)
+					}
+				}
 			}
-			cwd, _ := os.Getwd()
-			guiCmd := exec.Command(guiExe, "--port", fmt.Sprintf("%d", port), "--root", cwd)
-			guiCmd.Stdout = os.Stdout
-			guiCmd.Stderr = os.Stderr
-			fmt.Printf("Starting axis-gui on port %d...\n", port)
-			return guiCmd.Run()
+
+			return runLocalRuntimeWithOpts(ctx, defaultApp.resolvedRoot(), cmd.OutOrStdout(), port, true, onReady)
 		},
 	}
-	cmd.Flags().IntVar(&port, "port", 3000, "GUI server port")
+	cmd.Flags().IntVar(&port, "port", 0, "Fixed port for runtime and UI (0 = random loopback port)")
+	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not automatically open the browser")
 	return cmd
 }
 
-func findGUIExe() string {
-	ext := ""
-	if runtime.GOOS == "windows" {
-		ext = ".exe"
+func openBrowser(targetURL string) error {
+	switch runtime.GOOS {
+	case "windows":
+		// #nosec G204
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", targetURL).Start()
+	case "darwin":
+		// #nosec G204
+		return exec.Command("open", targetURL).Start()
+	default:
+		// #nosec G204
+		return exec.Command("xdg-open", targetURL).Start()
 	}
-	// Check relative to the axis binary
-	exePath, _ := os.Executable()
-	if exePath != "" {
-		dir := filepath.Dir(exePath)
-		candidate := filepath.Join(dir, "..", "tools", "axis-gui", "axis-gui"+ext)
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate
-		}
-	}
-	// Check relative to cwd
-	cwd, _ := os.Getwd()
-	candidate := filepath.Join(cwd, "tools", "axis-gui", "axis-gui"+ext)
-	if _, err := os.Stat(candidate); err == nil {
-		return candidate
-	}
-	// Check PATH
-	if path, err := exec.LookPath("axis-gui" + ext); err == nil {
-		return path
-	}
-	return ""
 }

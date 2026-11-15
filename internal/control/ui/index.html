@@ -108,6 +108,21 @@
 
       <section class="panel" style="margin-bottom: 12px;">
         <div class="panel-head mono">
+          <span>Submit Task (Agent)</span>
+          <span id="submit-status" class="meta"></span>
+        </div>
+        <div class="item">
+          <form id="task-form" style="display:flex; gap:6px; align-items:center;">
+            <label for="task-prompt" style="position:absolute;left:-9999px;">Task prompt</label>
+            <input id="task-prompt" class="mono" placeholder="输入任务指令（例如：Read go.mod and summarize）..." />
+            <button id="task-submit-btn" type="submit" class="mono">run</button>
+          </form>
+          <pre id="task-output" class="mono" style="display:none; margin:8px 0 0; padding:8px; background:var(--bg); border:1px solid var(--border); white-space:pre-wrap; word-break:break-word; font-size:11px; max-height:220px; overflow:auto;"></pre>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-bottom: 12px;">
+        <div class="panel-head mono">
           <span>Human Inbox (CAS Gate)</span>
           <span id="inbox-err" role="alert" style="color:var(--err);"></span>
         </div>
@@ -266,6 +281,66 @@
         renderEvents(ev.events || []);
       } catch {}
     }
+
+    async function submitPrompt(promptText) {
+      const st = $('submit-status');
+      const out = $('task-output');
+      const btn = $('task-submit-btn');
+      const taskId = 'ui-' + Date.now();
+      btn.disabled = true;
+      st.textContent = 'submitting ' + taskId + '...';
+      out.style.display = 'block';
+      out.textContent = 'Running ' + taskId + '...';
+      try {
+        const res = await fetch('/v1/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task: {
+              task_id: taskId,
+              contract_id: 'default',
+              input: { message: promptText, goal: promptText },
+              status: 'pending',
+              metadata: { executor_type: 'agent' }
+            }
+          })
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          st.textContent = 'submit failed';
+          out.textContent = d.message || d.error || ('HTTP ' + res.status);
+          btn.disabled = false;
+          return;
+        }
+        st.textContent = 'running ' + taskId;
+        for (let i = 0; i < 90; i++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const s = await fetch('/v1/tasks/' + encodeURIComponent(taskId) + '/status').then(r => r.json()).catch(() => null);
+          if (!s) continue;
+          if (s.status === 'completed' || s.status === 'failed') {
+            st.textContent = taskId + ': ' + s.status;
+            const text = s.output?.text || s.output?.result || s.error || JSON.stringify(s.output || s, null, 2);
+            out.textContent = text;
+            btn.disabled = false;
+            await refresh();
+            return;
+          }
+        }
+        st.textContent = taskId + ': timeout';
+      } catch {
+        st.textContent = 'network error';
+      }
+      btn.disabled = false;
+    }
+
+    $('task-form').onsubmit = e => {
+      e.preventDefault();
+      const input = $('task-prompt');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      submitPrompt(text);
+    };
 
     $('refresh-btn').onclick = refresh;
     refresh();
