@@ -605,12 +605,13 @@
       </div>
       <div id="metaStrip" class="meta-strip" aria-label="Runtime configuration"></div>
       <div class="top-actions">
+        <button id="btnLang" class="btn" type="button" title="Switch language / 切换语言">EN</button>
         <button id="btnNewTask" class="btn" type="button">+ New Task</button>
         <button id="btnHarnesses" class="btn" type="button">
-          Harnesses <span id="harnessBadge" class="badge">1</span>
+          <span data-i18n="harnessesBtn">Harnesses</span> <span id="harnessBadge" class="badge">1</span>
         </button>
         <button id="btnInbox" class="btn" type="button">
-          Inbox <span id="inboxBadge" class="badge">0</span>
+          <span data-i18n="inboxBtn">Inbox</span> <span id="inboxBadge" class="badge">0</span>
         </button>
       </div>
     </header>
@@ -618,7 +619,7 @@
     <div class="workspace">
       <aside class="sidebar" aria-label="Task sessions">
         <div class="sidebar-head">
-          <span>Tasks</span>
+          <span data-i18n="tasksTitle">Tasks</span>
           <span id="taskCount">0</span>
         </div>
         <div id="harnessFilterBar" class="harness-filter" aria-label="Filter by harness"></div>
@@ -657,32 +658,32 @@
         </section>
 
         <details class="events-bar">
-          <summary>Event Stream (<span id="evCount">0</span>)</summary>
+          <summary><span data-i18n="eventStream">Event Stream</span> (<span id="evCount">0</span>)</summary>
           <div id="eventsList" class="events-list"></div>
         </details>
       </main>
 
       <aside id="inboxDrawer" class="drawer" aria-label="Human approval inbox">
         <div class="drawer-head">
-          <span>Human Inbox</span>
-          <button id="btnCloseInbox" class="btn" type="button">Close</button>
+          <span data-i18n="humanInbox">Human Inbox</span>
+          <button id="btnCloseInbox" class="btn" type="button" data-i18n="closeBtn">Close</button>
         </div>
         <div id="inboxList" class="drawer-body"></div>
       </aside>
 
       <aside id="harnessDrawer" class="drawer" aria-label="Agent harnesses">
         <div class="drawer-head">
-          <span>Agent Harnesses</span>
-          <button id="btnCloseHarnesses" class="btn" type="button">Close</button>
+          <span data-i18n="agentHarnesses">Agent Harnesses</span>
+          <button id="btnCloseHarnesses" class="btn" type="button" data-i18n="closeBtn">Close</button>
         </div>
         <div class="drawer-body">
           <div class="form-grid">
-            <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">Register External CLI Harness</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);" data-i18n="regHarnessTitle">Register External CLI Harness</div>
             <input id="hIdInput" type="text" placeholder="id (e.g. claude-code, codex)">
             <input id="hCmdInput" type="text" placeholder="command (e.g. claude, codex, pwsh)">
             <input id="hArgsInput" type="text" placeholder="args (space-separated, {prompt} optional)">
             <input id="hDescInput" type="text" placeholder="description (optional)">
-            <button id="btnAddHarness" class="btn primary" type="button">Register Harness</button>
+            <button id="btnAddHarness" class="btn primary" type="button" data-i18n="regHarnessBtn">Register Harness</button>
           </div>
           <div id="harnessList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
@@ -691,7 +692,126 @@
   </div>
 
   <script>
+    const I18N = {
+      'zh-CN': {
+        langToggle: 'EN',
+        skipLink: '跳到主内容',
+        newTaskBtn: '+ 新建任务',
+        harnessesBtn: '执行器',
+        inboxBtn: '收件箱',
+        tasksTitle: '任务列表',
+        selectOrSubmit: '选择或提交任务',
+        newTaskTitle: '新建任务',
+        emptyTitle: 'Axis 多 Agent 控制台',
+        emptyDesc: '在下方输入指令并选择目标 Harness，或从左侧选择历史任务查看工具轨迹、实时输出与人工审批。',
+        promptPlaceholder: '输入任务指令...（Enter 发送，Shift+Enter 换行）',
+        harnessLabel: '执行器:',
+        taskIdPlaceholder: '自动生成 (ui-...)',
+        sendBtn: '发送任务',
+        eventStream: '事件流',
+        humanInbox: '人工审批收件箱',
+        agentHarnesses: 'Agent 执行器管理',
+        closeBtn: '关闭',
+        regHarnessTitle: '注册外部 CLI 执行器',
+        hIdPlaceholder: 'ID（如 claude-code、codex）',
+        hCmdPlaceholder: '命令（如 claude、codex、pwsh）',
+        hArgsPlaceholder: '参数（空格分隔，可用 {prompt} 占位）',
+        hDescPlaceholder: '描述（可选）',
+        regHarnessBtn: '注册执行器',
+        filterAll: '全部',
+        noTasks: '当前视图暂无任务。',
+        noPromptPreview: '（无指令摘要）',
+        createdAt: '创建于',
+        userPromptLabel: '用户输入',
+        toolTrajectory: '工具轨迹',
+        stepUnit: '步',
+        runtimeLabel: '运行时',
+        executingHint: '任务执行中... 通过 SSE 实时同步。',
+        errorLabel: '错误',
+        failedTag: '失败',
+        agentOutputLabel: '输出',
+        handoffBtn: '接力 →',
+        noDetail: '暂无详情记录',
+        waitingStatus: '等待运行时状态...',
+        inboxEmpty: '收件箱为空。',
+        replyPlaceholder: '输入回复内容...',
+        replySend: '发送',
+        noEvents: '暂无事件。',
+        builtinTag: '内置',
+        customTag: '自定义',
+        handoffPrefix: '接力自',
+        handoffNext: '下一步指令：',
+        alertIdCmd: '请填写 ID 和命令',
+        alertRegFailed: '注册执行器失败：',
+        alertInboxFailed: '审批回复失败：',
+        alertSubmitFailed: '提交任务失败：'
+      },
+      'en': {
+        langToggle: '中文',
+        skipLink: 'Skip to main content',
+        newTaskBtn: '+ New Task',
+        harnessesBtn: 'Harnesses',
+        inboxBtn: 'Inbox',
+        tasksTitle: 'Tasks',
+        selectOrSubmit: 'Select or submit a task',
+        newTaskTitle: 'New Task',
+        emptyTitle: 'Axis Local Agent Workbench',
+        emptyDesc: 'Submit a prompt below and choose a target harness, or pick an existing task from the left sidebar to inspect trajectories, live logs, and human approvals.',
+        promptPlaceholder: 'Enter task prompt... (Enter to send, Shift+Enter for newline)',
+        harnessLabel: 'harness:',
+        taskIdPlaceholder: 'auto (ui-...)',
+        sendBtn: 'Send Task',
+        eventStream: 'Event Stream',
+        humanInbox: 'Human Inbox',
+        agentHarnesses: 'Agent Harnesses',
+        closeBtn: 'Close',
+        regHarnessTitle: 'Register External CLI Harness',
+        hIdPlaceholder: 'id (e.g. claude-code, codex)',
+        hCmdPlaceholder: 'command (e.g. claude, codex, pwsh)',
+        hArgsPlaceholder: 'args (space-separated, {prompt} optional)',
+        hDescPlaceholder: 'description (optional)',
+        regHarnessBtn: 'Register Harness',
+        filterAll: 'all',
+        noTasks: 'No tasks in this view.',
+        noPromptPreview: '(no prompt preview)',
+        createdAt: 'created',
+        userPromptLabel: 'USER PROMPT',
+        toolTrajectory: 'TOOL TRAJECTORY',
+        stepUnit: 'step(s)',
+        runtimeLabel: 'RUNTIME',
+        executingHint: 'Executing task... live updates via SSE.',
+        errorLabel: 'ERROR',
+        failedTag: 'failed',
+        agentOutputLabel: 'AGENT OUTPUT',
+        handoffBtn: 'Handoff →',
+        noDetail: 'No detail recorded yet',
+        waitingStatus: 'Waiting for runtime status...',
+        inboxEmpty: 'Inbox is empty.',
+        replyPlaceholder: 'Reply text...',
+        replySend: 'Send',
+        noEvents: 'No events yet.',
+        builtinTag: 'builtin',
+        customTag: 'custom',
+        handoffPrefix: 'Handoff from',
+        handoffNext: 'Next instruction: ',
+        alertIdCmd: 'id and command are required',
+        alertRegFailed: 'Register harness failed: ',
+        alertInboxFailed: 'Inbox respond failed: ',
+        alertSubmitFailed: 'Submit failed: '
+      }
+    };
+
+    function detectDefaultLang() {
+      try {
+        const saved = localStorage.getItem('axis_ui_lang');
+        if (saved === 'zh-CN' || saved === 'en') return saved;
+      } catch (_) {}
+      const sys = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+      return String(sys).toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
+    }
+
     const state = {
+      lang: detectDefaultLang(),
       tasks: [],
       harnesses: [],
       harnessFilter: 'all',
@@ -705,6 +825,27 @@
     };
 
     const el = (id) => document.getElementById(id);
+    const t = (key) => (I18N[state.lang] && I18N[state.lang][key]) || I18N.en[key] || key;
+
+    function applyI18n() {
+      document.documentElement.lang = state.lang;
+      el('btnLang').textContent = t('langToggle');
+      const skip = document.querySelector('.skip-link');
+      if (skip) skip.textContent = t('skipLink');
+      el('btnNewTask').textContent = t('newTaskBtn');
+      el('btnSubmit').textContent = t('sendBtn');
+      el('promptInput').placeholder = t('promptPlaceholder');
+      el('taskIdInput').placeholder = t('taskIdPlaceholder');
+      const hLabel = document.querySelector('label[for="harnessSelect"]');
+      if (hLabel) hLabel.textContent = t('harnessLabel');
+      el('hIdInput').placeholder = t('hIdPlaceholder');
+      el('hCmdInput').placeholder = t('hCmdPlaceholder');
+      el('hArgsInput').placeholder = t('hArgsPlaceholder');
+      el('hDescInput').placeholder = t('hDescPlaceholder');
+      document.querySelectorAll('[data-i18n]').forEach((node) => {
+        node.textContent = t(node.dataset.i18n);
+      });
+    }
 
     function esc(s) {
       return String(s ?? '')
@@ -763,7 +904,8 @@
       const filters = ['all', ...list.map((h) => h.id)];
       filterBar.innerHTML = filters.map((fid) => {
         const active = state.harnessFilter === fid ? ' active' : '';
-        return `<button type="button" class="filter-chip${active}" data-filter="${esc(fid)}">${esc(fid)}</button>`;
+        const label = fid === 'all' ? t('filterAll') : fid;
+        return `<button type="button" class="filter-chip${active}" data-filter="${esc(fid)}">${esc(label)}</button>`;
       }).join('');
       filterBar.querySelectorAll('.filter-chip').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -778,7 +920,7 @@
         <div class="inbox-card">
           <div class="inbox-meta">
             <span><b>${esc(h.id)}</b> · ${esc(h.kind)}</span>
-            <span>${h.builtin ? 'builtin' : 'custom'}</span>
+            <span>${h.builtin ? esc(t('builtinTag')) : esc(t('customTag'))}</span>
           </div>
           ${h.command ? `<div style="font-family:var(--mono);font-size:11px;color:var(--accent);">${esc(h.command)} ${esc((h.args || []).join(' '))}</div>` : ''}
           ${h.description ? `<div style="font-size:12px;color:var(--text-muted);">${esc(h.description)}</div>` : ''}
@@ -793,19 +935,19 @@
       el('taskCount').textContent = String(filtered.length);
       const list = el('taskList');
       if (!filtered.length) {
-        list.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:12px;">No tasks in this view.</div>';
+        list.innerHTML = `<div style="padding:12px;color:var(--text-dim);font-size:12px;">${esc(t('noTasks'))}</div>`;
         return;
       }
-      list.innerHTML = filtered.map((t) => {
-        const active = t.task_id === state.selectedTaskId ? ' active' : '';
-        const dotCls = t.status === 'completed' ? 'ok' : (t.status === 'failed' ? 'err' : 'warn');
-        const preview = t.prompt || '(no prompt preview)';
-        const hTag = t.harness || 'axis-native';
+      list.innerHTML = filtered.map((tItem) => {
+        const active = tItem.task_id === state.selectedTaskId ? ' active' : '';
+        const dotCls = tItem.status === 'completed' ? 'ok' : (tItem.status === 'failed' ? 'err' : 'warn');
+        const preview = tItem.prompt || t('noPromptPreview');
+        const hTag = tItem.harness || 'axis-native';
         return `
-          <button type="button" class="task-item${active}" data-task-id="${esc(t.task_id)}">
+          <button type="button" class="task-item${active}" data-task-id="${esc(tItem.task_id)}">
             <div class="task-item-top">
-              <span class="task-id"><span class="status-dot ${dotCls}"></span>${esc(t.task_id)}</span>
-              <span class="task-time">${esc(fmtTime(t.created_at))}</span>
+              <span class="task-id"><span class="status-dot ${dotCls}"></span>${esc(tItem.task_id)}</span>
+              <span class="task-time">${esc(fmtTime(tItem.created_at))}</span>
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
               <span class="harness-tag">${esc(hTag)}</span>
@@ -826,18 +968,18 @@
       const tl = el('timeline');
 
       if (!state.selectedTaskId) {
-        titleEl.textContent = 'New Task';
+        titleEl.textContent = t('newTaskTitle');
         pillEl.style.display = 'none';
         metaEl.textContent = '';
         tl.innerHTML = `
           <div class="empty-state">
-            <h2>Axis Local Agent Workbench</h2>
-            <p>Submit a prompt below or choose an existing task from the left sidebar to inspect tool trajectories, outputs, and human approval requests.</p>
+            <h2>${esc(t('emptyTitle'))}</h2>
+            <p>${esc(t('emptyDesc'))}</p>
           </div>`;
         return;
       }
 
-      const summary = state.tasks.find((t) => t.task_id === state.selectedTaskId) || {};
+      const summary = state.tasks.find((item) => item.task_id === state.selectedTaskId) || {};
       const detail = state.selectedDetail || {};
       const status = detail.status || summary.status || 'pending';
 
@@ -846,14 +988,14 @@
       pillEl.style.display = 'inline-block';
       pillEl.className = 'pill ' + pillClass(status);
       pillEl.textContent = status;
-      metaEl.innerHTML = `<span class="harness-tag">${esc(harnessName)}</span> ${summary.created_at ? ('created ' + esc(fmtTime(summary.created_at))) : ''}`;
+      metaEl.innerHTML = `<span class="harness-tag">${esc(harnessName)}</span> ${summary.created_at ? (esc(t('createdAt')) + ' ' + esc(fmtTime(summary.created_at))) : ''}`;
 
       const blocks = [];
       const promptText = summary.prompt || (summary.input ? JSON.stringify(summary.input, null, 2) : '');
       if (promptText) {
         blocks.push(`
           <div class="turn-block user">
-            <div class="turn-label"><span>USER PROMPT</span><span>${esc(fmtTime(summary.created_at))}</span></div>
+            <div class="turn-label"><span>${esc(t('userPromptLabel'))}</span><span>${esc(fmtTime(summary.created_at))}</span></div>
             <div class="turn-body">${esc(promptText)}</div>
           </div>
         `);
@@ -879,7 +1021,7 @@
         }).join('');
         blocks.push(`
           <div class="trace-group">
-            <div class="trace-group-head"><span>TOOL TRAJECTORY</span><span>${traces.length} step(s)</span></div>
+            <div class="trace-group-head"><span>${esc(t('toolTrajectory'))}</span><span>${traces.length} ${esc(t('stepUnit'))}</span></div>
             <div class="trace-list">${stepsHTML}</div>
           </div>
         `);
@@ -893,8 +1035,8 @@
           .join('\n');
         blocks.push(`
           <div class="turn-block">
-            <div class="turn-label"><span>RUNTIME (${esc(harnessName)})</span><span>${esc(status)}</span></div>
-            <div class="turn-body mono">${esc(streamLines || 'Executing task... live updates via SSE.')}</div>
+            <div class="turn-label"><span>${esc(t('runtimeLabel'))} (${esc(harnessName)})</span><span>${esc(status)}</span></div>
+            <div class="turn-body mono">${esc(streamLines || t('executingHint'))}</div>
           </div>
         `);
       }
@@ -902,7 +1044,7 @@
       if (detail.error) {
         blocks.push(`
           <div class="turn-block error">
-            <div class="turn-label"><span>ERROR</span><span>failed</span></div>
+            <div class="turn-label"><span>${esc(t('errorLabel'))}</span><span>${esc(t('failedTag'))}</span></div>
             <div class="turn-body mono">${esc(detail.error)}</div>
           </div>
         `);
@@ -915,8 +1057,8 @@
         blocks.push(`
           <div class="turn-block assistant">
             <div class="turn-label">
-              <span>AGENT OUTPUT (${esc(harnessName)})</span>
-              <button id="btnHandoff" type="button" class="btn" style="padding:1px 7px;font-size:10px;">Handoff →</button>
+              <span>${esc(t('agentOutputLabel'))} (${esc(harnessName)})</span>
+              <button id="btnHandoff" type="button" class="btn" style="padding:1px 7px;font-size:10px;">${esc(t('handoffBtn'))}</button>
             </div>
             <div class="turn-body">${esc(finalText)}</div>
           </div>
@@ -924,14 +1066,14 @@
       }
 
       if (!blocks.length) {
-        blocks.push('<div class="empty-state"><h2>No detail recorded yet</h2><p>Waiting for runtime status...</p></div>');
+        blocks.push(`<div class="empty-state"><h2>${esc(t('noDetail'))}</h2><p>${esc(t('waitingStatus'))}</p></div>`);
       }
       tl.innerHTML = blocks.join('');
       const handoffBtn = el('btnHandoff');
       if (handoffBtn && finalText) {
         handoffBtn.addEventListener('click', () => {
           const snippet = finalText.length > 1500 ? finalText.slice(0, 1500) + '\n...(truncated)' : finalText;
-          el('promptInput').value = `[Handoff from ${state.selectedTaskId} @ ${harnessName}]\n${snippet}\n\nNext instruction: `;
+          el('promptInput').value = `[${t('handoffPrefix')} ${state.selectedTaskId} @ ${harnessName}]\n${snippet}\n\n${t('handoffNext')}`;
           el('harnessSelect').focus();
         });
       }
@@ -946,7 +1088,7 @@
 
       const list = el('inboxList');
       if (!records.length) {
-        list.innerHTML = '<div style="color:var(--text-dim);font-size:12px;">Inbox is empty.</div>';
+        list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;">${esc(t('inboxEmpty'))}</div>`;
         return;
       }
       list.innerHTML = records.map((r) => {
@@ -959,7 +1101,7 @@
           ? `<div class="inbox-options">${opts.map((opt) => `<button type="button" class="btn inbox-opt" data-call-id="${esc(callId)}" data-choice="${esc(opt.key || opt)}">${esc(opt.label || opt.key || opt)}</button>`).join('')}</div>`
           : '';
         const replyHTML = isPending
-          ? `<div class="inbox-reply-row"><input type="text" placeholder="Reply text..." data-call-input="${esc(callId)}"><button type="button" class="btn primary inbox-send" data-call-id="${esc(callId)}">Send</button></div>`
+          ? `<div class="inbox-reply-row"><input type="text" placeholder="${esc(t('replyPlaceholder'))}" data-call-input="${esc(callId)}"><button type="button" class="btn primary inbox-send" data-call-id="${esc(callId)}">${esc(t('replySend'))}</button></div>`
           : `<div style="font-family:var(--mono);font-size:11px;color:var(--ok);">status: ${esc(r.status)}</div>`;
         return `
           <div class="inbox-card ${isPending ? 'pending' : ''}">
@@ -993,7 +1135,7 @@
           <span>${esc(ev.task_id || '')} ${esc(ev.status ? '[' + ev.status + ']' : '')} ${esc(ev.message || '')}</span>
         </div>
       `).join('');
-      el('eventsList').innerHTML = rows || '<div style="color:var(--text-dim);">No events yet.</div>';
+      el('eventsList').innerHTML = rows || `<div style="color:var(--text-dim);">${esc(t('noEvents'))}</div>`;
     }
 
     async function loadUIInfo() {
@@ -1017,7 +1159,7 @@
       const argsRaw = el('hArgsInput').value.trim();
       const description = el('hDescInput').value.trim();
       if (!id || !command) {
-        alert('id and command are required');
+        alert(t('alertIdCmd'));
         return;
       }
       const args = argsRaw ? argsRaw.split(/\s+/) : [];
@@ -1033,7 +1175,7 @@
         el('hDescInput').value = '';
         await loadHarnesses();
       } catch (err) {
-        alert('Register harness failed: ' + err.message);
+        alert(t('alertRegFailed') + err.message);
       }
     }
 
@@ -1095,7 +1237,7 @@
         await loadTasks();
         await loadSelectedDetail();
       } catch (err) {
-        alert('Inbox respond failed: ' + err.message);
+        alert(t('alertInboxFailed') + err.message);
       }
     }
 
@@ -1128,7 +1270,7 @@
         await loadTasks();
         await loadSelectedDetail();
       } catch (err) {
-        alert('Submit failed: ' + err.message);
+        alert(t('alertSubmitFailed') + err.message);
       } finally {
         state.submitting = false;
         el('btnSubmit').disabled = false;
@@ -1194,6 +1336,16 @@
       el('harnessDrawer').classList.remove('open');
     });
     el('btnAddHarness').addEventListener('click', registerHarness);
+    el('btnLang').addEventListener('click', () => {
+      state.lang = state.lang === 'zh-CN' ? 'en' : 'zh-CN';
+      try { localStorage.setItem('axis_ui_lang', state.lang); } catch (_) {}
+      applyI18n();
+      renderHarnesses();
+      renderTaskList();
+      renderTimeline();
+      renderInbox();
+      renderEvents();
+    });
 
     // Periodic lightweight sync only when active task is still running or inbox check is needed
     setInterval(async () => {
@@ -1206,6 +1358,7 @@
     }, 2500);
 
     (async function init() {
+      applyI18n();
       await Promise.all([loadUIInfo(), loadHarnesses(), loadTasks(), loadInbox(), loadEvents()]);
       await loadSelectedDetail();
       connectSSE();
