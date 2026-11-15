@@ -6,7 +6,7 @@ set ROOT=%~dp0
 cd /d "%ROOT%"
 
 echo [Axis] Building engine...
-go build -o axis-dev.exe ./cmd/axis/ 2>nul
+go build -o axis-dev.exe ./cmd/axis/
 if errorlevel 1 (
     echo [Axis] Engine build failed.
     pause
@@ -14,8 +14,11 @@ if errorlevel 1 (
 )
 
 echo [Axis] Building GUI...
-go build -o tools\axis-gui\axis-gui.exe ./tools/axis-gui/ 2>nul
-if errorlevel 1 (
+pushd "%ROOT%tools\axis-gui"
+go build -o axis-gui.exe .
+set GUI_EC=%errorlevel%
+popd
+if not "%GUI_EC%"=="0" (
     echo [Axis] GUI build failed.
     pause
     exit /b 1
