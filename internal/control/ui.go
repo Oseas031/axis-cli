@@ -37,6 +37,8 @@ type TaskLister interface {
 type TaskSummary struct {
 	TaskID      string           `json:"task_id"`
 	Status      types.TaskStatus `json:"status"`
+	Harness     string           `json:"harness,omitempty"`
+	AgentID     string           `json:"agent_id,omitempty"`
 	Prompt      string           `json:"prompt,omitempty"`
 	Input       map[string]any   `json:"input,omitempty"`
 	CreatedAt   time.Time        `json:"created_at,omitempty"`
@@ -84,6 +86,30 @@ func (s *Server) handleUIInfo(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, info)
 }
 
+func taskSummaryFromAgentTask(t *types.AgentTask, fallbackHarness string) TaskSummary {
+	harness := fallbackHarness
+	agentID := ""
+	if t.Metadata != nil {
+		if h := t.Metadata["harness"]; h != "" {
+			harness = h
+		}
+		agentID = t.Metadata["agent_id"]
+	}
+	if agentID == "" {
+		agentID = harness
+	}
+	return TaskSummary{
+		TaskID:      t.TaskID,
+		Status:      t.Status,
+		Harness:     harness,
+		AgentID:     agentID,
+		Prompt:      extractTaskPrompt(t.Input),
+		Input:       t.Input,
+		CreatedAt:   t.CreatedAt,
+		CompletedAt: t.CompletedAt,
+	}
+}
+
 func (s *Server) handleTasksList(w http.ResponseWriter, r *http.Request) {
 	byID := make(map[string]TaskSummary)
 
@@ -92,15 +118,15 @@ func (s *Server) handleTasksList(w http.ResponseWriter, r *http.Request) {
 			if t == nil || t.TaskID == "" {
 				continue
 			}
-			byID[t.TaskID] = TaskSummary{
-				TaskID:      t.TaskID,
-				Status:      t.Status,
-				Prompt:      extractTaskPrompt(t.Input),
-				Input:       t.Input,
-				CreatedAt:   t.CreatedAt,
-				CompletedAt: t.CompletedAt,
-			}
+			byID[t.TaskID] = taskSummaryFromAgentTask(t, defaultHarnessID)
 		}
+	}
+
+	for _, t := range s.ensureHarnesses().GetAllTasks() {
+		if t == nil || t.TaskID == "" {
+			continue
+		}
+		byID[t.TaskID] = taskSummaryFromAgentTask(t, defaultHarnessID)
 	}
 
 	// Merge event log records so tasks from earlier turns/restarts remain visible if absent from memory.
@@ -111,13 +137,25 @@ func (s *Server) handleTasksList(w http.ResponseWriter, r *http.Request) {
 		if existing, ok := byID[ev.TaskID]; ok {
 			if existing.CreatedAt.IsZero() && !ev.CreatedAt.IsZero() {
 				existing.CreatedAt = ev.CreatedAt
-				byID[ev.TaskID] = existing
 			}
+			if existing.AgentID == "" && ev.AgentID != "" {
+				existing.AgentID = ev.AgentID
+			}
+			if existing.Harness == "" && ev.AgentID != "" {
+				existing.Harness = ev.AgentID
+			}
+			byID[ev.TaskID] = existing
 			continue
+		}
+		harness := ev.AgentID
+		if harness == "" {
+			harness = defaultHarnessID
 		}
 		byID[ev.TaskID] = TaskSummary{
 			TaskID:    ev.TaskID,
 			Status:    types.TaskStatus(ev.Status),
+			Harness:   harness,
+			AgentID:   ev.AgentID,
 			CreatedAt: ev.CreatedAt,
 		}
 	}

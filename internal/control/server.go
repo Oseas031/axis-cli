@@ -34,6 +34,7 @@ type Server struct {
 	inbox     InboxAPI
 	uiEnabled bool
 	uiInfo    UIInfo
+	harnesses *HarnessManager
 }
 
 func NewServer(runtime Runtime, record RuntimeRecord) *Server {
@@ -60,6 +61,7 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("/v1/events", s.handleEventsList)
 		mux.HandleFunc("/v1/events/stream", s.handleEventsStream)
 		mux.HandleFunc("/v1/ui/info", s.handleUIInfo)
+		mux.HandleFunc("/v1/harnesses", s.handleHarnesses)
 	}
 	return mux
 }
@@ -112,11 +114,39 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "task is required", "")
 		return
 	}
+	harnessID := ""
+	if req.Task.Metadata != nil {
+		harnessID = strings.TrimSpace(req.Task.Metadata["harness"])
+	}
+	if harnessID == "" {
+		harnessID = defaultHarnessID
+	}
+	agentID := harnessID
+	if req.Task.Metadata != nil && strings.TrimSpace(req.Task.Metadata["agent_id"]) != "" {
+		agentID = strings.TrimSpace(req.Task.Metadata["agent_id"])
+	}
+
+	if harnessID != defaultHarnessID {
+		mgr := s.ensureHarnesses()
+		spec, ok := mgr.Get(harnessID)
+		if !ok {
+			writeError(w, http.StatusBadRequest, "unknown_harness", fmt.Sprintf("harness %q is not registered", harnessID), "GET /v1/harnesses")
+			return
+		}
+		if err := mgr.SubmitCLI(spec, req.Task); err != nil {
+			writeError(w, http.StatusInternalServerError, "submit_failed", err.Error(), "")
+			return
+		}
+		s.appendEvent(TaskEvent{TaskID: req.Task.TaskID, EventType: "submitted", Actor: "local-control", AgentID: agentID, Status: string(types.TaskStatusPending), Message: "task submitted to harness " + harnessID})
+		writeJSON(w, http.StatusAccepted, SubmitTaskResponse{TaskID: req.Task.TaskID, Status: types.TaskStatusPending})
+		return
+	}
+
 	if err := s.runtime.SubmitTask(req.Task); err != nil {
 		writeError(w, http.StatusInternalServerError, "submit_failed", err.Error(), "")
 		return
 	}
-	s.appendEvent(TaskEvent{TaskID: req.Task.TaskID, EventType: "submitted", Actor: "local-control", Status: string(types.TaskStatusPending), Message: "task submitted"})
+	s.appendEvent(TaskEvent{TaskID: req.Task.TaskID, EventType: "submitted", Actor: "local-control", AgentID: agentID, Status: string(types.TaskStatusPending), Message: "task submitted"})
 	writeJSON(w, http.StatusAccepted, SubmitTaskResponse{TaskID: req.Task.TaskID, Status: types.TaskStatusPending})
 }
 
@@ -133,6 +163,18 @@ func (s *Server) handleTaskStatus(w http.ResponseWriter, r *http.Request) {
 	taskID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, prefix), "/status")
 	if taskID == "" || strings.Contains(taskID, "/") {
 		writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
+		return
+	}
+	if mgr := s.ensureHarnesses(); mgr.HasTask(taskID) {
+		status, _ := mgr.GetTaskStatus(taskID)
+		resp := StatusResponse{TaskID: taskID, Status: status}
+		if status == types.TaskStatusCompleted || status == types.TaskStatusFailed {
+			if result, ok := mgr.GetTaskResult(taskID); ok && result != nil {
+				resp.Output = result.Output
+				resp.Error = result.Error
+			}
+		}
+		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 	status, err := s.runtime.GetTaskStatus(taskID)
