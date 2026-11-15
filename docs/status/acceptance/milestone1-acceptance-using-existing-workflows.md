@@ -2,7 +2,6 @@
 
 # Milestone 1 Acceptance: Automated Testing Using Existing Workflows
 
-**[Chinese version / 中文版](../../zh/status/acceptance/milestone1-acceptance-using-existing-workflows.md)**
 
 **Goal**: Complete Milestone 1 self-check and acceptance process using the existing workflow system, verifying workflow automation capability
 

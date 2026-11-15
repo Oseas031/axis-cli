@@ -1,6 +1,5 @@
 # axis-up
 
-**[Chinese version / 中文版](../zh/tools/axis-up.md)**
 
 `axis-up` is an external human onboarding tool for Axis.
 
@@ -72,8 +71,6 @@ axis-dev.exe provider use <name>
 
 Detailed implementation notes are kept in the tool directory:
 
-- [`tools/axis-up/README.md`](../../tools/axis-up/README.md)
-- [`tools/axis-up/DESIGN.md`](../../tools/axis-up/DESIGN.md)
 
 This way, if `axis-up` is ever split into an independent repository, the tool docs can migrate directly.
 

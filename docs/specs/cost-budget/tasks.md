@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-16
+last_verified: 2026-08-26
+---
+
 > 状态：Completed（功能已随 2026-05 cost-budget 波次落地，任务清单留档）
 # Cost Budget: Tasks
 

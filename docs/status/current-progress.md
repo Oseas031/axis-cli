@@ -1,13 +1,26 @@
 # Current Progress
 
-**Updated**: 2026-08-24
+**Updated**: 2026-11-15
 **Milestones**: M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Coding Agent P0 ✅ | Hardening ✅ | Real-World Validation ✅
 
 ## Vigil Status
 
 Total: 114 | Completed: 89 | Pending: 25 (stale entries pending W0 audit reconciliation)
 
-## This Week (2026-08-24)
+## This Week (2026-11-15)
+
+### Workflow Alignment & Cleanup (2026-11-15)
+- 修正开发流为“人守 Spec 与概念完整性 + 冻结新子系统扩张 + 确定性 DAG 门控与 `human/gate` 终审”，已写回 `CLAUDE.md`
+- 确立 3 步收敛落地路线：① 跑通本地实测闭环与任务基准数据校准 → ② 顺滑 `axis inbox` 并发与人机协同体验 → ③（可选）纳管外部 CLI Agent 作为 `AgentExecutor`
+- 修复 `internal/human/gate` `degrade()` 吞错导致的 CAS 竞态（`TestGate_ResolveWinsOverDegrade` 压测通过）
+- 清理 `cmd/axis/main.go` SystemPrompt 重复段落与仓库追踪残留 `nu_`，对齐 `README.md` Go 1.26+ 与状态描述
+
+### Positioning Pivot (2026-08-26)
+- 核心命题锁定：人机互调度新范式——同合约双执行者，双向任务流
+- New spec: docs/specs/human-agent-scheduling/（反调 12 条发现已闭合）
+- **v1 实现落地**：per-actor 持久收件箱（CAS/大小上限/迁移）、human gate（park/nudge/fail-closed 降级/scrubber）、dispatcher 异步接线（busy-poll 移除、PermissionAsk 启用、park 让位超时）、waiting_human 状态可查询、控制面 /v1/inbox 端点、CLI inbox 命令族、GUI Inbox 视图、单实例互斥、启动过期扫描、human.request.* 事件族
+- 测试：gate 8 + comm 7 + dispatcher 新增 7 + CLI 6 + e2e 3，全仓 `go test -race -short` 绿
+- Docs lint tooling: --check 范围过滤、目录链接 orphan 识别、占位符跳过；存量债清偿 153→0
 
 ### Streamlining (2026-08-25, positioning locked: A+B)
 - Removed dead subsystems: kernel/audit, safego, contextpack shims (-1491 LOC)

@@ -1,4 +1,11 @@
-﻿# Secret Handling
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# Secret Handling
 
 > 展开自 CLAUDE.md §1.7（禁止输出密钥）
 

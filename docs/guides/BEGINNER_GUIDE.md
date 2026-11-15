@@ -1,6 +1,5 @@
 # Axis Beginner Guide: Getting Started with axis-up
 
-**[Chinese version / 中文版](../zh/guides/BEGINNER_GUIDE.md)**
 
 This guide is for first-time Axis users. You don't need to understand Axis's architecture, and you don't need a real model API key. Just use `axis-up` to complete environment checks, build Axis, run a demo, and understand what to do next.
 

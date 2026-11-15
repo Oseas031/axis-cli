@@ -1,6 +1,5 @@
 # Quick Start
 
-**[Chinese version / 中文版](../zh/guides/QUICKSTART.md)**
 
 ## What is Axis
 

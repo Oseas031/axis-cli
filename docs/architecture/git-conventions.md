@@ -2,12 +2,12 @@
 type: architecture
 status: active
 created: 2026-05-15
-last_verified: 2026-05-15
+last_verified: 2026-11-15
 related:
   - docs/architecture/axis-system-conventions.md
 ---
 
-> 展开自 CLAUDE.md §9
+> 展开自 CLAUDE.md §9（2026-11-15 轻量化收敛，适配单操作者节奏）
 
 # Git Conventions
 
@@ -15,21 +15,15 @@ Authoritative git workflow reference for the Axis project.
 
 ## Branch Strategy
 
-**`main`**: always deployable, bisect-safe. Every commit compiles (`go build ./...`) and passes `go vet ./...`.
+**`main`**: always bisect-safe. Every commit compiles (`go build ./...`), passes `go vet ./...`, and passes `go test -race -short ./...`.
 
-**Direct main commit allowed when**:
-- RDM operations (docs-only, ≤5 files, ≤100 lines)
+**Direct `main` commit**: default for single-operator iteration (RDM docs, bug fixes, and scoped changes).
 
-**Feature branch required when** (any one):
-- >5 files changed
-- >200 lines delta
-- Crosses ≥2 `internal/` subdirectories
+**Feature branch (recommended)**: large experimental refactors or multi-day work where isolation helps.
 
 **Branch naming**: `<type>/<scope>-<description>`
 
 Types: `feature` | `fix` | `docs` | `research` | `refactor` | `chore`
-
-Examples: `feature/kernel-crash-recovery`, `fix/vigil-done-grep`, `docs/git-conventions`
 
 ## Commit Message Convention
 
@@ -37,42 +31,20 @@ Format (Conventional Commits):
 
 ```
 <type>(<scope>): <description>
-                                        ← blank line
-<body>
-                                        ← blank line
-<footer>
+
+[optional body: what + why]
+[optional footer: vigil: <id> | Refs: <spec-id>]
 ```
 
-**Header**: ≤70 characters, imperative mood, no trailing period.
+**Header**: ≤70 characters, imperative mood; avoid bare `wip` or `fix typo` on `main`.
 
 **Types**: `feat` | `fix` | `docs` | `refactor` | `test` | `chore` | `perf` | `research` | `rdm`
 
-**Scopes**: `agent` | `kernel` | `contextpack` | `model` | `vigil` | `gui` | `methodology`
-
-**Body**: what + why (not how). Wrap at 72 characters.
-
-**Footer**:
-- `vigil: <id>` — links to vigil work item
-- `Refs: <spec-id>` — links to Spec-RDT (e.g., `Refs: M6 T13`)
-
-At least one of `vigil:` or `Refs:` is required for non-RDM commits.
+**Scopes**: `agent` | `kernel` | `contextpack` | `model` | `vigil` | `gui` | `human` | `comm` | `docs`
 
 ## Commit Granularity
 
-- One logical concern = one commit
-- Target: ≤5 files, ≤200 lines per commit
-- Research pipeline: report + vigil update = one commit; code implementation = separate commit(s)
-
-**Never mix in one commit**:
-- Code changes + methodology updates
-- Code changes + documentation
-- Multiple unrelated fixes
-
-## Push Policy
-
-- Push at end of every work session (minimum daily)
-- Never accumulate >10 unpushed commits
-- New branches: `git push -u origin <branch>`
+- One logical concern = one commit (target small, bisect-safe commits; keep code and doc sync together when they describe the same feature).
 
 ## Never Commit (Private / Sensitive)
 

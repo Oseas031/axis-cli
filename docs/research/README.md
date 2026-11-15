@@ -13,3 +13,5 @@
 | [context-rot-safety-warning](context-rot-safety-warning.md) | 05-14 | Context Rot 安全警告 |
 | [gemma4-mtp-evaluation-2026-05-14](gemma4-mtp-evaluation-2026-05-14.md) | 05-14 | Gemma4 多任务评估 |
 | [context-recommendation-system-ai-agents-2026-06-15](context-recommendation-system-ai-agents-2026-06-15.md) | 06-15 | 上下文推荐系统在 AI Agent 中的应用：选择/排序/压缩/刷新 |
+| [mattpocock-skills-design-2026-05-15](mattpocock-skills-design-2026-05-15.md) | 05-15 | Mattpocock skills 设计研究 |
+| [tencentdb-agent-memory](tencentdb-agent-memory.md) | — | 腾讯云 DB Agent 记忆方案调研 |

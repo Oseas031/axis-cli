@@ -1,4 +1,11 @@
-﻿# Layered Memory Model Requirements
+---
+type: spec
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# Layered Memory Model Requirements
 
 > 实现 agent-native-first-principles.md P4（Layered Isolation）
 

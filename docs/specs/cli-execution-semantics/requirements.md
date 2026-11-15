@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-14
+last_verified: 2026-08-26
+---
+
 # CLI Execution Semantics Requirements
 
 > 实现 agent-native-first-principles.md P1（CLI First）+ CLAUDE.md §1.2（No hidden daemons）

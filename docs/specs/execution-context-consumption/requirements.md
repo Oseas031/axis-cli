@@ -1,4 +1,11 @@
-﻿# Execution-time Context Consumption Requirements
+---
+type: spec
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# Execution-time Context Consumption Requirements
 
 > 实现 agent-native-first-principles.md P2（Query is Context）
 

@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-13
+last_verified: 2026-08-26
+---
+
 # Axis CodingAgent: Design First Principles
 
 **Date**: 2026-05-13

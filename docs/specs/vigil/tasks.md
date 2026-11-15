@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-14
+last_verified: 2026-08-26
+---
+
 # Vigil Tasks
 
 **Status**: In Progress

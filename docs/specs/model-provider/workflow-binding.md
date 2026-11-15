@@ -1,4 +1,11 @@
-﻿# Model Provider Workflow Binding
+---
+type: spec
+status: active
+created: 2026-05-08
+last_verified: 2026-08-26
+---
+
+# Model Provider Workflow Binding
 
 ## Purpose
 

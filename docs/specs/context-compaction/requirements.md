@@ -1,4 +1,11 @@
-﻿# Context Compaction Requirements
+---
+type: spec
+status: active
+created: 2026-05-12
+last_verified: 2026-08-26
+---
+
+# Context Compaction Requirements
 
 > 实现 agent-native-first-principles.md P2（Query is Context）
 

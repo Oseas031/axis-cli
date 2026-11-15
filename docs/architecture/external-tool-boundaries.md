@@ -1,4 +1,11 @@
-﻿# External Tool Boundaries
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# External Tool Boundaries
 
 > 展开自 CLAUDE.md §4（目录边界）+ §6（语义边界）
 

@@ -1,3 +1,10 @@
+---
+type: architecture
+status: active
+created: 2026-05-13
+last_verified: 2026-08-26
+---
+
 # Decision Record: Language Choice & Structural Tensions
 
 **Date**: 2026-05-13

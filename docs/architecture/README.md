@@ -22,3 +22,4 @@
 | [refactor-migration-conventions](refactor-migration-conventions.md) | 重构迁移规范 |
 | [decision-language-choice-and-structural-tensions](decision-language-choice-and-structural-tensions.md) | Go 语言选择分析 |
 | [aspirational-directions](aspirational-directions.md) | 未来方向 |
+| [git-conventions](git-conventions.md) | Git 工作流（宪法 P3） |

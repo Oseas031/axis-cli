@@ -1,3 +1,10 @@
+---
+type: architecture
+status: active
+created: 2026-05-13
+last_verified: 2026-08-26
+---
+
 # Aspirational Directions
 
 > 展开自 CLAUDE.md §13.4 模式 A（理论超前实践）

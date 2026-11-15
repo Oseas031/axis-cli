@@ -1,5 +1,7 @@
 # Specs Index
 
+> **收敛约束（2026-11-15）**：冻结新增独立 Spec 的横向扩张，优先跑通并验证现有核心闭环（详见 `CLAUDE.md` §0 & §5）。
+
 每个 spec 含 requirements.md + design.md + tasks.md。
 
 | Spec | 状态 | 一句话 |
@@ -19,3 +21,7 @@
 | [interactive-shell](interactive-shell/) | Completed | axis shell 交互会话 |
 | [adaptive-context-assembly](adaptive-context-assembly/) | Completed | 自适应上下文组装 |
 | [execution-context-consumption](execution-context-consumption/) | Completed | 执行时上下文消费 |
+| [human-agent-scheduling](human-agent-scheduling/) | In Progress | 人机互调度：双向任务流对称执行者 |
+| [cost-budget](cost-budget/) | Completed | 任务级 USD 预算 + 自动降级 |
+| [swarm-topology](swarm-topology/) | Completed | Swarm 多候选并行投票 |
+| [context-recommendation](context-recommendation/) | Planned | 上下文推荐系统（design 先行） |

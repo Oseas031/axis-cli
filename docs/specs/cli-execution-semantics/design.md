@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-14
+last_verified: 2026-08-26
+---
+
 # CLI Execution Semantics Design
 
 > 展开自 CLAUDE.md §1（No hidden daemons）+ §8（CLI Output Contracts）

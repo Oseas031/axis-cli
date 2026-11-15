@@ -1,6 +1,5 @@
 # Axis Agent-Native Scheduling · Scenarios Whitepaper
 
-**[Chinese version / 中文版](../zh/product/axis-native-scenarios-whitepaper.md)**
 
 > Perspective: Multi-agent systems philosopher × Agent-native architecture chief designer × Distributed scheduling product strategist
 > Rules: First principles, zero traditional paradigm borrowing, semantic orthogonality, three-layer boundaries

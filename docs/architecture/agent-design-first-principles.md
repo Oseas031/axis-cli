@@ -1,3 +1,10 @@
+---
+type: architecture
+status: active
+created: 2026-05-14
+last_verified: 2026-08-26
+---
+
 # Agent Design First Principles — Compensating LLM Deficiencies
 
 > 展开自 CLAUDE.md §11（演化原则）+ §0（辩证方法论）

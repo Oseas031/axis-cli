@@ -6,7 +6,7 @@
 项目：**Axis** — 单操作者的 AI 编码中枢 + Agent 可靠性实验台。
 核心命题：**更多上下文、更多行动、零控制、可控演化**。
 
-定位（2026-08-25 收敛）：A 自用调度塔（多 provider 任务提交/成本预算/judge 验证/vigil 追踪）＋ B 可靠性实验台（swarm 多候选、多数决、评测数据对外输出）。不做分布式、不做多租户、不追求通用产品。
+定位（2026-08-26 收敛）：A 自用调度塔（多 provider 任务提交/成本预算/judge 验证/vigil 追踪）＋ B 可靠性实验台（swarm 多候选、多数决、评测数据对外输出）＋ C 人机互调度（同合约双执行者，经 `human/gate` 与 `comm` inbox 双向流转）。不做分布式、不做多租户、不追求通用产品。
 
 ---
 
@@ -22,6 +22,7 @@
 - 短指令先展开意图再执行；不确定就问
 - 工作追踪用 vigil；新会话先 `axis vigil resume`
 - 文档日常维护走 RDM 豁免（见 §2.1）
+- **开发流收敛约束（2026-11-15 确立）**：概念完整性与 Spec 定界由人主导，不外包给多 Agent；冻结新增独立子系统直至核心闭环跑通；DAG 节点强绑定确定性验证（`go test` / `go vet`），分叉与 `promote` 前经 `human/gate` 终审
 
 深度参考（可选读）：`docs/guides/SRS-LOOP-AI-REFERENCE.md`
 
@@ -74,6 +75,8 @@
 | `internal/memory/` | 永不 push 到 prompt；不物理删除；无外部依赖/后台任务；LF-only |
 | `internal/skills/` | 不自动 push skill 内容；无网络访问 |
 | `internal/vigil/` | 不阻塞 git；不强制顺序；不对 Agent 隐藏 item |
+| `internal/human/` | 仅做门控/降级/脱敏；不绕过 `comm` inbox CAS；不自动批准 |
+| `internal/comm/` | 持久化收件箱仅 CAS 变更状态；不直接驱动调度 |
 
 ## 5. Spec-First（按需）
 

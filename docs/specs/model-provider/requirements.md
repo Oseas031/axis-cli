@@ -1,4 +1,11 @@
-﻿# Model Provider Requirements
+---
+type: spec
+status: active
+created: 2026-05-08
+last_verified: 2026-08-26
+---
+
+# Model Provider Requirements
 
 > 实现 semantic-boundaries.md Provider 边界
 

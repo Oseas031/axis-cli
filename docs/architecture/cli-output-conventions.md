@@ -1,4 +1,11 @@
-﻿# CLI Output Conventions
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# CLI Output Conventions
 
 > 展开自 CLAUDE.md §8（CLI 输出契约）
 

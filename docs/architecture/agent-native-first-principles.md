@@ -18,7 +18,6 @@ related:
 
 > This document is the foundation of all Axis design decisions. The former `agent-native-design-philosophy.md` has been merged here and deprecated.
 
-**[Chinese version / 中文版](../../docs/zh/architecture/agent-native-first-principles.md)**
 
 ---
 

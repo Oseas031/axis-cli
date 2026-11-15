@@ -1,10 +1,17 @@
-﻿# Model Provider Tasks
+---
+type: spec
+status: active
+created: 2026-05-08
+last_verified: 2026-08-26
+---
+
+# Model Provider Tasks
 
 ## Related Documents
 
   [requirements.md](requirements.md)
   [design.md](design.md)
-  [workflow binding.md](workflow binding.md)
+  [workflow binding.md](workflow-binding.md)
 
 ## Upstream Workflow Binding
 

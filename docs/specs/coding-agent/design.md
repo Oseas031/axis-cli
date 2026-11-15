@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-14
+last_verified: 2026-08-26
+---
+
 # Coding Agent — Design
 
 > 实现 `docs/architecture/agent-design-first-principles.md` §3-§4

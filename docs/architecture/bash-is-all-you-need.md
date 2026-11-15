@@ -1,9 +1,15 @@
-﻿# Bash is All You Need
+---
+type: architecture
+status: active
+created: 2026-05-08
+last_verified: 2026-08-26
+---
+
+# Bash is All You Need
 
 > 展开自 CLAUDE.md §7（CLI First）
 
 
-**[Chinese version / 中文版](../zh/architecture/bash-is-all-you-need.md)**
 
 ## Summary
 

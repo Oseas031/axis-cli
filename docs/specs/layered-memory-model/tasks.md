@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
 # Layered Memory Model Tasks
 
 **Status**: In Progress (P0 Completed)

@@ -1,4 +1,11 @@
-﻿# Refactor and Migration Conventions
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# Refactor and Migration Conventions
 
 > 展开自 CLAUDE.md §11（演化原则）+ §12（命名与结构）
 

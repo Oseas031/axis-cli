@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-16
+last_verified: 2026-08-26
+---
+
 # Cost Budget: Requirements
 
 > 实现 docs/architecture/agent-native-first-principles.md 原则 #3（可控演化）

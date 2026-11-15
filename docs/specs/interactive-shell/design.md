@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-08
+last_verified: 2026-08-26
+---
+
 # Interactive Shell Design
 
 ## Overview

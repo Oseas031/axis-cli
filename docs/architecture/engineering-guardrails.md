@@ -1,4 +1,11 @@
-﻿# Engineering Guardrails — Root Cause Elimination Plan
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# Engineering Guardrails — Root Cause Elimination Plan
 
 > 展开自 CLAUDE.md §10（工程实践）
 

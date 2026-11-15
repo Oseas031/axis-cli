@@ -1,4 +1,11 @@
-﻿# Data Model Evolution
+---
+type: architecture
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# Data Model Evolution
 
 > 展开自 CLAUDE.md §11（演化原则）
 

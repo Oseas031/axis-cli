@@ -1,3 +1,10 @@
+---
+type: architecture
+status: active
+created: 2026-05-14
+last_verified: 2026-08-26
+---
+
 # Agent Evaluation Principles
 
 > Derived from SWE-bench / MLE-bench / Terminal-Bench methodology, adapted for Axis.

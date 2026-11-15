@@ -4,8 +4,8 @@
 
 | 目录 | 内容 | 子索引 |
 |------|------|--------|
-| [architecture/](architecture/README.md) | 设计决策、模块边界、命名规范 | 20 文件 |
-| [specs/](specs/README.md) | 实现契约 (requirements + design + tasks) | 15 个 spec |
+| [architecture/](architecture/README.md) | 设计决策、模块边界、命名规范 | 22 文件 |
+| [specs/](specs/README.md) | 实现契约 (requirements + design + tasks) | 19 个 spec |
 | [research/](research/README.md) | 外部论文/项目研究报告 | 9 文件 |
 | [status/](status/) | 里程碑进度、验证报告 | 2 文件 |
 | [guides/](guides/) | 方法论手册、快速开始 | 3 文件 |
@@ -15,12 +15,14 @@
 
 ## 关键入口
 
+- **唯一权威宪法与工作流**: [CLAUDE.md](../CLAUDE.md)
 - **编码前必读**: [Agent-Native First Principles](architecture/agent-native-first-principles.md)
-- **方法论**: [SRS Loop AI Reference](guides/SRS-LOOP-AI-REFERENCE.md)
 - **当前状态**: [Current Progress](status/current-progress.md)
-- **方向意图**: [PURPOSE.md](PURPOSE.md)
+- **Git 工作流**: [Git Conventions](architecture/git-conventions.md)
+- **端到端验证记录**: [e2e-combat-001](validation/e2e-combat-001.md)
 
 ## 元文件
 
 - [CHANGELOG.md](CHANGELOG.md) — 文档变更时间线
 - [PURPOSE.md](PURPOSE.md) — 知识库方向
+- [WIKI-SCHEMA.md](WIKI-SCHEMA.md) — Agent 编辑规范（人类专属修改权）

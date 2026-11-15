@@ -2,7 +2,6 @@
 
 # Project Evolution Roadmap
 
-**[Chinese version / 中文版](../zh/product/ROADMAP.md)**
 
 **Last Updated**: 2026-05-11
 

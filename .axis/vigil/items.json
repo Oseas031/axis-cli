@@ -742,5 +742,119 @@
     "notes": "后续候选: CandidatePool接线(B需要)/README showcase/specs合并评估",
     "created_at": "2026-08-25T09:55:05.3988582+08:00",
     "history": []
+  },
+  {
+    "id": "vigil-f6c483",
+    "title": "实现 axis docs lint --check 范围过滤",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "docs-tooling"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "WIKI-SCHEMA 记载 --check flag 但二进制未实现；修复文档-二进制漂移",
+    "created_at": "2026-08-26T01:15:45.7313579+08:00",
+    "started_at": "2026-08-26T01:16:06.3738422+08:00",
+    "completed_at": "2026-08-26T01:25:42.1434365+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-08-26T01:16:06.3738422+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-08-26T01:25:42.1434365+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-b66b31",
+    "title": "清偿 docs lint 存量债",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "docs-hygiene"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "zh/ 镜像删除遗留死链清理 + specs/architecture frontmatter 补齐至 error=0 可执行",
+    "created_at": "2026-08-26T01:15:45.8347604+08:00",
+    "started_at": "2026-08-26T01:20:50.7625391+08:00",
+    "completed_at": "2026-08-26T01:25:42.3332743+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-08-26T01:20:50.7625391+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-08-26T01:25:42.3332743+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-03632e",
+    "title": "orphan 检查识别 README 目录式链接",
+    "priority": "P2",
+    "status": "completed",
+    "tags": [
+      "docs-tooling"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "specs/README 表格用目录链接，所有 spec 文件被误报孤儿",
+    "created_at": "2026-08-26T01:15:45.9331188+08:00",
+    "started_at": "2026-08-26T01:16:06.4775431+08:00",
+    "completed_at": "2026-08-26T01:25:42.5175039+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-08-26T01:16:06.4775431+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-08-26T01:25:42.5175039+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-a94446",
+    "title": "实施 human-agent-scheduling Spec T1-T7",
+    "priority": "P1",
+    "status": "in_progress",
+    "tags": [
+      "spec"
+    ],
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "notes": "docs/specs/human-agent-scheduling/ 已 Draft+反调闭合；从 T1 类型扩展起步",
+    "created_at": "2026-08-26T01:15:46.0343861+08:00",
+    "started_at": "2026-08-26T01:35:42.2498692+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-08-26T01:35:42.2498692+08:00"
+      }
+    ]
   }
 ]

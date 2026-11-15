@@ -1,4 +1,11 @@
-﻿# Skills System Requirements
+---
+type: spec
+status: active
+created: 2026-05-13
+last_verified: 2026-08-26
+---
+
+# Skills System Requirements
 
 > 实现 agent-native-first-principles.md P2（Query is Context）
 
@@ -7,7 +14,6 @@
 **Inspired by**: learn-claude-code s05: Skills — on-demand knowledge loading
 **Related**: `docs/architecture/agent-native-first-principles.md`, `reports/analysis/learn-claude-code-agent-execution-layer-analysis-2026-05-12.md`
 
-**[Chinese version](../../zh/specs/skills-system/requirements.md)**
 
 ## Summary
 

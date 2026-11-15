@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-08-25
+last_verified: 2026-08-26
+---
+
 > 状态：Draft（方向性设计，requirements/tasks 待定位明确后补齐）
 # Context Recommendation System — Design Document
 

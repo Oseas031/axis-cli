@@ -1,36 +1,51 @@
 ﻿# Axis
 
-> Single-operator AI coding control tower & agent reliability lab. Submit coding tasks across providers with cost budgets, permission ladders, and judge verification; run multi-candidate experiments and export the data.
+> **Local AI Coding Control Tower & Agent Reliability Lab** (Go, Zero-Framework CLI).  
+> Axis does not replace your IDE or chat window. It solves the **engineering governance problem** when running multiple coding models concurrently on real repositories: **unbounded token cost, broken human-agent handoffs, and unsafe direct edits to the main tree**.
 
-Axis is not a task scheduler, nor an LLM wrapper framework. Axis is **Objectification infrastructure**: the substrate that enables human intent (and eventually Agent intent) to be transformed into objective, verifiable, evolvable artifacts — code, documents, systems — through the dialectical process of Construct (建构), Constraint (规定性), and Judge (判定).
+## Core Business Scenario
 
+When developers move from single-turn chat coding to **concurrent, multi-model AI development**, three real-world bottlenecks appear:
 
-## Core Thesis
+1. **Multi-model cost & reliability chaos**: Frontier models burn budgets on trivial tasks, while single-provider blips break long pipelines → solved by **DAG scheduling, per-task USD budget caps, circuit breakers, and model escalation**.
+2. **Broken human-agent handoff**: When an Agent hits ambiguity in a background run, it either guesses blindly across 20 files or crashes → solved by **symmetric human-agent scheduling (`human/gate` + `axis inbox`)**, parking tasks until a human responds or safely degrading.
+3. **Unsafe & opaque repository mutations**: Blindly stuffing prompts causes Context Rot, and direct writes risk breaking `main` → solved by **opt-in `contextpack` (`preflight --strict`)** and **staged sandbox evolution** (deterministic `go test`/`go vet` gates before explicit `promote`).
+
+## Problem-Driven Architecture (Why Axis?)
+
+Every core subsystem in Axis exists to solve a concrete failure mode in real-world AI coding workflows:
+
+| Real-World Pain Point | Architectural Solution | Forward-Looking Design |
+|---|---|---|
+| **Ambiguity stalls or ruins runs**: Agents either guess blindly across 20 files or crash when requirements are unclear. | **Park / Nudge / Fail-Closed Gate** (`internal/human/gate`) backed by a persistent JSONL CAS inbox (`internal/comm`, `axis inbox`). | **Human-Agent Symmetric Scheduling**: Humans and Agents act as peer executors under one contract, enabling bidirectional task flow. |
+| **Unbounded cost & fragile APIs**: Frontier models burn budgets on trivial steps; single-provider blips break long pipelines. | **DAG `scheduler` + 5-worker `orchestrator`**, per-task USD budget caps, multi-provider circuit breaker, and model escalation. | **Reliability Lab**: Swarm multi-candidate majority voting and measurable cost/quality trade-offs. |
+| **Context Rot & blind prompt stuffing**: Dumping full repos into prompts wastes tokens and degrades reasoning quality. | **Opt-in `contextpack`**: relevance scoring, token-budget trimming, and `context preflight --strict` readiness gates. | **Pull-over-Push Context**: Queryable, auditable context assembly rather than hidden prompt injection. |
+| **Unsafe self-modification**: Letting Agents directly mutate the main tree or tool permissions risks silent regressions. | **Staged Evolution + Permission Ladder** (Bash L0/L1/Docker sandbox) + deterministic `go test`/`go vet` verification. | **Controllable Evolution**: Isolated atomic steps with trace ledgers and explicit `promote`/`discard` gates. |
+
+## Research Thesis & Design Philosophy
+
+Axis is also an experimental **Objectification infrastructure**: transforming human (and Agent) intent into verifiable, evolvable artifacts through **Construct — Constraint — Judge**.
 
 ```text
 More Context, More Action, Zero Control, Controllable Evolution
 ```
 
-- **More Context**: The system provides query infrastructure; Agents actively query and assemble context rather than passively receiving redundant pushes
-- **More Action**: Execution, composition, validation, correction, and follow-up task generation capabilities, with permissions matched to competence
-- **Zero Control**: The system provides contracts, infrastructure, and observability, but does not prescribe a single action path for the Agent
-- **Controllable Evolution**: Self-bootstrapping, self-generation, and self-modification must remain within observable, verifiable, and rollback-safe boundaries
-
-## Design Principles
+- **More Context**: Queryable context infrastructure; Agents assemble context on demand rather than receiving redundant pushes
+- **More Action**: Composable execution, validation, and follow-up generation with competence-matched permissions
+- **Zero Control**: Contracts and observability without prescribing a single rigid reasoning path
+- **Controllable Evolution**: Self-modification strictly bounded by isolated workspaces, deterministic tests, and human sign-off
 
 ```text
 bash is all you need · Competence earns autonomy · Interface is existence
 ```
 
-- **CLI First**: Scriptable, composable, callable by humans/CI/Agents; no default Web UI or complex TUI
-- **Progressive Autonomy**: The more reliable, the wider the action radius; high-risk operations are not exempt based on executor identity
-- **Interface is Existence**: Humans and Agents implement the same agent interface, with no identity bias
-- **Contract is Structure**: File system / meta-files are the shared contract language for all Agents
-- **Transitional Structures**: workflow/contract/permission/spec are seeds and scaffolding, eventually to be internalized, rewritten, and discarded by Agents
+- **CLI First**: Scriptable, composable single binary; no Web/TUI framework in core
+- **Progressive Autonomy**: Reliability earns wider action radius; no identity-based exemptions
+- **Transitional Structures**: Specs, workflows, and permissions act as inspectable scaffolding rather than opaque black boxes
 
 ## Current Status
 
-M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Staged Evolution ✅ | Local Control Plane ✅
+M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Staged Evolution ✅ | Local Control Plane ✅ | Human-Agent Scheduling (v1) ✅
 
 ### Completed Capabilities
 
@@ -65,8 +80,11 @@ M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Staged Evolution ✅ | Loc
 ## Quick Start
 
 ```bash
-go test ./...
+# Build & verify without any API key (uses built-in mock provider)
 go build -o axis-dev.exe ./cmd/axis
+go test -race -short ./internal/kernel/... ./internal/human/... ./cmd/axis
+.\axis-dev.exe ask "check provider config"       # dry-run intent -> AgentTask preview
+.\axis-dev.exe context preview "check config"    # opt-in context assembly preview
 ```
 
 > On Windows, output to `axis-dev.exe` to avoid overwriting or locking an existing `axis.exe` in the project root.
@@ -154,30 +172,27 @@ Profiles are stored in `.axis/providers.json` and do not modify shell environmen
 | `axis evolve inspect/promote/discard` | Staged evolution inspection and decisions | No |
 | `axis skills list/show/validate/create` | Manage on-demand knowledge skills | No |
 | `axis vigil resume/list/add/start/done/show/triage` | Cross-session work tracking | No |
+| `axis inbox list/show/respond` | Human inbox: answer agent decision/info requests (human-agent-scheduling) | Optional |
 | `axis gui [--port 3000]` | Launch observation dashboard (Web UI) | No |
 
 ## External Tools
 
-- **[axis-gui](tools/axis-gui/)**: Local Web GUI connecting to the Local Control Plane, providing Dashboard / Tasks / Providers / Events / Chat views (WebSocket real-time updates)
+- **[axis-gui](tools/axis-gui/)**: Local Web GUI connecting to the Local Control Plane, providing Dashboard / Tasks / Providers / Events / Inbox / Chat views (WebSocket real-time updates)
 - **[axis-up](tools/axis-up/)**: Guided onboarding tool for environment detection / build / configuration / demo
 
 Both tools do not import Axis internal packages; they communicate via CLI and HTTP API.
 
 ## Key Documentation
 
-- [Dialectical Development Methodology](docs/architecture/dialectical-development-methodology.md) **<-- read first: how decisions are made**
-- [Agent-Native First Principles](docs/architecture/agent-native-first-principles.md) **<-- read before coding**
-- [Kernel Abstraction Model](docs/architecture/kernel-abstraction-model.md) — syscall layer, core abstractions, infrastructure
-- [Bash is All You Need](docs/architecture/bash-is-all-you-need.md)
-- [System Conventions](docs/architecture/axis-system-conventions.md)
-- [Current Progress](docs/status/current-progress.md)
-- [Documentation Index](docs/README.md)
-- [Agent-Native Scenarios Whitepaper](docs/product/axis-native-scenarios-whitepaper.md)
-- [Autogenesis Design Report](reports/strategy/axis-autogenesis-design-2026-05-08.md)
+- [CLAUDE.md](CLAUDE.md) **<-- authoritative charter, workflow & module boundaries**
+- [Current Progress](docs/status/current-progress.md) — milestone & cleanup ground truth
+- [Semantic Boundaries](docs/architecture/semantic-boundaries.md) — what each module must NOT do
+- [Git Conventions](docs/architecture/git-conventions.md) — streamlined single-operator commit workflow
+- [Documentation Index](docs/README.md) — full docs router (specs, guides, historical reports)
 
 ## Tech Stack
 
-- **Go 1.21+**, core modules prefer the standard library
+- **Go 1.26+**, core modules prefer the standard library
 - **Single binary CLI**, shell-native workflow
 - **Cobra** CLI framework
 - **Project-local state**: `.axis/` directory (providers.json / runtime.json / events/ / evolution/)
@@ -210,10 +225,8 @@ tools/
 
 ## Next Steps
 
-- **Autonomy negative feedback**: Auto-downgrade on consecutive failures, permission scope enforcement
-- **Runaway detection**: Semantic progress tracking (repeated tool output → abort)
-- **Real-world validation**: Run 10+ coding tasks end-to-end, calibrate all theoretical parameters
-- **Cross-process state persistence**: ReadinessRegistry integration with Local Control Plane
-- **Structured event log queries**: `axis audit` or equivalent capability
-- **Dynamic model routing**: Cost/latency-aware provider selection + degradation chain
+- **Freeze horizontal expansion**: No new independent subsystems until the existing core loop is validated end-to-end
+- **Minimal Spec → DAG + Deterministic Gate loop**: Keep human-owned Spec/boundaries; wire deterministic `go test`/`go vet` gates and `human/gate` (`axis inbox`) final sign-off
+- **Real-world validation**: Run 10+ coding tasks end-to-end, calibrate timeouts, circuit breakers, and context budgets
+- **Debt cleanup**: Reconcile pending vigil items and finish remaining `human-agent-scheduling` polish
 

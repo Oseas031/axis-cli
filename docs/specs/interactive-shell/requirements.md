@@ -1,4 +1,11 @@
-﻿# Interactive Shell Requirements
+---
+type: spec
+status: active
+created: 2026-05-08
+last_verified: 2026-08-26
+---
+
+# Interactive Shell Requirements
 
 > 实现 bash-is-all-you-need.md（CLI First）
 

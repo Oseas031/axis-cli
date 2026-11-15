@@ -2,7 +2,6 @@
 
 # Milestone 1 Acceptance Report
 
-**[Chinese version / 中文版](../../zh/status/acceptance/milestone1-acceptance-report.md)**
 
 **Acceptance Date**: 2026-05-08
 **Acceptance Branch**: milestone1-acceptance

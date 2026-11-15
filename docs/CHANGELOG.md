@@ -2,6 +2,27 @@
 
 > Append-only record of documentation changes. Parseable format: `## [date] operation | subject`
 
+## [2026-08-26] feat | Human-agent scheduling v1 implementation（spec T1-T7）
+- Added: `internal/comm/inbox.go` — per-actor persistent inbox (CAS resolve, size cap, read hardening, legacy migration) + 7 tests
+- Added: `internal/human/gate/` — human request gate: park semantics, nudge audit, fail-closed degrade chain, denylist scrubber + 8 tests
+- Modified: `internal/kernel/dispatcher/` — HumanGate interface, executeViaHumanInbox (busy-poll removed), PermissionAsk wired behind RequiresConfirmation, timeout yields while parked
+- Modified: `internal/kernel/orchestrator/` — SetHumanGate + status observer (waiting_human queryable)
+- Modified: `internal/control/` — GET /v1/inbox + POST /v1/inbox/{id}/respond endpoints; client methods
+- Added: `cmd/axis/inbox_cmd.go` + `inbox_runtime.go` — CLI list/show/respond (online proxy / offline direct); single-instance refusal; startup expired-request scan + 9 tests incl. e2e
+- Modified: `tools/axis-gui/` — Inbox view + /api/inbox* endpoints; frontend rebuilt
+- Added: `scripts/human-inbox-demo.ps1` — US1 decision loop demo
+
+## [2026-08-26] fix | Docs lint tooling + debt clearance（153 → 0）
+- Modified: `cmd/axis/docs.go` — 新增 `--check` 范围过滤（兑现 WIKI-SCHEMA 记载的契约）；orphan 检查识别目录式索引链接；占位符 URL（`{path}` 类模板文本）不再误报死链
+- Added: `cmd/axis/docs_lint_test.go` — 5 个回归测试
+- Modified: 64 个 spec/architecture 文件补齐 frontmatter（created 取 git 首次提交日期）
+- Modified: 13 个文档清除 zh/ 镜像遗留死链；model-provider/tasks.md 死链指向修正；tools/axis-up.md 移除已删源码引用
+- Modified: architecture/research/specs/docs 四处 README 索引挂接孤儿条目
+
+## [2026-08-26] spec | Human-Agent Scheduling
+- Added: `docs/specs/human-agent-scheduling/` (requirements + design + tasks) — 人机互调度范式：同合约双执行者、四类 Agent→人请求、对称 SLA（nudge vs retry）、per-actor 收件箱
+- Modified: `docs/specs/README.md` — index + Draft status
+
 ## [2026-05-15] research | Bystander Effect in Multi-Agent Reasoning
 - Added: `docs/research/bystander-effect-multi-agent-reasoning-2026-05-15.md` — 多Agent认知偷懒量化 + Axis防御策略
 - Added vigil-cf6700: CandidatePool 强制异构策略 (P1)

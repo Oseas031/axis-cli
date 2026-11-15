@@ -1,4 +1,11 @@
-﻿# Staged Evolution Protocol Requirements
+---
+type: spec
+status: active
+created: 2026-05-11
+last_verified: 2026-08-26
+---
+
+# Staged Evolution Protocol Requirements
 
 > 实现 agent-native-first-principles.md P4 + §11（演化原则）
 

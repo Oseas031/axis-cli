@@ -1,3 +1,10 @@
+---
+type: spec
+status: active
+created: 2026-05-14
+last_verified: 2026-08-26
+---
+
 # Coding Agent — Tasks
 
 > 实现 `docs/specs/coding-agent/design.md`

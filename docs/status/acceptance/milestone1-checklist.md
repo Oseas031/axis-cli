@@ -2,7 +2,6 @@
 
 # Milestone 1 Technical Admission Checklist (Occam's Razor Simplified Version)
 
-**[Chinese version / 中文版](../../zh/status/acceptance/milestone1-checklist.md)**
 
 ## Milestone Goal
 Focus on verifying Agent scheduling core capabilities, implementing a minimal closed loop of basic task scheduling, simple dependency management, and input/output validation.
