@@ -117,10 +117,13 @@ func TestOpenAIProvider_Execute_Success(t *testing.T) {
 
 func TestOpenAIChatCompletionsURL(t *testing.T) {
 	tests := map[string]string{
-		"https://api.openai.com":       "https://api.openai.com/v1/chat/completions",
-		"https://api.openai.com/":      "https://api.openai.com/v1/chat/completions",
-		"https://api.minimaxi.com/v1":  "https://api.minimaxi.com/v1/chat/completions",
-		"https://api.minimaxi.com/v1/": "https://api.minimaxi.com/v1/chat/completions",
+		"https://api.openai.com":                               "https://api.openai.com/v1/chat/completions",
+		"https://api.openai.com/":                              "https://api.openai.com/v1/chat/completions",
+		"https://api.minimaxi.com/v1":                          "https://api.minimaxi.com/v1/chat/completions",
+		"https://api.minimaxi.com/v1/":                         "https://api.minimaxi.com/v1/chat/completions",
+		"https://ark.cn-beijing.volces.com/api/coding/v3":      "https://ark.cn-beijing.volces.com/api/coding/v3/chat/completions",
+		"https://open.bigmodel.cn/api/paas/v4/":                "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+		"https://example.com/custom/v2/chat/completions":       "https://example.com/custom/v2/chat/completions",
 	}
 
 	for baseURL, expected := range tests {

@@ -332,10 +332,25 @@ func (p *OpenAIProvider) Execute(ctx context.Context, req *ModelRequest) (*Model
 
 func openAIChatCompletionsURL(baseURL string) string {
 	baseURL = strings.TrimRight(baseURL, "/")
-	if strings.HasSuffix(baseURL, "/v1") {
-		return baseURL + "/chat/completions"
+	if strings.HasSuffix(baseURL, "/chat/completions") {
+		return baseURL
+	}
+	if idx := strings.LastIndex(baseURL, "/"); idx >= 0 {
+		last := baseURL[idx+1:]
+		if len(last) >= 2 && last[0] == 'v' && isDigits(last[1:]) {
+			return baseURL + "/chat/completions"
+		}
 	}
 	return baseURL + "/v1/chat/completions"
+}
+
+func isDigits(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return len(s) > 0
 }
 
 // formatJSON converts a map to a JSON string.

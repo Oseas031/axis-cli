@@ -49,12 +49,13 @@ var (
 )
 
 type App struct {
-	orch         *orchestrator.Orchestrator
-	orchOnce     sync.Once
-	providerName string
-	modelName    string
-	root         string // project root for file-backed stores; empty means in-memory
-	guarantees   *guarantee.Registry
+	orch           *orchestrator.Orchestrator
+	orchOnce       sync.Once
+	providerName   string
+	modelName      string
+	runtimeProfile string // "full" (default) or "minimal"
+	root           string // project root for file-backed stores; empty means in-memory
+	guarantees     *guarantee.Registry
 }
 
 // resolvedRoot returns the project root, resolving from cwd if not explicitly set.
@@ -118,10 +119,11 @@ func NewRootCommand(app *App) *cobra.Command {
 	}
 	shellCmd.Flags().Bool("no-prompt", false, "Suppress interactive shell prompt for pipe/automation drivers")
 
-	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand(), newInboxCommand(), newDocsCommand(), newGuaranteeCommand(app))
+	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand(), newInboxCommand(), newDocsCommand(), newGuaranteeCommand(app), newConfigCommand(app))
 
 	rootCmd.PersistentFlags().StringVar(&app.providerName, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
 	rootCmd.PersistentFlags().StringVar(&app.modelName, "model", "", "Model name for real providers")
+	rootCmd.PersistentFlags().StringVar(&app.runtimeProfile, "runtime-profile", "full", "Runtime assembly profile: full, minimal")
 
 	return rootCmd
 }
@@ -289,8 +291,25 @@ func initOrchestrator() {
 	orch = defaultApp.orch
 }
 
+func normalizeRuntimeProfile(profile string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(profile)) {
+	case "", "full":
+		return "full", nil
+	case "minimal":
+		return "minimal", nil
+	default:
+		return "", fmt.Errorf("invalid --runtime-profile %q: must be full or minimal", profile)
+	}
+}
+
 func (app *App) initOrchestrator() {
 	app.orchOnce.Do(func() {
+		profile, perr := normalizeRuntimeProfile(app.runtimeProfile)
+		if perr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: %v, falling back to full\n", perr)
+			profile = "full"
+		}
+
 		providerName, opts := app.resolveProvider()
 		p, err := provider.NewProvider(providerName, opts...)
 		if err != nil {
@@ -308,43 +327,42 @@ func (app *App) initOrchestrator() {
 		// Create LLM Agent Executor with the resolved provider
 		eventLog := control.NewTaskEventLog(app.resolvedRoot())
 		emitter := &eventLogEmitter{log: eventLog}
-		memStore := horizon.NewStore(project.MemoryDir(app.resolvedRoot()))
-		_ = memStore.Init()
 
-		// Create offload compactor (degrades to noop on failure)
-		offloadDir := project.MemoryDir(app.resolvedRoot()) + string(os.PathSeparator) + "offload"
-		var compactorOpt agent.LLMAgentOption
-		if c, err := compactor.New(compactor.DefaultConfig(offloadDir)); err == nil {
-			compactorOpt = agent.WithHistoryCompactor(c)
-		} else {
-			compactorOpt = func(e *agent.LLMAgentExecutor) {} // noop: keep default compactor
-		}
-
-		// Create working memory recaller (degrades gracefully on failure)
-		var wmOpt agent.LLMAgentOption
-		var immOpt agent.LLMAgentOption
-		if wmEngine, wmErr := working.Open(filepath.Join(project.MemoryDir(app.resolvedRoot()), "working")); wmErr == nil {
-			wmOpt = agent.WithWorkingMemory(agent.NewWorkingMemoryRecaller(wmEngine, 5))
-			immOpt = agent.WithImmediateMemory(agent.NewImmediateMemoryAdapter(app.resolvedRoot(), wmEngine, 4000))
-		} else {
-			wmOpt = func(e *agent.LLMAgentExecutor) {}  // noop
-			immOpt = func(e *agent.LLMAgentExecutor) {} // noop
-		}
-
-		agentExec := agent.NewLLMAgentExecutor(p, nil,
+		agentOpts := []agent.LLMAgentOption{
 			agent.WithAgentID("axis-coding-agent"),
 			agent.WithSystemPrompt("You are Axis Coding Agent. Use available tools to complete tasks. Be concise and direct. Do not over-analyze simple questions — if the user asks what tools you have, just list them briefly. When done, respond with your final output without tool calls.\n\nEnvironment: Windows with WSL bash. Tools available in PATH: go, git, find, grep, wc, cat. For Windows-specific commands use cmd.exe /c \"...\". Do NOT retry the same command if it fails — try a different approach.\n\nWhen tasks span multiple files or logical subsystems, decompose them with the spawn tool: spawn a focused subtask for each logical unit, then integrate results. spawn runs with its own iteration budget and returns the subtask output as a tool result.\nExample: for \"add X field + Y logic + Z test\", spawn: (1) \"add X field to types.go\", (2) \"implement Y logic in dispatcher.go\", (3) \"write tests for X and Y\"."),
 			agent.WithMaxIterations(50),
 			agent.WithMaxErrors(5),
-			agent.WithTurnTimeout(90*time.Second),
+			agent.WithTurnTimeout(90 * time.Second),
 			agent.WithEventEmitter(emitter),
 			agent.WithTraceDir(filepath.Join(app.resolvedRoot(), ".axis", "traces")),
-			agent.WithPostJudge(&agent.ExecutionJudge{}),
-			agent.WithMemory(agent.NewHorizonMemory(memStore)),
-			compactorOpt,
-			wmOpt,
-			immOpt,
-		)
+		}
+
+		if profile == "full" {
+			memStore := horizon.NewStore(project.MemoryDir(app.resolvedRoot()))
+			_ = memStore.Init()
+
+			// Create offload compactor (degrades to noop on failure)
+			offloadDir := project.MemoryDir(app.resolvedRoot()) + string(os.PathSeparator) + "offload"
+			if c, err := compactor.New(compactor.DefaultConfig(offloadDir)); err == nil {
+				agentOpts = append(agentOpts, agent.WithHistoryCompactor(c))
+			}
+
+			// Create working memory recaller (degrades gracefully on failure)
+			if wmEngine, wmErr := working.Open(filepath.Join(project.MemoryDir(app.resolvedRoot()), "working")); wmErr == nil {
+				agentOpts = append(agentOpts,
+					agent.WithWorkingMemory(agent.NewWorkingMemoryRecaller(wmEngine, 5)),
+					agent.WithImmediateMemory(agent.NewImmediateMemoryAdapter(app.resolvedRoot(), wmEngine, 4000)),
+				)
+			}
+
+			agentOpts = append(agentOpts,
+				agent.WithPostJudge(&agent.ExecutionJudge{}),
+				agent.WithMemory(agent.NewHorizonMemory(memStore)),
+			)
+		}
+
+		agentExec := agent.NewLLMAgentExecutor(p, nil, agentOpts...)
 
 		app.orch = orchestrator.NewOrchestrator(
 			orchestrator.WithModelProvider(p),

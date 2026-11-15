@@ -22,6 +22,7 @@ func newAskCommand() *cobra.Command {
 	var taskID string
 	var readStdin bool
 	var withContext bool
+	var jsonOut bool
 	cmd := &cobra.Command{
 		Use:   "ask [prompt]",
 		Short: "Convert natural language into an Axis task proposal",
@@ -83,17 +84,37 @@ func newAskCommand() *cobra.Command {
 				if _, err := client.SubmitTask(context.Background(), result.Task); err != nil {
 					return fmt.Errorf("failed to submit task: %w", err)
 				}
+				if jsonOut {
+					return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{
+						"task_id": result.Task.TaskID,
+						"status":  "submitted",
+					})
+				}
 				fmt.Fprintf(cmd.OutOrStdout(), "Task %s submitted. Try: status %s\n", result.Task.TaskID, result.Task.TaskID)
 				return nil
+			}
+			var bundle *contextpack.ContextBundle
+			if withContext {
+				var berr error
+				bundle, berr = assembleContextForTask(result.Task)
+				if berr != nil {
+					return berr
+				}
+			}
+			if jsonOut {
+				payload := map[string]any{
+					"submitted": false,
+					"task":      result.Task,
+				}
+				if bundle != nil {
+					payload["context_bundle"] = bundle
+				}
+				return json.NewEncoder(cmd.OutOrStdout()).Encode(payload)
 			}
 			if err := renderTaskProposal(result.Task, cmd.OutOrStdout()); err != nil {
 				return err
 			}
-			if withContext {
-				bundle, err := assembleContextForTask(result.Task)
-				if err != nil {
-					return err
-				}
+			if bundle != nil {
 				if err := renderContextBundle(bundle, cmd.OutOrStdout()); err != nil {
 					return err
 				}
@@ -109,6 +130,7 @@ func newAskCommand() *cobra.Command {
 	cmd.Flags().StringVar(&taskID, "task-id", "", "Task ID for the generated task")
 	cmd.Flags().BoolVar(&readStdin, "stdin", false, "Read prompt from stdin")
 	cmd.Flags().BoolVar(&withContext, "with-context", false, "Preview an adaptive context bundle with the generated task")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Machine-readable JSON output")
 	return cmd
 }
 
