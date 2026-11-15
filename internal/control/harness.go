@@ -37,6 +37,7 @@ type HarnessSpec struct {
 type managedTask struct {
 	task   *types.AgentTask
 	result *types.TaskResult
+	cancel context.CancelFunc
 }
 
 // HarnessManager coordinates multiple heterogeneous agent harnesses under a single
@@ -186,6 +187,26 @@ func (m *HarnessManager) HasTask(taskID string) bool {
 	return ok
 }
 
+func (m *HarnessManager) CancelTask(taskID string) error {
+	m.mu.Lock()
+	mt, ok := m.tasks[taskID]
+	if !ok || mt.task == nil {
+		m.mu.Unlock()
+		return fmt.Errorf("task %s not found", taskID)
+	}
+	if mt.task.Status == types.TaskStatusCompleted || mt.task.Status == types.TaskStatusFailed {
+		m.mu.Unlock()
+		return fmt.Errorf("task %s is already %s", taskID, mt.task.Status)
+	}
+	cancel := mt.cancel
+	m.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+	return nil
+}
+
 func (m *HarnessManager) GetTaskStatus(taskID string) (types.TaskStatus, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -237,23 +258,40 @@ func (m *HarnessManager) SubmitCLI(spec HarnessSpec, task *types.AgentTask) erro
 		cp.Metadata["agent_id"] = spec.ID
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+
 	m.mu.Lock()
 	if _, exists := m.tasks[cp.TaskID]; exists {
 		m.mu.Unlock()
+		cancel()
 		return fmt.Errorf("task %s already exists", cp.TaskID)
 	}
-	m.tasks[cp.TaskID] = &managedTask{task: &cp}
+	m.tasks[cp.TaskID] = &managedTask{task: &cp, cancel: cancel}
 	m.mu.Unlock()
 
-	go m.runCLITask(spec, cp.TaskID)
+	go m.runCLITask(ctx, cancel, spec, cp.TaskID)
 	return nil
 }
 
-func (m *HarnessManager) runCLITask(spec HarnessSpec, taskID string) {
+func (m *HarnessManager) runCLITask(ctx context.Context, cancel context.CancelFunc, spec HarnessSpec, taskID string) {
+	defer func() {
+		cancel()
+		m.mu.Lock()
+		if mt2, ok := m.tasks[taskID]; ok {
+			mt2.cancel = nil
+		}
+		m.mu.Unlock()
+	}()
+
 	m.mu.Lock()
 	mt := m.tasks[taskID]
 	if mt == nil || mt.task == nil {
 		m.mu.Unlock()
+		return
+	}
+	if ctx.Err() != nil {
+		m.mu.Unlock()
+		m.finishCLITask(taskID, mt.task.Metadata["agent_id"], spec, time.Now().UTC(), "", "", ctx.Err())
 		return
 	}
 	started := time.Now().UTC()
@@ -274,8 +312,6 @@ func (m *HarnessManager) runCLITask(spec HarnessSpec, taskID string) {
 	})
 
 	args, usedPlaceholder := buildCLIArgs(spec.Args, prompt)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
 
 	cmd := exec.CommandContext(ctx, spec.Command, args...)
 	if workdir != "" && filepath.IsAbs(workdir) {

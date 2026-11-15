@@ -159,7 +159,39 @@
     .btn:hover { background: var(--bg-hover); border-color: var(--accent); }
     .btn.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
     .btn.primary:hover { background: rgba(16, 185, 129, 0.22); }
+    .btn.danger { background: var(--err-dim); border-color: var(--err); color: var(--err); }
+    .btn.danger:hover { background: rgba(239, 68, 68, 0.22); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .composer { position: relative; }
+    .mention-menu {
+      position: absolute;
+      left: 16px;
+      bottom: 100%;
+      margin-bottom: 4px;
+      min-width: 240px;
+      max-height: 180px;
+      overflow-y: auto;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-strong);
+      border-radius: 2px;
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+    }
+    .mention-menu.open { display: flex; }
+    .mention-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 10px;
+      border: none;
+      background: transparent;
+      text-align: left;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .mention-item:hover { background: var(--bg-hover); color: var(--accent); }
+    .preset-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -643,6 +675,7 @@
         </div>
 
         <section class="composer" aria-label="Task prompt composer">
+          <div id="mentionMenu" class="mention-menu" role="listbox" aria-label="Mention harness"></div>
           <div class="composer-box">
             <textarea id="promptInput" placeholder="输入任务指令... (Enter 发送，Shift+Enter 换行)"></textarea>
             <div class="composer-bar">
@@ -679,6 +712,13 @@
         <div class="drawer-body">
           <div class="form-grid">
             <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);" data-i18n="regHarnessTitle">Register External CLI Harness</div>
+            <div class="preset-row">
+              <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);" data-i18n="presetsLabel">Presets:</span>
+              <button type="button" class="filter-chip preset-btn" data-preset="claude">claude</button>
+              <button type="button" class="filter-chip preset-btn" data-preset="codex">codex</button>
+              <button type="button" class="filter-chip preset-btn" data-preset="gemini">gemini</button>
+              <button type="button" class="filter-chip preset-btn" data-preset="opencode">opencode</button>
+            </div>
             <input id="hIdInput" type="text" placeholder="id (e.g. claude-code, codex)">
             <input id="hCmdInput" type="text" placeholder="command (e.g. claude, codex, pwsh)">
             <input id="hArgsInput" type="text" placeholder="args (space-separated, {prompt} optional)">
@@ -744,7 +784,10 @@
         alertIdCmd: '请填写 ID 和命令',
         alertRegFailed: '注册执行器失败：',
         alertInboxFailed: '审批回复失败：',
-        alertSubmitFailed: '提交任务失败：'
+        alertSubmitFailed: '提交任务失败：',
+        alertCancelFailed: '停止任务失败：',
+        stopBtn: '停止',
+        presetsLabel: '预设:'
       },
       'en': {
         langToggle: '中文',
@@ -797,7 +840,10 @@
         alertIdCmd: 'id and command are required',
         alertRegFailed: 'Register harness failed: ',
         alertInboxFailed: 'Inbox respond failed: ',
-        alertSubmitFailed: 'Submit failed: '
+        alertSubmitFailed: 'Submit failed: ',
+        alertCancelFailed: 'Stop failed: ',
+        stopBtn: 'Stop',
+        presetsLabel: 'Presets:'
       }
     };
 
@@ -1035,7 +1081,10 @@
           .join('\n');
         blocks.push(`
           <div class="turn-block">
-            <div class="turn-label"><span>${esc(t('runtimeLabel'))} (${esc(harnessName)})</span><span>${esc(status)}</span></div>
+            <div class="turn-label">
+              <span>${esc(t('runtimeLabel'))} (${esc(harnessName)}) · ${esc(status)}</span>
+              <button id="btnStopTask" type="button" class="btn danger" style="padding:1px 8px;font-size:10px;">${esc(t('stopBtn'))}</button>
+            </div>
             <div class="turn-body mono">${esc(streamLines || t('executingHint'))}</div>
           </div>
         `);
@@ -1069,6 +1118,10 @@
         blocks.push(`<div class="empty-state"><h2>${esc(t('noDetail'))}</h2><p>${esc(t('waitingStatus'))}</p></div>`);
       }
       tl.innerHTML = blocks.join('');
+      const stopBtn = el('btnStopTask');
+      if (stopBtn) {
+        stopBtn.addEventListener('click', () => cancelTask(state.selectedTaskId));
+      }
       const handoffBtn = el('btnHandoff');
       if (handoffBtn && finalText) {
         handoffBtn.addEventListener('click', () => {
@@ -1241,10 +1294,28 @@
       }
     }
 
+    async function cancelTask(taskId) {
+      if (!taskId) return;
+      try {
+        await fetchJSON(`/v1/tasks/${encodeURIComponent(taskId)}/cancel`, { method: 'POST' });
+        await loadTasks();
+        await loadSelectedDetail();
+      } catch (err) {
+        alert(t('alertCancelFailed') + err.message);
+      }
+    }
+
     async function submitTask() {
       if (state.submitting) return;
       const prompt = el('promptInput').value.trim();
       if (!prompt) return;
+      if ((prompt.toLowerCase() === 'stop now' || prompt.toLowerCase() === '/stop') &&
+          state.selectedTaskId && state.selectedDetail &&
+          (state.selectedDetail.status === 'pending' || state.selectedDetail.status === 'running')) {
+        el('promptInput').value = '';
+        await cancelTask(state.selectedTaskId);
+        return;
+      }
       const customId = el('taskIdInput').value.trim();
       const taskId = customId || ('ui-' + Date.now());
       const harness = el('harnessSelect').value || 'axis-native';
@@ -1305,10 +1376,69 @@
     }
 
     // UI Bindings
+    const HARNESS_PRESETS = {
+      claude: { id: 'claude-code', command: 'claude', args: '-p {prompt} --output-format text', description: 'Claude Code CLI' },
+      codex: { id: 'codex-cli', command: 'codex', args: 'exec {prompt}', description: 'OpenAI Codex CLI' },
+      gemini: { id: 'gemini-cli', command: 'gemini', args: '-p {prompt}', description: 'Gemini CLI' },
+      opencode: { id: 'opencode-cli', command: 'opencode', args: 'run {prompt}', description: 'OpenCode CLI' }
+    };
+    document.querySelectorAll('.preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const p = HARNESS_PRESETS[btn.dataset.preset];
+        if (!p) return;
+        el('hIdInput').value = p.id;
+        el('hCmdInput').value = p.command;
+        el('hArgsInput').value = p.args;
+        el('hDescInput').value = p.description;
+      });
+    });
+
+    function updateMentionMenu() {
+      const ta = el('promptInput');
+      const menu = el('mentionMenu');
+      const pos = ta.selectionStart || 0;
+      const before = ta.value.slice(0, pos);
+      const match = before.match(/(?:^|\s)@([a-zA-Z0-9_-]*)$/);
+      if (!match) {
+        menu.classList.remove('open');
+        return;
+      }
+      const query = match[1].toLowerCase();
+      const list = (state.harnesses.length ? state.harnesses : [{ id: 'axis-native', kind: 'native' }])
+        .filter((h) => h.id.toLowerCase().includes(query));
+      if (!list.length) {
+        menu.classList.remove('open');
+        return;
+      }
+      menu.innerHTML = list.map((h) => `
+        <button type="button" class="mention-item" data-harness="${esc(h.id)}">
+          <span>@${esc(h.id)}</span>
+          <span style="color:var(--text-dim);">${esc(h.kind)}</span>
+        </button>
+      `).join('');
+      menu.classList.add('open');
+      menu.querySelectorAll('.mention-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const picked = btn.dataset.harness;
+          el('harnessSelect').value = picked;
+          const replaceStart = pos - match[1].length - 1;
+          ta.value = ta.value.slice(0, replaceStart) + ta.value.slice(pos);
+          menu.classList.remove('open');
+          ta.focus();
+        });
+      });
+    }
+
+    el('promptInput').addEventListener('input', updateMentionMenu);
     el('btnSubmit').addEventListener('click', submitTask);
     el('promptInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        el('mentionMenu').classList.remove('open');
+        return;
+      }
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
+        el('mentionMenu').classList.remove('open');
         submitTask();
       }
     });

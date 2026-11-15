@@ -150,13 +150,51 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusAccepted, SubmitTaskResponse{TaskID: req.Task.TaskID, Status: types.TaskStatusPending})
 }
 
+// TaskCanceller is an optional extension of Runtime for cancelling active tasks.
+type TaskCanceller interface {
+	CancelTask(taskID string) error
+}
+
 func (s *Server) handleTaskStatus(w http.ResponseWriter, r *http.Request) {
+	prefix := "/v1/tasks/"
+	if !strings.HasPrefix(r.URL.Path, prefix) {
+		writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
+		return
+	}
+	if strings.HasSuffix(r.URL.Path, "/cancel") {
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")
+			return
+		}
+		taskID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, prefix), "/cancel")
+		if taskID == "" || strings.Contains(taskID, "/") {
+			writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
+			return
+		}
+		if mgr := s.ensureHarnesses(); mgr.HasTask(taskID) {
+			if err := mgr.CancelTask(taskID); err != nil {
+				writeError(w, http.StatusConflict, "cancel_failed", err.Error(), "")
+				return
+			}
+		} else if canceller, ok := s.runtime.(TaskCanceller); ok {
+			if err := canceller.CancelTask(taskID); err != nil {
+				writeError(w, http.StatusConflict, "cancel_failed", err.Error(), "")
+				return
+			}
+		} else {
+			writeError(w, http.StatusNotImplemented, "cancel_unsupported", "runtime does not support task cancellation", "")
+			return
+		}
+		s.appendEvent(TaskEvent{TaskID: taskID, EventType: "cancelled", Actor: "local-control", Status: string(types.TaskStatusFailed), Message: "task cancelled by user"})
+		writeJSON(w, http.StatusOK, map[string]any{"task_id": taskID, "status": "cancelled"})
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")
 		return
 	}
-	prefix := "/v1/tasks/"
-	if !strings.HasPrefix(r.URL.Path, prefix) || !strings.HasSuffix(r.URL.Path, "/status") {
+	if !strings.HasSuffix(r.URL.Path, "/status") {
 		writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
 		return
 	}

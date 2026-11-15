@@ -19,11 +19,12 @@ func TestHelperCLIHarness(t *testing.T) {
 		return
 	}
 	fmt.Println("helper-line-1")
-	if len(os.Args) > 1 {
-		for i, a := range os.Args {
-			if a == "--prompt" && i+1 < len(os.Args) {
-				fmt.Printf("echo:%s\n", os.Args[i+1])
-			}
+	for i, a := range os.Args {
+		if a == "--sleep" {
+			time.Sleep(10 * time.Second)
+		}
+		if a == "--prompt" && i+1 < len(os.Args) {
+			fmt.Printf("echo:%s\n", os.Args[i+1])
 		}
 	}
 	os.Exit(0)
@@ -150,5 +151,86 @@ func TestHarness_RegisterPersistAndExecuteCLI(t *testing.T) {
 	}
 	if len(tasksPayload.Tasks) == 0 || tasksPayload.Tasks[0].TaskID != "t-cli-1" || tasksPayload.Tasks[0].Harness != "helper-cli" {
 		t.Fatalf("unexpected tasks list: %+v", tasksPayload.Tasks)
+	}
+}
+
+func TestHarness_CancelRunningCLITask(t *testing.T) {
+	dir := t.TempDir()
+	evLog := NewTaskEventLog(dir)
+	srv := NewServerWithEventLog(stubRuntime{}, RuntimeRecord{
+		Protocol:    "http",
+		Address:     "http://127.0.0.1:4321",
+		ProjectRoot: dir,
+	}, evLog)
+	srv.SetUIEnabled(true)
+	h := srv.Handler()
+
+	t.Setenv("GO_WANT_HARNESS_HELPER", "1")
+	regBody, _ := json.Marshal(HarnessSpec{
+		ID:      "slow-cli",
+		Name:    "Slow CLI",
+		Kind:    "cli",
+		Command: os.Args[0],
+		Args:    []string{"-test.run=^TestHelperCLIHarness$", "--", "--sleep"},
+	})
+	regReq := httptest.NewRequest(http.MethodPost, "/v1/harnesses", bytes.NewReader(regBody))
+	regRec := httptest.NewRecorder()
+	h.ServeHTTP(regRec, regReq)
+	if regRec.Code != http.StatusCreated {
+		t.Fatalf("register slow-cli status = %d", regRec.Code)
+	}
+
+	subBody, _ := json.Marshal(SubmitTaskRequest{
+		Task: &types.AgentTask{
+			TaskID:   "t-cancel-1",
+			Input:    map[string]any{"prompt": "wait"},
+			Metadata: map[string]string{"harness": "slow-cli"},
+		},
+	})
+	subReq := httptest.NewRequest(http.MethodPost, "/v1/tasks", bytes.NewReader(subBody))
+	subRec := httptest.NewRecorder()
+	h.ServeHTTP(subRec, subReq)
+	if subRec.Code != http.StatusAccepted {
+		t.Fatalf("submit status = %d", subRec.Code)
+	}
+
+	// Wait briefly until task transitions to running
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		stReq := httptest.NewRequest(http.MethodGet, "/v1/tasks/t-cancel-1/status", nil)
+		stRec := httptest.NewRecorder()
+		h.ServeHTTP(stRec, stReq)
+		var resp StatusResponse
+		if json.Unmarshal(stRec.Body.Bytes(), &resp) == nil && resp.Status == types.TaskStatusRunning {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	cancelReq := httptest.NewRequest(http.MethodPost, "/v1/tasks/t-cancel-1/cancel", nil)
+	cancelRec := httptest.NewRecorder()
+	h.ServeHTTP(cancelRec, cancelReq)
+	if cancelRec.Code != http.StatusOK {
+		t.Fatalf("cancel status = %d, body = %s", cancelRec.Code, cancelRec.Body.String())
+	}
+
+	// Task should converge to failed after cancellation
+	deadline = time.Now().Add(3 * time.Second)
+	var finalStatus types.TaskStatus
+	for time.Now().Before(deadline) {
+		stReq := httptest.NewRequest(http.MethodGet, "/v1/tasks/t-cancel-1/status", nil)
+		stRec := httptest.NewRecorder()
+		h.ServeHTTP(stRec, stReq)
+		var resp StatusResponse
+		if json.Unmarshal(stRec.Body.Bytes(), &resp) == nil {
+			finalStatus = resp.Status
+			if finalStatus == types.TaskStatusFailed {
+				break
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	if finalStatus != types.TaskStatusFailed {
+		t.Fatalf("expected failed status after cancel, got %s", finalStatus)
 	}
 }

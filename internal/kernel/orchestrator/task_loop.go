@@ -105,6 +105,17 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 		return
 	}
 
+	taskCtx, taskCancel := context.WithCancel(ctx)
+	o.taskCancelMu.Lock()
+	o.taskCancels[task.TaskID] = taskCancel
+	o.taskCancelMu.Unlock()
+	defer func() {
+		taskCancel()
+		o.taskCancelMu.Lock()
+		delete(o.taskCancels, task.TaskID)
+		o.taskCancelMu.Unlock()
+	}()
+
 	// Fatal failure class: admission rejects fatal + retries > 0, so maxRetries is already 0 here.
 	// This assertion is a safety net, not a silent override.
 	if failureClass == types.FailureClassFatal && maxRetries > 0 {
@@ -113,11 +124,14 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 	}
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if taskCtx.Err() != nil {
+			break
+		}
 		result, dispatchErr := func() (*types.TaskResult, error) {
-			execCtx := ctx
+			execCtx := taskCtx
 			if timeoutMs > 0 {
 				var cancel context.CancelFunc
-				execCtx, cancel = context.WithTimeout(ctx, time.Duration(timeoutMs)*time.Millisecond)
+				execCtx, cancel = context.WithTimeout(taskCtx, time.Duration(timeoutMs)*time.Millisecond)
 				defer cancel()
 			}
 			return o.dispatcher.Dispatch(execCtx, task)

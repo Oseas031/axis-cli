@@ -93,6 +93,8 @@ type Orchestrator struct {
 	stopCh             chan struct{} // Closed by Shutdown to signal runTaskLoop to exit
 	stopOnce           sync.Once     // Ensures stopCh is closed exactly once
 	loopDone           chan struct{} // Closed by Start goroutine after runTaskLoop + wg.Wait finish
+	taskCancelMu       sync.Mutex
+	taskCancels        map[string]context.CancelFunc
 }
 
 // NewOrchestrator creates a new orchestrator with the given options.
@@ -114,6 +116,7 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 		workerSem:        make(chan struct{}, defaultWorkerLimit),
 		stopCh:           make(chan struct{}),
 		loopDone:         make(chan struct{}),
+		taskCancels:      make(map[string]context.CancelFunc),
 	}
 
 	for _, opt := range opts {
@@ -289,6 +292,36 @@ func (o *Orchestrator) SubmitTask(task *types.AgentTask) error {
 // GetTaskStatus returns the status of a task
 func (o *Orchestrator) GetTaskStatus(taskID string) (types.TaskStatus, error) {
 	return o.scheduler.GetStatus(taskID)
+}
+
+// CancelTask cancels an active or pending task by ID.
+func (o *Orchestrator) CancelTask(taskID string) error {
+	status, err := o.scheduler.GetStatus(taskID)
+	if err != nil {
+		return err
+	}
+	if status == types.TaskStatusCompleted || status == types.TaskStatusFailed {
+		return fmt.Errorf("task %s is already %s", taskID, status)
+	}
+
+	o.taskCancelMu.Lock()
+	cancel := o.taskCancels[taskID]
+	o.taskCancelMu.Unlock()
+
+	if cancel != nil {
+		cancel()
+		return nil
+	}
+
+	// Task has not started executing yet (pending/waiting): mark failed immediately.
+	_ = o.scheduler.UpdateTaskStatus(taskID, types.TaskStatusFailed)
+	o.saveTaskResult(taskID, &types.TaskResult{
+		TaskID:    taskID,
+		Status:    types.TaskStatusFailed,
+		Error:     "task cancelled",
+		Completed: time.Now().UTC(),
+	})
+	return nil
 }
 
 // GetTaskResult returns the result of a completed or failed task
