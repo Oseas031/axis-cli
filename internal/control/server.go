@@ -3,12 +3,14 @@ package control
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"strings"
 
+	"github.com/axis-cli/axis/internal/comm"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -18,10 +20,18 @@ type Runtime interface {
 	GetTaskResult(taskID string) (*types.TaskResult, error)
 }
 
+// InboxAPI abstracts the human inbox (design.md D7). *human.gate.Gate
+// satisfies it; the control plane stays decoupled from the gate package.
+type InboxAPI interface {
+	List() ([]comm.InboxRecord, int, error)
+	RespondCall(callID, choice, text string) (*comm.InboxRecord, error)
+}
+
 type Server struct {
 	runtime Runtime
 	record  RuntimeRecord
 	events  *TaskEventLog
+	inbox   InboxAPI
 }
 
 func NewServer(runtime Runtime, record RuntimeRecord) *Server {
@@ -32,11 +42,16 @@ func NewServerWithEventLog(runtime Runtime, record RuntimeRecord, events *TaskEv
 	return &Server{runtime: runtime, record: record, events: events}
 }
 
+// SetInboxAPI wires the human inbox endpoints (optional capability).
+func (s *Server) SetInboxAPI(inbox InboxAPI) { s.inbox = inbox }
+
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/health", s.handleHealth)
 	mux.HandleFunc("/v1/tasks", s.handleTasks)
 	mux.HandleFunc("/v1/tasks/", s.handleTaskStatus)
+	mux.HandleFunc("/v1/inbox", s.handleInboxList)
+	mux.HandleFunc("/v1/inbox/", s.handleInboxRespond)
 	return mux
 }
 
@@ -130,6 +145,75 @@ func (s *Server) appendEvent(event TaskEvent) {
 	if err := s.events.Append(event); err != nil {
 		log.Printf("failed to append task event %s for task %s: %v", event.EventType, event.TaskID, err)
 	}
+}
+
+// handleInboxList serves GET /v1/inbox — pending and resolved human requests.
+func (s *Server) handleInboxList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")
+		return
+	}
+	if s.inbox == nil {
+		writeError(w, http.StatusNotImplemented, "inbox_unavailable", "human inbox not configured on this runtime", "start a runtime with inbox support")
+		return
+	}
+	records, corrupted, err := s.inbox.List()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "inbox_read_failed", err.Error(), "retry or inspect .axis/comm/")
+		return
+	}
+	writeJSON(w, http.StatusOK, InboxListResponse{Records: records, CorruptedLines: corrupted})
+}
+
+// handleInboxRespond serves POST /v1/inbox/{call-id}/respond.
+func (s *Server) handleInboxRespond(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")
+		return
+	}
+	if s.inbox == nil {
+		writeError(w, http.StatusNotImplemented, "inbox_unavailable", "human inbox not configured on this runtime", "start a runtime with inbox support")
+		return
+	}
+	prefix := "/v1/inbox/"
+	suffix := "/respond"
+	if !strings.HasPrefix(r.URL.Path, prefix) || !strings.HasSuffix(r.URL.Path, suffix) {
+		writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
+		return
+	}
+	callID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, prefix), suffix)
+	if callID == "" || strings.Contains(callID, "/") {
+		writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
+		return
+	}
+	var req InboxRespondRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "invalid respond request", `body: {"choice":"B"} or {"text":"..."}`)
+		return
+	}
+	rec, err := s.inbox.RespondCall(callID, req.Choice, req.Text)
+	if err != nil {
+		switch {
+		case errors.Is(err, comm.ErrCallNotFound):
+			writeError(w, http.StatusNotFound, "call_not_found", err.Error(), "axis inbox list")
+		case errors.Is(err, comm.ErrNotPending):
+			writeError(w, http.StatusConflict, "call_not_pending", err.Error(), "axis inbox list --all")
+		default:
+			writeError(w, http.StatusInternalServerError, "respond_failed", err.Error(), "")
+		}
+		return
+	}
+	taskID := ""
+	if raw, ok := rec.Message.Payload["request"]; ok {
+		if data, merr := json.Marshal(raw); merr == nil {
+			var hreq types.HumanCallRequest
+			if json.Unmarshal(data, &hreq) == nil {
+				taskID = hreq.TaskID
+			}
+		}
+	}
+	s.appendEvent(TaskEvent{TaskID: taskID, EventType: "human.request.resolved", Actor: "local-control", Status: rec.Status, Message: "responded via control plane (" + callID + ")"})
+	writeJSON(w, http.StatusOK, InboxRespondResponse{CallID: callID, Status: rec.Status})
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {

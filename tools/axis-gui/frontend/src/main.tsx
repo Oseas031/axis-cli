@@ -7,6 +7,7 @@ import Tasks from './pages/Tasks'
 import Providers from './pages/Providers'
 import Events from './pages/Events'
 import Chat from './pages/Chat'
+import Inbox from './pages/Inbox'
 import Skills from './pages/Skills'
 import './index.css'
 
@@ -19,7 +20,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="tasks" element={<Tasks />} />
           <Route path="providers" element={<Providers />} />
           <Route path="events" element={<Events />} />
-          <Route path="chat" element={<Chat />} />
+          <Route path="inbox" element={<Inbox />} />
+<Route path="chat" element={<Chat />} />
           <Route path="skills" element={<Skills />} />
         </Route>
       </Routes>

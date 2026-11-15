@@ -3,6 +3,7 @@ package dispatcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -56,15 +57,19 @@ type DispatcherImpl struct {
 	candidatePoolEnabled bool
 	providerNames        []string
 	swarmEventFn         func(SwarmEvent)
+	humanGate            HumanGate
+	statusObserver       func(taskID string, status types.TaskStatus)
+	permissionResolver   *PermissionResolver
 }
 
 // NewDispatcher creates a new dispatcher
 func NewDispatcher(contractExec contractexec.ContractExecutor, humanExec humanexec.HumanExecutor) *DispatcherImpl {
 	return &DispatcherImpl{
-		contractExecutor: contractExec,
-		humanExecutor:    humanExec,
-		timeout:          30 * time.Minute, // Default timeout for milestone 1
-		autonomyResolver: DefaultAutonomyResolver,
+		contractExecutor:   contractExec,
+		humanExecutor:      humanExec,
+		timeout:            30 * time.Minute, // Default timeout for milestone 1
+		autonomyResolver:   DefaultAutonomyResolver,
+		permissionResolver: NewPermissionResolver(),
 	}
 }
 
@@ -221,39 +226,63 @@ func (d *DispatcherImpl) Dispatch(ctx context.Context, task *types.AgentTask) (*
 		}
 	}()
 
-	select {
-	case <-timeoutCtx.Done():
-		// Capture any late-arriving goroutine error
+	// Timeout enforcement yields to the human SLA while a task parks on an
+	// inbox request (design.md D2): the gate owns the real deadline, so the
+	// dispatcher only re-checks periodically instead of failing a waiting task.
+	timeoutTimer := time.NewTimer(d.timeout)
+	defer timeoutTimer.Stop()
+
+	for {
 		select {
+		case <-ctx.Done():
+			return d.timeoutResult(start, task, errChan,
+				fmt.Sprintf("task %s cancelled", task.TaskID))
+		case <-timeoutTimer.C:
+			d.auditMu.RLock()
+			waiting := d.humanGate != nil && d.humanGate.TaskWaiting(task.TaskID)
+			d.auditMu.RUnlock()
+			if waiting {
+				timeoutTimer.Reset(humanWaitRecheckInterval)
+				continue
+			}
+			return d.timeoutResult(start, task, errChan,
+				fmt.Sprintf("task %s timed out", task.TaskID))
+		case result := <-resultChan:
+			d.recordAudit(start, task, result)
+			d.audit(task.TaskID, "dispatch_end", string(result.Status))
+			return result, nil
 		case err := <-errChan:
-			log.Printf("Task %s timed out; underlying error: %v", task.TaskID, err)
-		default:
+			result := &types.TaskResult{
+				TaskID:    task.TaskID,
+				Status:    types.TaskStatusFailed,
+				Error:     err.Error(),
+				Completed: time.Now(),
+			}
+			d.recordAudit(start, task, result)
+			d.audit(task.TaskID, "dispatch_end", string(result.Status))
+			return result, err
 		}
-		timeoutErr := types.NewAgentError(types.ErrTaskTimeout, fmt.Sprintf("task %s timed out", task.TaskID))
-		result := &types.TaskResult{
-			TaskID:    task.TaskID,
-			Status:    types.TaskStatusFailed,
-			Error:     timeoutErr.Error(),
-			Completed: time.Now(),
-		}
-		d.recordAudit(start, task, result)
-		d.audit(task.TaskID, "dispatch_end", string(result.Status))
-		return result, timeoutErr
-	case result := <-resultChan:
-		d.recordAudit(start, task, result)
-		d.audit(task.TaskID, "dispatch_end", string(result.Status))
-		return result, nil
-	case err := <-errChan:
-		result := &types.TaskResult{
-			TaskID:    task.TaskID,
-			Status:    types.TaskStatusFailed,
-			Error:     err.Error(),
-			Completed: time.Now(),
-		}
-		d.recordAudit(start, task, result)
-		d.audit(task.TaskID, "dispatch_end", string(result.Status))
-		return result, err
 	}
+}
+
+// timeoutResult synthesizes the legacy TASK_TIMEOUT failure, draining any
+// late-arriving goroutine error for the log.
+func (d *DispatcherImpl) timeoutResult(start time.Time, task *types.AgentTask, errChan chan error, msg string) (*types.TaskResult, error) {
+	select {
+	case err := <-errChan:
+		log.Printf("Task %s ended; underlying error: %v", task.TaskID, err)
+	default:
+	}
+	timeoutErr := types.NewAgentError(types.ErrTaskTimeout, msg)
+	result := &types.TaskResult{
+		TaskID:    task.TaskID,
+		Status:    types.TaskStatusFailed,
+		Error:     timeoutErr.Error(),
+		Completed: time.Now(),
+	}
+	d.recordAudit(start, task, result)
+	d.audit(task.TaskID, "dispatch_end", string(result.Status))
+	return result, timeoutErr
 }
 
 // recordAudit appends an audit entry for a completed dispatch.
@@ -452,12 +481,15 @@ func (d *DispatcherImpl) executeTask(ctx context.Context, task *types.AgentTask)
 	}
 
 	executorType := task.Metadata[types.TaskMetadataKeyExecutor]
+	pref := task.Metadata[types.ExecutorKeyPreference]
 
-	if executorType == types.ExecutorTypeHuman {
-		return d.executeHumanTask(ctx, task)
+	// Route to the persistent human inbox when explicitly requested either by
+	// legacy executor metadata or by the namespaced preference key.
+	if executorType == types.ExecutorTypeHuman || pref == types.ExecutorPrefRequireHuman {
+		return d.executeViaHumanInbox(ctx, task)
 	}
 
-	if executorType == types.ExecutorTypeAgent {
+	if executorType == types.ExecutorTypeAgent || pref == types.ExecutorPrefRequireAgent {
 		return d.executeAgentTask(ctx, task)
 	}
 
@@ -512,13 +544,35 @@ func (d *DispatcherImpl) executeAgentTask(ctx context.Context, task *types.Agent
 	selfContext := agent.NewSelfContext(task.TaskID)
 	summary := executionContextSummary(task)
 
+	// Permission gate (design.md D2): Ask pauses the task on a persistent
+	// human decision request; Deny fails closed. An unresolved (degraded) ask
+	// denies — Ask never auto-upgrades to Allow. Only tasks that explicitly
+	// declare autonomy or carry high-risk keys enter this path.
+	autonomy := d.autonomyResolver(task)
+	if d.permissionResolver.RequiresConfirmation(task.Metadata) {
+		switch d.permissionResolver.Resolve(autonomy, task.Metadata) {
+		case PermissionDeny:
+			msg := fmt.Sprintf("[PERMISSION_DENIED] %s: autonomy %s for task %s", ErrPermissionDenied, autonomy, task.TaskID)
+			return humanFailResult(task, msg), errors.New(msg)
+		case PermissionAsk:
+			if err := d.requestDecision(task, autonomy.String()); err != nil {
+				code := "[PERMISSION_DENIED]"
+				if !errors.Is(err, ErrPermissionDenied) {
+					code = "[HUMAN_GATE_ERROR]"
+				}
+				msg := code + " " + err.Error()
+				return humanFailResult(task, msg), errors.New(msg)
+			}
+		}
+	}
+
 	// RequestedSources is populated from the summary rather than parsed again
 	// to avoid duplicate work. The summary already parsed the metadata once;
 	// dispatcher only carries it forward to the executor.
 	agentReq := &agent.AgentExecutionRequest{
 		Task:             task,
 		SelfContext:      selfContext,
-		Autonomy:         d.autonomyResolver(task),
+		Autonomy:         autonomy,
 		ContextSummary:   summary,
 		RequestedSources: summary.RequestedSources,
 	}
@@ -638,11 +692,12 @@ func (d *DispatcherImpl) executeViaEvolution(ctx context.Context, task *types.Ag
 // executeTaskNormal runs the normal executor routing (agent/contract/human).
 func (d *DispatcherImpl) executeTaskNormal(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
 	executorType := task.Metadata[types.TaskMetadataKeyExecutor]
+	pref := task.Metadata[types.ExecutorKeyPreference]
 
-	if executorType == types.ExecutorTypeHuman {
-		return d.executeHumanTask(ctx, task)
+	if executorType == types.ExecutorTypeHuman || pref == types.ExecutorPrefRequireHuman {
+		return d.executeViaHumanInbox(ctx, task)
 	}
-	if executorType == types.ExecutorTypeAgent {
+	if executorType == types.ExecutorTypeAgent || pref == types.ExecutorPrefRequireAgent {
 		return d.executeAgentTask(ctx, task)
 	}
 
@@ -661,76 +716,4 @@ func (d *DispatcherImpl) executeTaskNormal(ctx context.Context, task *types.Agen
 		Status:    types.TaskStatusCompleted,
 		Completed: time.Now(),
 	}, nil
-}
-
-// executeHumanTask routes a task to the human executor and polls until resolved or timed out.
-func (d *DispatcherImpl) executeHumanTask(ctx context.Context, task *types.AgentTask) (*types.TaskResult, error) {
-	callReq := &types.HumanCallRequest{
-		CallID:   task.TaskID,
-		TaskID:   task.TaskID,
-		Input:    task.Input,
-		Metadata: task.Metadata,
-	}
-
-	if _, err := d.humanExecutor.ExecuteCall(callReq); err != nil {
-		return &types.TaskResult{
-			TaskID:    task.TaskID,
-			Status:    types.TaskStatusFailed,
-			Error:     fmt.Sprintf("human call failed: %v", err),
-			Completed: time.Now(),
-		}, err
-	}
-
-	pollInterval := 100 * time.Millisecond
-	deadline := time.Now().Add(d.timeout)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return &types.TaskResult{
-				TaskID:    task.TaskID,
-				Status:    types.TaskStatusFailed,
-				Error:     ctx.Err().Error(),
-				Completed: time.Now(),
-			}, ctx.Err()
-		default:
-		}
-		status, err := d.humanExecutor.GetCallStatus(task.TaskID)
-		if err != nil {
-			return &types.TaskResult{
-				TaskID:    task.TaskID,
-				Status:    types.TaskStatusFailed,
-				Error:     fmt.Sprintf("call status check failed: %v", err),
-				Completed: time.Now(),
-			}, fmt.Errorf("call status check failed: %v", err)
-		}
-
-		switch status {
-		case types.CallStatusCompleted:
-			return &types.TaskResult{
-				TaskID:    task.TaskID,
-				Status:    types.TaskStatusCompleted,
-				Completed: time.Now(),
-			}, nil
-		case types.CallStatusFailed:
-			return &types.TaskResult{
-				TaskID:    task.TaskID,
-				Status:    types.TaskStatusFailed,
-				Error:     "human call failed",
-				Completed: time.Now(),
-			}, fmt.Errorf("human call %s failed", task.TaskID)
-		}
-
-		if time.Now().After(deadline) {
-			timeoutErr := types.NewAgentError(types.ErrTaskTimeout, fmt.Sprintf("human call %s timed out waiting for resolution", task.TaskID))
-			return &types.TaskResult{
-				TaskID:    task.TaskID,
-				Status:    types.TaskStatusFailed,
-				Error:     timeoutErr.Error(),
-				Completed: time.Now(),
-			}, timeoutErr
-		}
-
-		time.Sleep(pollInterval)
-	}
 }

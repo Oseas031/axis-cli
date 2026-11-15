@@ -141,6 +141,11 @@ func NewOrchestrator(opts ...OrchestratorOption) *Orchestrator {
 	orch.dispatcher = dispatcher.NewDispatcher(contractExec, humanExec)
 	orch.admissionValidator = admission.NewAdmissionValidator(contractExec)
 
+	// Surface intermediate dispatcher statuses (waiting_human) through the
+	// scheduler so control-plane queries observe parked tasks (design.md D2).
+	orch.dispatcher.SetStatusObserver(func(taskID string, status types.TaskStatus) {
+		_ = orch.scheduler.UpdateTaskStatus(taskID, status)
+	})
 	// Inject agent executor into dispatcher if configured
 	if orch.agentExecutor != nil {
 		orch.dispatcher.SetAgentExecutor(orch.agentExecutor)
@@ -253,6 +258,12 @@ func (o *Orchestrator) markOrphanedTasks() {
 			log.Printf("[Orchestrator] Marked orphaned task %s as failed", id)
 		}
 	}
+}
+
+// SetHumanGate injects the human inbox gate so tasks that require human
+// confirmation park instead of failing (human-agent-scheduling spec D2).
+func (o *Orchestrator) SetHumanGate(g dispatcher.HumanGate) {
+	o.dispatcher.SetHumanGate(g)
 }
 
 // SubmitTask submits a task to the orchestrator after admission validation.

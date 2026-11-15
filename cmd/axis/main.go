@@ -118,7 +118,7 @@ func NewRootCommand(app *App) *cobra.Command {
 	}
 	shellCmd.Flags().Bool("no-prompt", false, "Suppress interactive shell prompt for pipe/automation drivers")
 
-	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand(), newDocsCommand(), newGuaranteeCommand(app))
+	rootCmd.AddCommand(runCmd, statusCmd, startCmd, shellCmd, newProviderCommand(), newAskCommand(), newContextCommand(), newJudgeCommand(), newEvolveCommand(), newMemoryCommand(), newSkillsCommand(), newGUICommand(), newVigilCommand(), newInboxCommand(), newDocsCommand(), newGuaranteeCommand(app))
 
 	rootCmd.PersistentFlags().StringVar(&app.providerName, "provider", "mock", "Model provider to use: mock, echo, anthropic, openai")
 	rootCmd.PersistentFlags().StringVar(&app.modelName, "model", "", "Model name for real providers")
@@ -333,7 +333,7 @@ func (app *App) initOrchestrator() {
 
 		agentExec := agent.NewLLMAgentExecutor(p, nil,
 			agent.WithAgentID("axis-coding-agent"),
-			agent.WithSystemPrompt("You are Axis Coding Agent. Use available tools to complete tasks. Be concise and direct. Do not over-analyze simple questions — if the user asks what tools you have, just list them briefly. When done, respond with your final output without tool calls.\n\nEnvironment: Windows with WSL bash. Tools available in PATH: go, git, find, grep, wc, cat. For Windows-specific commands use cmd.exe /c \"...\". Do NOT retry the same command if it fails — try a different approach.\n\nWhen tasks span multiple files or logical subsystems, decompose them with the spawn tool: spawn a focused subtask for each logical unit, then integrate results. spawn runs with its own iteration budget and returns the subtask output as a tool result.\nExample: for \"add X field + Y logic + Z test\", spawn: (1) \"add X field to types.go\", (2) \"implement Y logic in dispatcher.go\", (3) \"write tests for X and Y\".\n\nWhen tasks span multiple files or logical subsystems, decompose them with the spawn tool: spawn a focused subtask for each logical unit, then integrate results. spawn runs with its own iteration budget and returns the subtask output as a tool result.\nExample: for \"add X field + Y logic + Z test\", spawn: (1) \"add X field to types.go\", (2) \"implement Y logic in dispatcher.go\", (3) \"write tests for X and Y\"."),
+			agent.WithSystemPrompt("You are Axis Coding Agent. Use available tools to complete tasks. Be concise and direct. Do not over-analyze simple questions — if the user asks what tools you have, just list them briefly. When done, respond with your final output without tool calls.\n\nEnvironment: Windows with WSL bash. Tools available in PATH: go, git, find, grep, wc, cat. For Windows-specific commands use cmd.exe /c \"...\". Do NOT retry the same command if it fails — try a different approach.\n\nWhen tasks span multiple files or logical subsystems, decompose them with the spawn tool: spawn a focused subtask for each logical unit, then integrate results. spawn runs with its own iteration budget and returns the subtask output as a tool result.\nExample: for \"add X field + Y logic + Z test\", spawn: (1) \"add X field to types.go\", (2) \"implement Y logic in dispatcher.go\", (3) \"write tests for X and Y\"."),
 			agent.WithMaxIterations(50),
 			agent.WithMaxErrors(5),
 			agent.WithTurnTimeout(90*time.Second),
@@ -350,6 +350,9 @@ func (app *App) initOrchestrator() {
 			orchestrator.WithModelProvider(p),
 			orchestrator.WithAgentExecutor(agentExec),
 		)
+		if g := getHumanGate(); g != nil {
+			app.orch.SetHumanGate(gateBridge{g: g})
+		}
 		if err := app.orch.RegisterContract(defaultContract()); err != nil {
 			fmt.Fprintf(os.Stderr, "Error registering default contract: %v\n", err)
 		}

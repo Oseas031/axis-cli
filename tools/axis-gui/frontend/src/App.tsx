@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, ListTodo, Cpu, Radio, MessageSquare, BookOpen } from 'lucide-react'
+import { LayoutDashboard, ListTodo, Cpu, Radio, MessageSquare, BookOpen, Inbox as InboxIcon } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/providers', icon: Cpu, label: 'Providers' },
   { to: '/events', icon: Radio, label: 'Events' },
   { to: '/skills', icon: BookOpen, label: 'Skills' },
+  { to: '/inbox', icon: InboxIcon, label: 'Inbox' },
   { to: '/chat', icon: MessageSquare, label: 'Chat' },
 ]
 

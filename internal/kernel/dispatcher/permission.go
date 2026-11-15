@@ -45,8 +45,32 @@ func NewPermissionResolver() *PermissionResolver {
 	}
 }
 
-// v1: Resolve is defined but not yet called from executeAgentTask.
-// TODO: wire into dispatch path and handle PermissionAsk (pause + confirm).
+// v1 (human-agent-scheduling spec): Resolve is wired into executeAgentTask
+// behind RequiresConfirmation so only tasks that explicitly declare autonomy
+// or carry high-risk keys enter the ask path.
+
+// RequiresConfirmation reports whether a task's metadata explicitly opts into
+// permission gating: an explicitly declared autonomy level or any high-risk
+// key. Tasks that never declared autonomy keep their legacy behavior
+// (implicit Low runs ungated) so wiring the ask path does not retroactively
+// gate every historical task; declarations are conscious acts.
+func (pr *PermissionResolver) RequiresConfirmation(metadata map[string]string) bool {
+	if metadata == nil {
+		return false
+	}
+	if _, ok := metadata["agent.autonomy_level"]; ok {
+		return true
+	}
+	if _, ok := metadata["autonomy_level"]; ok {
+		return true
+	}
+	for _, key := range pr.HighRiskKeys {
+		if _, ok := metadata[key]; ok {
+			return true
+		}
+	}
+	return false
+}
 
 // Resolve determines the permission for a task given its autonomy level and metadata.
 // Rules:

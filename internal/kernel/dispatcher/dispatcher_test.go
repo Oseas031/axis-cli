@@ -2,7 +2,9 @@ package dispatcher
 
 import (
 	"context"
+	"errors"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -216,11 +218,45 @@ func TestDispatcher_DispatchTimeout(t *testing.T) {
 	}
 }
 
-func TestDispatcher_HumanExecutorRoute(t *testing.T) {
-	contractExec := contractexec.NewContractExecutor()
-	humanExec := humanexec.NewHumanExecutor()
-	dispatch := NewDispatcher(contractExec, humanExec)
+// stubHumanGate lets tests script gate outcomes without touching disk.
+type stubHumanGate struct {
+	mu      sync.Mutex
+	waiting bool
+	fn      func(task *types.AgentTask, req *types.HumanCallRequest) (*HumanOutcome, error)
+}
+
+func (g *stubHumanGate) Request(task *types.AgentTask, req *types.HumanCallRequest) (*HumanOutcome, error) {
+	g.mu.Lock()
+	g.waiting = true
+	g.mu.Unlock()
+	defer func() {
+		g.mu.Lock()
+		g.waiting = false
+		g.mu.Unlock()
+	}()
+	return g.fn(task, req)
+}
+
+func (g *stubHumanGate) TaskWaiting(string) bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.waiting
+}
+
+func newSilentDispatcher() *DispatcherImpl {
+	d := NewDispatcher(contractexec.NewContractExecutor(), humanexec.NewHumanExecutor())
+	return d
+}
+
+// Regression (T3): the legacy busy-poll is replaced by the inbox gate; the
+// resolved answer must be plumbed into Result.Output (previously dropped).
+func TestDispatcher_HumanInboxRoute_Approved(t *testing.T) {
+	dispatch := newSilentDispatcher()
 	dispatch.timeout = 500 * time.Millisecond
+	dispatch.SetHumanGate(&stubHumanGate{fn: func(task *types.AgentTask, req *types.HumanCallRequest) (*HumanOutcome, error) {
+		time.Sleep(30 * time.Millisecond)
+		return &HumanOutcome{Approved: true, Text: "hi", Output: map[string]any{"answer": "hi"}}, nil
+	}})
 
 	task := &types.AgentTask{
 		TaskID:     "human-task",
@@ -229,25 +265,71 @@ func TestDispatcher_HumanExecutorRoute(t *testing.T) {
 		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeHuman},
 	}
 
-	go func() {
-		time.Sleep(50 * time.Millisecond)
-		humanExec.ResolveCall("human-task", map[string]any{"answer": "hi"}, nil)
-	}()
-
-	ctx := context.Background()
-	result, err := dispatch.Dispatch(ctx, task)
+	result, err := dispatch.Dispatch(context.Background(), task)
 	if err != nil {
 		t.Fatalf("Human dispatch should succeed after resolution: %v", err)
 	}
 	if result.Status != types.TaskStatusCompleted {
 		t.Errorf("Expected completed, got %s", result.Status)
 	}
+	if result.Output["answer"] != "hi" {
+		t.Errorf("human answer not plumbed into output: %+v", result.Output)
+	}
 }
 
+// Regression (design.md D2): while parked on a human request, dispatcher
+// timeout enforcement yields to the human SLA instead of failing the task.
+func TestDispatcher_HumanInbox_ParkExtendsTimeout(t *testing.T) {
+	dispatch := newSilentDispatcher()
+	dispatch.timeout = 100 * time.Millisecond
+	dispatch.SetHumanGate(&stubHumanGate{fn: func(task *types.AgentTask, req *types.HumanCallRequest) (*HumanOutcome, error) {
+		time.Sleep(300 * time.Millisecond) // exceeds dispatcher timeout while parked
+		return &HumanOutcome{Approved: true}, nil
+	}})
+
+	task := &types.AgentTask{
+		TaskID:     "human-park",
+		ContractID: "any",
+		Input:      map[string]any{"prompt": "hello"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeHuman},
+	}
+
+	result, err := dispatch.Dispatch(context.Background(), task)
+	if err != nil {
+		t.Fatalf("parked wait should outlive dispatcher timeout: %v", err)
+	}
+	if result.Status != types.TaskStatusCompleted {
+		t.Errorf("Expected completed, got %s (%s)", result.Status, result.Error)
+	}
+}
+
+// Fail-closed invariant: a degraded human wait never becomes an approval.
+func TestDispatcher_HumanInbox_DegradeFailsClosed(t *testing.T) {
+	dispatch := newSilentDispatcher()
+	dispatch.timeout = time.Second
+	dispatch.SetHumanGate(&stubHumanGate{fn: func(*types.AgentTask, *types.HumanCallRequest) (*HumanOutcome, error) {
+		return &HumanOutcome{Degraded: true}, nil
+	}})
+
+	task := &types.AgentTask{
+		TaskID:     "human-degraded",
+		ContractID: "any",
+		Input:      map[string]any{"prompt": "hello"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeHuman},
+	}
+
+	result, err := dispatch.Dispatch(context.Background(), task)
+	if err == nil {
+		t.Fatal("degraded wait must fail closed")
+	}
+	if !strings.Contains(result.Error, "HUMAN_WAIT_DEGRADED") {
+		t.Errorf("expected HUMAN_WAIT_DEGRADED marker, got %q", result.Error)
+	}
+}
+
+// Without a configured gate, human tasks fail closed instead of hanging.
 func TestDispatcher_HumanExecutorTimeout(t *testing.T) {
-	contractExec := contractexec.NewContractExecutor()
-	humanExec := humanexec.NewHumanExecutor()
-	dispatch := NewDispatcher(contractExec, humanExec)
+	dispatch := newSilentDispatcher()
 	dispatch.timeout = 100 * time.Millisecond
 
 	task := &types.AgentTask{
@@ -257,16 +339,115 @@ func TestDispatcher_HumanExecutorTimeout(t *testing.T) {
 		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeHuman},
 	}
 
-	ctx := context.Background()
-	result, err := dispatch.Dispatch(ctx, task)
+	result, err := dispatch.Dispatch(context.Background(), task)
 	if err == nil {
-		t.Fatal("Human dispatch should timeout")
+		t.Fatal("human dispatch without gate must fail")
 	}
 	if result.Status != types.TaskStatusFailed {
 		t.Errorf("Expected failed status, got %s", result.Status)
 	}
+	if !strings.Contains(result.Error, "HUMAN_GATE_UNAVAILABLE") {
+		t.Errorf("expected fail-closed gate marker, got %q", result.Error)
+	}
 }
 
+// T3: explicit autonomy declaration routes Ask through the gate.
+type capturingGate struct {
+	stubHumanGate
+	called int
+}
+
+func (g *capturingGate) Request(task *types.AgentTask, req *types.HumanCallRequest) (*HumanOutcome, error) {
+	g.mu.Lock()
+	g.called++
+	g.mu.Unlock()
+	if req.Kind != types.HumanKindDecision {
+		return nil, errors.New("expected decision kind")
+	}
+	return &HumanOutcome{Approved: true, Choice: "proceed"}, nil
+}
+
+func TestDispatcher_PermissionAsk_GateApproves(t *testing.T) {
+	dispatch := newSilentDispatcher()
+	gate := &capturingGate{}
+	dispatch.SetHumanGate(gate)
+	executed := false
+	capturing := &spyAgentExecutor{onExecute: func() { executed = true }}
+	dispatch.SetAgentExecutor(capturing)
+
+	task := &types.AgentTask{
+		TaskID:     "ask-approved",
+		ContractID: "default",
+		Input:      map[string]any{"goal": "x"},
+		Metadata:   map[string]string{"agent.autonomy_level": "low", types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+	}
+	result, err := dispatch.Dispatch(context.Background(), task)
+	if err != nil || result.Status != types.TaskStatusCompleted {
+		t.Fatalf("approved ask should proceed: err=%v status=%s error=%s", err, result.Status, result.Error)
+	}
+	if gate.called != 1 || !executed {
+		t.Fatalf("gate called=%d executed=%v", gate.called, executed)
+	}
+}
+
+func TestDispatcher_PermissionAsk_DegradeDenies(t *testing.T) {
+	dispatch := newSilentDispatcher()
+	dispatch.SetHumanGate(&stubHumanGate{fn: func(*types.AgentTask, *types.HumanCallRequest) (*HumanOutcome, error) {
+		return &HumanOutcome{Degraded: true}, nil
+	}})
+	spy := &spyAgentExecutor{}
+	dispatch.SetAgentExecutor(spy)
+
+	task := &types.AgentTask{
+		TaskID:     "ask-degraded",
+		ContractID: "default",
+		Metadata:   map[string]string{"agent.autonomy_level": "low", types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+	}
+	result, err := dispatch.Dispatch(context.Background(), task)
+	if err == nil || !strings.Contains(result.Error, "PERMISSION_DENIED") {
+		t.Fatalf("degraded ask must deny: %q", result.Error)
+	}
+	if spy.executed {
+		t.Fatal("agent executor must not run after denied ask")
+	}
+}
+
+func TestDispatcher_PermissionDeny_NoneAutonomy(t *testing.T) {
+	dispatch := newSilentDispatcher()
+	spy := &spyAgentExecutor{}
+	dispatch.SetAgentExecutor(spy)
+
+	task := &types.AgentTask{
+		TaskID:     "deny-none",
+		ContractID: "default",
+		Metadata:   map[string]string{"agent.autonomy_level": "none", types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+	}
+	result, err := dispatch.Dispatch(context.Background(), task)
+	if err == nil || !strings.Contains(result.Error, "PERMISSION_DENIED") {
+		t.Fatalf("autonomy none must deny: %q", result.Error)
+	}
+	if spy.executed {
+		t.Fatal("agent executor must not run on deny")
+	}
+}
+
+// Backward compatibility: implicit-Low legacy tasks stay ungated.
+func TestDispatcher_Permission_ImplicitLowUngated(t *testing.T) {
+	dispatch := newSilentDispatcher()
+	// No gate configured; if the ask path fired this would fail closed.
+	dispatch.SetAgentExecutor(&spyAgentExecutor{onExecute: func() {}})
+
+	task := &types.AgentTask{
+		TaskID:     "implicit-low",
+		ContractID: "test-contract",
+		Input:      map[string]any{"input": "x", "task_type": "default"},
+		Metadata:   map[string]string{types.TaskMetadataKeyExecutor: types.ExecutorTypeAgent},
+	}
+	result, err := dispatch.Dispatch(context.Background(), task)
+	if err != nil || result.Status != types.TaskStatusCompleted {
+		t.Fatalf("implicit low should keep legacy behavior: err=%v status=%s", err, result.Status)
+	}
+}
 func TestDispatcher_SetAgentExecutor(t *testing.T) {
 	contractExec := contractexec.NewContractExecutor()
 	humanExec := humanexec.NewHumanExecutor()
@@ -805,4 +986,21 @@ func TestDispatcher_AuditLog(t *testing.T) {
 	if entry.Error != "" {
 		t.Errorf("Expected empty Error, got %s", entry.Error)
 	}
+}
+
+type spyAgentExecutor struct {
+	onExecute func()
+	executed  bool
+}
+
+func (s *spyAgentExecutor) Execute(ctx context.Context, req *agent.AgentExecutionRequest) (*agent.AgentExecutionResult, error) {
+	s.executed = true
+	if s.onExecute != nil {
+		s.onExecute()
+	}
+	return &agent.AgentExecutionResult{Output: map[string]any{"status": "ok"}}, nil
+}
+
+func (s *spyAgentExecutor) GetAutonomyLevel() agent.AutonomyLevel {
+	return agent.AutonomyLevelFull
 }

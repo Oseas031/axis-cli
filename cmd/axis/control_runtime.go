@@ -24,9 +24,22 @@ func newLocalHTTPServer(handler http.Handler) *http.Server {
 }
 
 func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) error {
+	// Single-writer discipline: refuse when a healthy runtime already owns
+	// this project root (design.md D2). Prevents mailbox double-write races.
+	if err := ensureNoLiveRuntime(root); err != nil {
+		return err
+	}
 	if err := contextpack.InitDefaultRegistry(root); err != nil {
 		return fmt.Errorf("failed to init readiness registry: %w", err)
 	}
+
+	eventLog := control.NewTaskEventLog(root)
+
+	// Human scheduling components must exist before initOrchestrator wires
+	// them into the dispatcher (design.md D2).
+	setupHumanScheduling(root, eventLog)
+	defer closeAndClearHumanSched()
+
 	initOrchestrator()
 	runtimeOrch := orch
 
@@ -47,6 +60,7 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) 
 		return fmt.Errorf("failed to start orchestrator: %w", err)
 	}
 	defer func() {
+		closeAndClearHumanSched() // wake parked waiters so Shutdown can drain
 		_ = runtimeOrch.Shutdown(context.Background())
 	}()
 
@@ -73,8 +87,6 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) 
 		fmt.Fprintf(out, "Local Axis runtime started at %s\n", record.Address)
 	}
 
-	eventLog := control.NewTaskEventLog(root)
-
 	// Mark orphaned tasks from previous runtime as abandoned
 	if orphaned, err := control.MarkOrphanedTasks(eventLog); err != nil {
 		if out != nil {
@@ -84,7 +96,14 @@ func runLocalRuntime(ctx context.Context, root string, out io.Writer, port int) 
 		fmt.Fprintf(out, "Marked %d orphaned task(s) as abandoned\n", orphaned)
 	}
 
+	// Startup scan: requests that expired while the runtime was down degrade
+	// fail-closed now (design.md D3).
+	degradeExpiredRequests(out)
+
 	server := control.NewServerWithEventLog(runtimeOrch, record, eventLog)
+	if g := getHumanGate(); g != nil {
+		server.SetInboxAPI(inboxAPIBridge{g: g})
+	}
 
 	httpServer := newLocalHTTPServer(server.Handler())
 	serveErr := make(chan error, 1)

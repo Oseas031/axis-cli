@@ -129,3 +129,23 @@ func (c *Client) do(ctx context.Context, method string, path string, body any, o
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
 }
+
+// InboxList fetches the human inbox via the control plane (design.md D7).
+func (c *Client) InboxList(ctx context.Context) (InboxListResponse, error) {
+	var out InboxListResponse
+	if err := c.do(ctx, http.MethodGet, "/v1/inbox", nil, &out); err != nil {
+		return InboxListResponse{}, err
+	}
+	return out, nil
+}
+
+// InboxRespond answers a pending human request via the control plane.
+func (c *Client) InboxRespond(ctx context.Context, callID, choice, text string) (InboxRespondResponse, error) {
+	body := InboxRespondRequest{Choice: choice, Text: text}
+	var out InboxRespondResponse
+	path := fmt.Sprintf("/v1/inbox/%s/respond", url.PathEscape(callID))
+	if err := c.do(ctx, http.MethodPost, path, body, &out); err != nil {
+		return InboxRespondResponse{}, err
+	}
+	return out, nil
+}

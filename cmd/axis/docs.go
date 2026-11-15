@@ -21,7 +21,8 @@ func newDocsCommand() *cobra.Command {
 }
 
 func newDocsLintCommand() *cobra.Command {
-	return &cobra.Command{
+	var checkPaths []string
+	cmd := &cobra.Command{
 		Use:   "lint",
 		Short: "Check documentation health (orphans, dead links, missing frontmatter)",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -30,6 +31,12 @@ func newDocsLintCommand() *cobra.Command {
 				return err
 			}
 			issues := runDocsLint(root)
+			if len(checkPaths) > 0 {
+				issues, err = filterDocIssues(issues, root, checkPaths)
+				if err != nil {
+					return err
+				}
+			}
 			for _, issue := range issues {
 				fmt.Println(issue)
 			}
@@ -41,6 +48,8 @@ func newDocsLintCommand() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().StringSliceVar(&checkPaths, "check", nil, "restrict findings to the given files (absolute, repo-relative, or docs-relative paths)")
+	return cmd
 }
 
 func findDocsRoot() (string, error) {
@@ -53,6 +62,68 @@ func findDocsRoot() (string, error) {
 		return docsDir, nil
 	}
 	return "", fmt.Errorf("docs/ directory not found in %s", wd)
+}
+
+// filterDocIssues keeps only issues whose subject file appears in checkPaths.
+func filterDocIssues(issues []string, docsRoot string, checkPaths []string) ([]string, error) {
+	want := make(map[string]bool)
+	for _, p := range checkPaths {
+		relToDocs, err := normalizeDocPath(docsRoot, p)
+		if err != nil {
+			return nil, err
+		}
+		want["docs/"+relToDocs] = true
+	}
+	var kept []string
+	for _, issue := range issues {
+		if want[docIssueSubject(issue)] {
+			kept = append(kept, issue)
+		}
+	}
+	return kept, nil
+}
+
+// docIssueSubject extracts "docs/<rel>" from an issue line of form
+// "[tag] docs/<rel>[ -> target]".
+func docIssueSubject(issue string) string {
+	idx := strings.Index(issue, "] ")
+	if idx < 0 {
+		return issue
+	}
+	rest := issue[idx+2:]
+	if cut := strings.Index(rest, " ->"); cut >= 0 {
+		rest = rest[:cut]
+	}
+	return rest
+}
+
+// normalizeDocPath maps a user-supplied path to its slash-separated path
+// relative to docsRoot. Accepted inputs: absolute paths, repo-root-relative
+// paths ("docs/specs/x.md"), and docs-root-relative paths ("specs/x.md").
+func normalizeDocPath(docsRoot, p string) (string, error) {
+	abs := p
+	if !filepath.IsAbs(p) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		abs = filepath.Join(cwd, p)
+	}
+	abs = filepath.Clean(abs)
+
+	if relToRepo, err := filepath.Rel(filepath.Dir(docsRoot), abs); err == nil {
+		if slashed := filepath.ToSlash(relToRepo); strings.HasPrefix(slashed, "docs/") {
+			return slashed[len("docs/"):], nil
+		}
+	}
+	relToDocs, err := filepath.Rel(docsRoot, abs)
+	if err != nil {
+		return "", fmt.Errorf("path %s is outside docs root %s", p, docsRoot)
+	}
+	if strings.HasPrefix(relToDocs, "..") {
+		return "", fmt.Errorf("path %s is outside docs root %s", p, docsRoot)
+	}
+	return filepath.ToSlash(relToDocs), nil
 }
 
 func runDocsLint(docsRoot string) []string {
@@ -93,6 +164,11 @@ func runDocsLint(docsRoot string) []string {
 				link = link[:idx]
 			}
 			if link == "" {
+				continue
+			}
+			if strings.ContainsAny(link, "{}") {
+				// Placeholder URL in template text (e.g. "[x]({path})") is not
+				// a real link; skip rather than report a dead link.
 				continue
 			}
 			target := filepath.Join(dir, filepath.FromSlash(link))
@@ -159,6 +235,20 @@ func collectReferencedFiles(docsRoot string, allFiles []string) map[string]bool 
 				continue
 			}
 			target := filepath.Join(dir, filepath.FromSlash(link))
+			if info, err := os.Stat(target); err == nil && info.IsDir() {
+				// Directory-style link (e.g. "[actor-comm](actor-comm/)" in a
+				// spec index) references every markdown file under the target.
+				filepath.Walk(target, func(p string, fi os.FileInfo, err error) error {
+					if err != nil || fi.IsDir() || !strings.HasSuffix(p, ".md") {
+						return nil
+					}
+					if rel, err := filepath.Rel(docsRoot, p); err == nil {
+						referenced[filepath.ToSlash(rel)] = true
+					}
+					return nil
+				})
+				continue
+			}
 			rel, err := filepath.Rel(docsRoot, target)
 			if err == nil {
 				referenced[filepath.ToSlash(rel)] = true

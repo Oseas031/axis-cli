@@ -11,10 +11,14 @@ import (
 type TaskStatus string
 
 const (
-	TaskStatusPending   TaskStatus = "pending"
-	TaskStatusRunning   TaskStatus = "running"
-	TaskStatusCompleted TaskStatus = "completed"
-	TaskStatusFailed    TaskStatus = "failed"
+	TaskStatusPending TaskStatus = "pending"
+	TaskStatusRunning TaskStatus = "running"
+	// TaskStatusWaitingHuman marks a task parked at a human decision point.
+	// The executing goroutine stays blocked (worker slot occupied) until the
+	// inbox request is resolved or degraded; see docs/specs/human-agent-scheduling/.
+	TaskStatusWaitingHuman TaskStatus = "waiting_human"
+	TaskStatusCompleted    TaskStatus = "completed"
+	TaskStatusFailed       TaskStatus = "failed"
 )
 
 // AgentTask represents an agent task to be scheduled
@@ -234,12 +238,23 @@ type ModelMessage struct {
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 }
 
-// HumanCallRequest represents a request to call a human
+// Human call request kinds (v1: decision | info; delegate/verify are future scope).
+const (
+	HumanKindDecision = "decision"
+	HumanKindInfo     = "info"
+)
+
+// HumanCallRequest represents a request to call a human.
 type HumanCallRequest struct {
 	CallID   string            `json:"call_id"`
 	TaskID   string            `json:"task_id"`
-	Input    map[string]any    `json:"input"`
-	Metadata map[string]string `json:"metadata,omitempty"`
+	Kind     string            `json:"kind,omitempty"`     // decision | info; struct field is canonical
+	Prompt   string            `json:"prompt,omitempty"`   // human-readable question statement
+	Options  []string          `json:"options,omitempty"`  // decision candidates
+	Context  map[string]any    `json:"context,omitempty"`  // decision context (must not carry secrets)
+	Input    map[string]any    `json:"input"`              // legacy field, kept for backward compatibility
+	Metadata map[string]string `json:"metadata,omitempty"` // legacy field, kept for backward compatibility
+	Deadline time.Time         `json:"deadline,omitempty"` // nudge/degrade clock basis
 }
 
 // HumanCallResult represents the result of a human call
@@ -258,4 +273,25 @@ const (
 	CallStatusPending   CallStatus = "pending"
 	CallStatusCompleted CallStatus = "completed"
 	CallStatusFailed    CallStatus = "failed"
+	// CallStatusDegraded marks a request resolved by the degrade chain
+	// (human never answered before Deadline); it must not re-degrade on restart.
+	CallStatusDegraded CallStatus = "degraded"
+)
+
+// Human-agent scheduling metadata keys (namespaced per CLAUDE.md §1.6).
+const (
+	// ExecutorKeyPreference routes a task to an executor class.
+	// Values: ExecutorPrefAuto (default), ExecutorPrefRequireHuman, ExecutorPrefRequireAgent.
+	ExecutorKeyPreference = "axis.executor.preference"
+
+	// RequestKindMeta mirrors HumanCallRequest.Kind in task metadata for log
+	// filtering only; the struct field remains canonical.
+	RequestKindMeta = "axis.request.kind"
+)
+
+// Executor preference values for ExecutorKeyPreference.
+const (
+	ExecutorPrefAuto         = "auto"
+	ExecutorPrefRequireHuman = "require-human"
+	ExecutorPrefRequireAgent = "require-agent"
 )

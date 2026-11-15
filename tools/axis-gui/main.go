@@ -50,6 +50,8 @@ func main() {
 	mux.HandleFunc("/api/runtime/stop", handleRuntimeStop)
 	mux.HandleFunc("/api/tasks/", handleTaskStatus) // /api/tasks/{id}/status
 	mux.HandleFunc("/api/tasks", handleTasks)       // GET list / POST submit
+	mux.HandleFunc("/api/inbox", handleInboxList)
+	mux.HandleFunc("/api/inbox/", handleInboxRespond)
 	mux.HandleFunc("/ws/events", handleWSEvents)
 
 	// ── Legacy endpoints (kept for compatibility) ────────────────────────────
@@ -254,6 +256,62 @@ func handleTaskStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	proxyToAxis(w, r, http.MethodGet, "/v1/tasks/"+rest, nil)
+}
+
+// handleInboxList serves GET /api/inbox by reading the per-actor human inbox
+// file (human-agent-scheduling spec D6). Writes are never local.
+func handleInboxList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	path := filepath.Join(axisDir, "comm", "human.jsonl")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{"records": []any{}})
+		return
+	}
+	var records []json.RawMessage
+	for _, line := range bytes.Split(data, []byte("\n")) {
+		if len(bytes.TrimSpace(line)) > 0 {
+			var probe map[string]any
+			if json.Unmarshal(line, &probe) != nil {
+				continue // skip corrupt lines rather than failing the view
+			}
+			records = append(records, json.RawMessage(line))
+		}
+	}
+	if records == nil {
+		records = []json.RawMessage{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{"records": records}) //nolint:errcheck
+}
+
+// handleInboxRespond proxies POST /api/inbox/{id}/respond to the control
+// plane; the runtime owns all inbox mutations.
+func handleInboxRespond(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	prefix := "/api/inbox/"
+	suffix := "/respond"
+	if !strings.HasPrefix(r.URL.Path, prefix) || !strings.HasSuffix(r.URL.Path, suffix) {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "endpoint not found"})
+		return
+	}
+	callID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, prefix), suffix)
+	if callID == "" || strings.Contains(callID, "/") {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "call id required"})
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read body"})
+		return
+	}
+	proxyToAxis(w, r, http.MethodPost, "/v1/inbox/"+callID+"/respond", bytes.NewReader(body))
 }
 
 // ── WebSocket events ──────────────────────────────────────────────────────────
