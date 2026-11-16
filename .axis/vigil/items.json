@@ -1101,5 +1101,115 @@
         "at": "2026-11-16T21:52:02.8936624+08:00"
       }
     ]
+  },
+  {
+    "id": "vigil-69a2b9",
+    "title": "工具修复：Windows BashTool 超时需终止整个子进程树（避免 uv/pip 等孙进程占住 stdout 管道阻塞）",
+    "priority": "P1",
+    "status": "pending",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T22:16:04.1957846+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-59ce45",
+    "title": "隔离执行Issue：勾选安全副本（isolate=true）目前仅对外部CLI生效，axis-native 尚未接入 git worktree 隔离与Diff合入闭环",
+    "priority": "P1",
+    "status": "pending",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T22:39:45.9958396+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-fa396e",
+    "title": "交互体验Issue：工作台主输入区缺少 Role（coordinator/implementer/test-runner/reviewer）快捷选择，目前仅流水线抽屉可用",
+    "priority": "P1",
+    "status": "pending",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T22:39:46.9253751+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-323df4",
+    "title": "流式输出Issue：axis-native 长文本回复生成阶段缺少 Token 级 text_delta 流式推送（目前仅实时推送思考与工具调用事件）",
+    "priority": "P2",
+    "status": "pending",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T22:39:47.380142+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-6bf324",
+    "title": "工具调用Issue：DeepSeek 模型偶发将工具调用以 \u003c｜DSML｜ calls\u003e 纯文本返回时，executeMultiTurn 误判为最终回复并提前 completed",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T22:47:31.0963001+08:00",
+    "started_at": "2026-11-16T22:48:40.902731+08:00",
+    "completed_at": "2026-11-16T22:51:43.6928684+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-11-16T22:48:40.902731+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-11-16T22:51:43.6928684+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-8be838",
+    "title": "编码Issue：executor.emitLiveEvent 按字节 [:220] 截断中文思考内容导致非法 UTF-8 字符",
+    "priority": "P2",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T22:47:31.5142449+08:00",
+    "started_at": "2026-11-16T22:48:41.2940003+08:00",
+    "completed_at": "2026-11-16T22:51:44.2354121+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "in_progress",
+        "at": "2026-11-16T22:48:41.2940003+08:00"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "2026-11-16T22:51:44.2354121+08:00"
+      }
+    ]
   }
 ]

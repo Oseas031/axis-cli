@@ -210,23 +210,39 @@ func emitLiveEvent(ctx context.Context, eventType, message string) {
 	}
 	if fn, ok := ctx.Value(liveEventCtxKey{}).(LiveEventFunc); ok && fn != nil {
 		trimmed := strings.TrimSpace(message)
-		if len(trimmed) > 220 {
-			trimmed = trimmed[:220] + "..."
+		runes := []rune(trimmed)
+		if len(runes) > 220 {
+			trimmed = string(runes[:220]) + "..."
 		}
 		fn(eventType, trimmed)
 	}
 }
 
-// executeMultiTurn runs a multi-turn tool-calling loop with a maximum of 25 turns.
+func leakedToolMarkupText(output map[string]any) (string, bool) {
+	if output == nil {
+		return "", false
+	}
+	txt, ok := output["text"].(string)
+	if !ok {
+		return "", false
+	}
+	if strings.Contains(txt, "<｜DSML｜") || strings.Contains(txt, "<|DSML|") {
+		return txt, true
+	}
+	return "", false
+}
+
+// executeMultiTurn runs a multi-turn tool-calling loop with a default maximum of 40 turns.
 // It implements a circuit breaker that aborts after 5 consecutive tool errors.
 func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
 	var history []types.ModelMessage
 	turnsSinceProgress := 0
 	maxTurns := e.maxTurns
 	if maxTurns == 0 {
-		maxTurns = 25
+		maxTurns = 40
 	}
 	consecutiveErrors := 0
+	dsmlRetries := 0
 	circuitBreakerThreshold := e.circuitBreakerThreshold
 	if circuitBreakerThreshold == 0 {
 		circuitBreakerThreshold = 5
@@ -346,6 +362,22 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 			}
 			continue
 		}
+
+		if txt, leaked := leakedToolMarkupText(resp.Output); leaked {
+			dsmlRetries++
+			if turn >= maxTurns-1 || dsmlRetries > 3 {
+				return &types.ExecutionResult{
+					Error: "provider returned raw DSML tool-call markup instead of structured tool calls",
+				}, fmt.Errorf("provider returned raw DSML tool-call markup instead of structured tool calls")
+			}
+			emitLiveEvent(ctx, "agent_thinking", "检测到文本格式工具调用泄露，正在要求模型改用标准 tool_calls 重试...")
+			history = append(history,
+				types.ModelMessage{Role: "assistant", Content: txt},
+				types.ModelMessage{Role: "user", Content: "Do not output raw <｜DSML｜> or XML tool-call markup as plain text. Invoke tools using the structured tool_calls API, or return a plain final summary if all work is finished."},
+			)
+			continue
+		}
+		dsmlRetries = 0
 
 		if resp.Output != nil {
 			if err := e.ValidateOutput(contractID, resp.Output); err != nil {

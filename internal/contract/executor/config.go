@@ -19,7 +19,7 @@ type ExecutorConfig struct {
 
 	// CircuitBreakerThreshold is the number of consecutive tool errors before aborting. Default: 5.
 	CircuitBreakerThreshold int
-	// MaxTurns is the maximum number of multi-turn iterations. Default: 25.
+	// MaxTurns is the maximum number of multi-turn iterations. Default: 40.
 	MaxTurns int
 }
 
@@ -31,7 +31,7 @@ func NewContractExecutorWithConfig(cfg ExecutorConfig) *ContractExecutorImpl {
 	}
 	maxTurns := cfg.MaxTurns
 	if maxTurns == 0 {
-		maxTurns = 25
+		maxTurns = 40
 	}
 	return &ContractExecutorImpl{
 		contracts:               make(map[string]*types.AgentContract),
