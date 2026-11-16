@@ -1,5 +1,7 @@
 ﻿# Axis
 
+**English** | [简体中文](README_ZH.md)
+
 > **Single-Binary Multi-Harness AI Agent Control Tower & Local Coding Orchestrator** (Go, Zero-Framework).  
 > Axis unifies native LLM agents and external coding CLI harnesses (`claude`, `codex`, `gemini`, `opencode`, etc.) under one local control plane: **single-command Web workbench (`axis gui`), git worktree isolation, inline human-in-the-loop approvals, and cross-harness pipelines**.
 
