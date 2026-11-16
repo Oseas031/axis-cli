@@ -1,7 +1,7 @@
 ﻿# Axis
 
-> **Local AI Coding Control Tower & Agent Reliability Lab** (Go, Zero-Framework CLI).  
-> Axis does not replace your IDE or chat window. It solves the **engineering governance problem** when running multiple coding models concurrently on real repositories: **unbounded token cost, broken human-agent handoffs, and unsafe direct edits to the main tree**.
+> **Single-Binary Multi-Harness AI Agent Control Tower & Local Coding Orchestrator** (Go, Zero-Framework).  
+> Axis unifies native LLM agents and external coding CLI harnesses (`claude`, `codex`, `gemini`, `opencode`, etc.) under one local control plane: **single-command Web workbench (`axis gui`), git worktree isolation, inline human-in-the-loop approvals, and cross-harness pipelines**.
 
 ## Core Business Scenario
 
@@ -45,9 +45,11 @@ bash is all you need · Competence earns autonomy · Interface is existence
 
 ## Current Status
 
-M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Staged Evolution ✅ | Local Control Plane ✅ | Human-Agent Scheduling (v1) ✅
+M1 ✅ | M2 ✅ | M3 ✅ | M4 ✅ | M5 ✅ | M6 ✅ | Staged Evolution ✅ | Local Control Plane ✅ | Human-Agent Scheduling (v1) ✅ | Multi-Harness Control Tower & Single-Binary UI ✅
 
 ### Completed Capabilities
+
+- **Single-Binary Multi-Harness Control Tower (`axis gui` / `axis web`)**: Zero-bundler 3-pane Web workbench embedded via `go:embed` with SSE real-time stream, `@harness` routing, `Stop` / task cancellation, inline human approvals (with masked secret input), `git worktree` isolation & diff review, Save-as-Skill, Routines, Memory notes, and cross-harness Pipelines (`{{prev_output}}` / `{{prev_diff}}`)
 
 - **Task Scheduling**: FIFO + DAG parallel scheduling, dependency management, 5-worker parallel orchestrator, contract admission, SLA timeout/retry/failure_class strategy engine
 - **LLM Integration**: Anthropic / OpenAI / DeepSeek / MiniMax providers, token accounting, circuit breaker (configurable), project-local provider profile management, quality-gated model escalation, semantic layering (primary/utility routing)
