@@ -819,6 +819,7 @@
                 <button id="btnAdvToggle" type="button" class="pill-toggle" data-i18n="advBtn">高级</button>
                 <span id="advFields" class="adv-inline">
                   <input id="taskIdInput" type="text" placeholder="task_id (auto)">
+                  <input id="budgetInput" type="number" min="0" step="0.01" placeholder="budget USD" style="width:95px;">
                 </span>
               </div>
               <button id="btnSubmit" class="send-btn" type="button" title="Send (Enter)">↑</button>
@@ -859,9 +860,17 @@
               <button type="button" class="chip-btn preset-btn" data-preset="codex">codex</button>
               <button type="button" class="chip-btn preset-btn" data-preset="gemini">gemini</button>
               <button type="button" class="chip-btn preset-btn" data-preset="opencode">opencode</button>
+              <button type="button" class="chip-btn preset-btn" data-preset="deepseek">deepseek</button>
+              <button type="button" class="chip-btn preset-btn" data-preset="workbuddy">workbuddy</button>
+              <button type="button" class="chip-btn preset-btn" data-preset="qoder">qoder</button>
+              <button type="button" class="chip-btn preset-btn" data-preset="zcode">zcode</button>
             </div>
+            <select id="hKindSelect" class="pill-select">
+              <option value="cli">cli (subprocess)</option>
+              <option value="http">http (endpoint)</option>
+            </select>
             <input id="hIdInput" type="text" placeholder="id (e.g. claude-code)">
-            <input id="hCmdInput" type="text" placeholder="command (e.g. claude)">
+            <input id="hCmdInput" type="text" placeholder="command or http://endpoint">
             <input id="hArgsInput" type="text" placeholder="args ({prompt} optional)">
             <input id="hDescInput" type="text" placeholder="description (optional)">
             <button id="btnAddHarness" class="btn primary" type="button" data-i18n="regHarnessBtn">注册</button>
@@ -909,12 +918,15 @@
         </div>
         <div class="drawer-body">
           <div class="form-grid">
-            <input id="pNameInput" type="text" placeholder="name (e.g. plan-and-code)">
-            <div style="font-family:var(--mono);font-size:10px;color:var(--axis-muted);">Step 1 → Step 2 ({{prev_output}}, {{prev_diff}})</div>
+            <input id="pNameInput" type="text" placeholder="name (e.g. dev-cycle)">
+            <input id="pBudgetInput" type="number" min="0" step="0.01" placeholder="budget USD (optional)">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--axis-muted);">Step 1 (coordinator/implementer) → Step 2 (reviewer/test-runner)</div>
+            <input id="pStep1Role" type="text" value="implementer" placeholder="step 1 role (optional)">
             <input id="pStep1Harness" type="text" value="axis-native" placeholder="step 1 agent">
             <input id="pStep1Prompt" type="text" placeholder="step 1 prompt">
+            <input id="pStep2Role" type="text" value="reviewer" placeholder="step 2 role (optional)">
             <input id="pStep2Harness" type="text" value="axis-native" placeholder="step 2 agent">
-            <input id="pStep2Prompt" type="text" value="Review:\n{{prev_output}}" placeholder="step 2 prompt">
+            <input id="pStep2Prompt" type="text" value="Review:\n{{prev_handoff}}" placeholder="step 2 prompt">
             <button id="btnRunPipeline" class="btn primary" type="button" data-i18n="runPipelineBtn">运行流水线</button>
           </div>
           <div id="pipelinesList" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -963,6 +975,8 @@
         saveSkillBtn: '存为技能',
         workspaceDiff: '工作区变更',
         cleanWorktree: '清理副本',
+        mergeWorktree: '合入主分支',
+        mergedAlert: '已合入主分支文件：',
         approvalRequired: '需要你确认',
         secretInputHint: '掩码安全输入',
         replyPlaceholder: '输入回复...',
@@ -1020,6 +1034,8 @@
         saveSkillBtn: 'Save skill',
         workspaceDiff: 'Sandbox diff',
         cleanWorktree: 'Clean sandbox',
+        mergeWorktree: 'Merge to Main',
+        mergedAlert: 'Merged files to main: ',
         approvalRequired: 'Approval required',
         secretInputHint: 'Masked secret input',
         replyPlaceholder: 'Reply...',
@@ -1126,10 +1142,11 @@
       el('harnessList').innerHTML = list.map((h) => `
         <div class="card-row">
           <div class="card-meta">
-            <span><b>${esc(h.id)}</b></span>
+            <span><b>${esc(h.id)}</b> · ${esc(h.kind)}</span>
             <span>${h.builtin ? esc(t('builtinTag')) : esc(t('customTag'))}</span>
           </div>
           ${h.command ? `<div style="font-family:var(--mono);font-size:11px;color:var(--axis-accent);">${esc(h.command)} ${esc((h.args || []).join(' '))}</div>` : ''}
+          ${h.endpoint ? `<div style="font-family:var(--mono);font-size:11px;color:var(--axis-accent);">${esc(h.endpoint)}</div>` : ''}
           ${h.description ? `<div style="font-size:12px;color:var(--axis-text-soft);">${esc(h.description)}</div>` : ''}
         </div>
       `).join('');
@@ -1203,9 +1220,13 @@
       const isRunning = status === 'pending' || status === 'running';
 
       titleEl.textContent = (summary.prompt && summary.prompt.trim()) ? summary.prompt.trim() : state.selectedTaskId;
+      const budget = summary.cost_budget || (detail.output && detail.output.cost_budget) || 0;
+      const spent = summary.spent_usd || (detail.output && detail.output.spent_usd) || 0;
+      const budgetTag = budget > 0 ? ` · $${spent.toFixed(4)}/$${budget.toFixed(2)}` : '';
+      const taintTag = (summary.tainted || (detail.output && detail.output.tainted)) ? ' · tainted' : '';
       pillEl.style.display = 'inline-block';
       pillEl.className = 'status-chip ' + (status === 'completed' ? 'completed' : (status === 'failed' ? 'failed' : 'running'));
-      pillEl.textContent = harnessName !== 'axis-native' ? `${harnessName} · ${status}` : status;
+      pillEl.textContent = (harnessName !== 'axis-native' ? `${harnessName} · ${status}` : status) + budgetTag + taintTag;
 
       sendBtn.classList.toggle('stop', isRunning);
       sendBtn.textContent = isRunning ? '■' : '↑';
@@ -1274,7 +1295,10 @@
           <div class="diff-card">
             <div class="diff-head">
               <span>${esc(t('workspaceDiff'))}${out.worktree ? ' · ' + esc(out.worktree) : ''}</span>
-              <button id="btnCleanWT" type="button" class="btn" style="padding:2px 8px;font-size:11px;">${esc(t('cleanWorktree'))}</button>
+              <span style="display:flex;gap:6px;">
+                <button id="btnMergeWT" type="button" class="btn primary" style="padding:2px 8px;font-size:11px;">${esc(t('mergeWorktree'))}</button>
+                <button id="btnCleanWT" type="button" class="btn" style="padding:2px 8px;font-size:11px;">${esc(t('cleanWorktree'))}</button>
+              </span>
             </div>
             <div class="diff-body">${esc(out.diff)}</div>
           </div>`);
@@ -1318,6 +1342,17 @@
         cleanWtBtn.addEventListener('click', async () => {
           await fetchJSON(`/v1/tasks/${encodeURIComponent(state.selectedTaskId)}/worktree/cleanup`, { method: 'POST' });
           cleanWtBtn.disabled = true;
+        });
+      }
+      const mergeWtBtn = el('btnMergeWT');
+      if (mergeWtBtn) {
+        mergeWtBtn.addEventListener('click', async () => {
+          try {
+            const res = await fetchJSON(`/v1/tasks/${encodeURIComponent(state.selectedTaskId)}/worktree/merge`, { method: 'POST' });
+            mergeWtBtn.disabled = true;
+            alert(t('mergedAlert') + ((res.merged_files || []).join(', ') || 'ok'));
+            await loadEvents();
+          } catch (err) { alert(err.message); }
         });
       }
       const saveSkillBtn = el('btnSaveSkill');
@@ -1467,15 +1502,18 @@
       const customId = el('taskIdInput').value.trim();
       const taskId = customId || ('ui-' + Date.now());
       const harness = el('harnessSelect').value || 'axis-native';
+      const budgetVal = parseFloat(el('budgetInput') ? el('budgetInput').value : '');
       const meta = { harness, agent_id: harness };
       if (el('isolateChk').checked) meta.isolate = 'true';
 
       state.submitting = true;
       el('btnSubmit').disabled = true;
       try {
+        const taskObj = { task_id: taskId, contract_id: 'default', input: { prompt }, metadata: meta };
+        if (!isNaN(budgetVal) && budgetVal > 0) taskObj.cost_budget = budgetVal;
         await fetchJSON('/v1/tasks', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ task: { task_id: taskId, contract_id: 'default', input: { prompt }, metadata: meta } })
+          body: JSON.stringify({ task: taskObj })
         });
         el('promptInput').value = '';
         el('taskIdInput').value = '';
@@ -1572,15 +1610,20 @@
 
     // Bindings
     const HARNESS_PRESETS = {
-      claude: { id: 'claude-code', command: 'claude', args: '-p {prompt} --output-format text', description: 'Claude Code CLI' },
-      codex: { id: 'codex-cli', command: 'codex', args: 'exec {prompt}', description: 'OpenAI Codex CLI' },
-      gemini: { id: 'gemini-cli', command: 'gemini', args: '-p {prompt}', description: 'Gemini CLI' },
-      opencode: { id: 'opencode-cli', command: 'opencode', args: 'run {prompt}', description: 'OpenCode CLI' }
+      claude: { id: 'claude-code', kind: 'cli', command: 'claude', args: '-p {prompt} --output-format text', description: 'Claude Code CLI' },
+      codex: { id: 'codex-cli', kind: 'cli', command: 'codex', args: 'exec {prompt}', description: 'OpenAI Codex CLI' },
+      gemini: { id: 'gemini-cli', kind: 'cli', command: 'gemini', args: '-p {prompt}', description: 'Gemini CLI' },
+      opencode: { id: 'opencode-cli', kind: 'cli', command: 'opencode', args: 'run {prompt}', description: 'OpenCode CLI' },
+      deepseek: { id: 'deepseek-harness', kind: 'http', command: 'http://127.0.0.1:8080/v1/tasks', args: '', description: 'DeepSeek Harness (HTTP / CLI)' },
+      workbuddy: { id: 'workbuddy', kind: 'http', command: 'http://127.0.0.1:8090/v1/tasks', args: '', description: 'WorkBuddy Harness (HTTP / CLI)' },
+      qoder: { id: 'qoder-cli', kind: 'cli', command: 'qoder', args: 'run {prompt}', description: 'Qoder CLI Harness' },
+      zcode: { id: 'zcode-cli', kind: 'cli', command: 'zcode', args: 'run {prompt}', description: 'ZCode CLI Harness' }
     };
     document.querySelectorAll('.preset-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const p = HARNESS_PRESETS[btn.dataset.preset];
         if (!p) return;
+        el('hKindSelect').value = p.kind || 'cli';
         el('hIdInput').value = p.id; el('hCmdInput').value = p.command;
         el('hArgsInput').value = p.args; el('hDescInput').value = p.description;
       });
@@ -1636,11 +1679,14 @@
     });
 
     el('btnAddHarness').addEventListener('click', async () => {
-      const id = el('hIdInput').value.trim(), command = el('hCmdInput').value.trim();
-      if (!id || !command) { alert(t('alertIdCmd')); return; }
+      const id = el('hIdInput').value.trim(), target = el('hCmdInput').value.trim(), kind = el('hKindSelect').value || 'cli';
+      if (!id || !target) { alert(t('alertIdCmd')); return; }
       const args = el('hArgsInput').value.trim() ? el('hArgsInput').value.trim().split(/\s+/) : [];
+      const payload = { id, kind, description: el('hDescInput').value.trim() };
+      if (kind === 'http') payload.endpoint = target;
+      else { payload.command = target; payload.args = args; }
       try {
-        await fetchJSON('/v1/harnesses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, kind: 'cli', command, args, description: el('hDescInput').value.trim() }) });
+        await fetchJSON('/v1/harnesses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         el('hIdInput').value = ''; el('hCmdInput').value = ''; el('hArgsInput').value = ''; el('hDescInput').value = '';
         await loadHarnesses();
       } catch (err) { alert(t('alertRegFailed') + err.message); }
@@ -1663,11 +1709,14 @@
     });
     el('btnRunPipeline').addEventListener('click', async () => {
       const steps = [];
-      if (el('pStep1Prompt').value.trim()) steps.push({ harness: el('pStep1Harness').value.trim() || 'axis-native', prompt: el('pStep1Prompt').value.trim() });
-      if (el('pStep2Prompt').value.trim()) steps.push({ harness: el('pStep2Harness').value.trim() || 'axis-native', prompt: el('pStep2Prompt').value.trim() });
+      if (el('pStep1Prompt').value.trim()) steps.push({ role: el('pStep1Role').value.trim(), harness: el('pStep1Harness').value.trim() || 'axis-native', prompt: el('pStep1Prompt').value.trim() });
+      if (el('pStep2Prompt').value.trim()) steps.push({ role: el('pStep2Role').value.trim(), harness: el('pStep2Harness').value.trim() || 'axis-native', prompt: el('pStep2Prompt').value.trim() });
       if (!steps.length) return;
+      const budget = parseFloat(el('pBudgetInput') ? el('pBudgetInput').value : '');
+      const body = { name: el('pNameInput').value.trim() || 'pipeline', steps };
+      if (!isNaN(budget) && budget > 0) body.budget_usd = budget;
       try {
-        await fetchJSON('/v1/pipelines', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: el('pNameInput').value.trim() || 'pipeline', steps }) });
+        await fetchJSON('/v1/pipelines', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         await Promise.all([loadPipelines(), loadTasks()]);
       } catch (err) { alert(err.message); }
     });

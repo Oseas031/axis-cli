@@ -39,6 +39,10 @@ type TaskSummary struct {
 	Status      types.TaskStatus `json:"status"`
 	Harness     string           `json:"harness,omitempty"`
 	AgentID     string           `json:"agent_id,omitempty"`
+	Role        string           `json:"role,omitempty"`
+	Tainted     bool             `json:"tainted,omitempty"`
+	CostBudget  float64          `json:"cost_budget,omitempty"`
+	SpentUSD    float64          `json:"spent_usd,omitempty"`
 	Prompt      string           `json:"prompt,omitempty"`
 	Input       map[string]any   `json:"input,omitempty"`
 	CreatedAt   time.Time        `json:"created_at,omitempty"`
@@ -89,11 +93,15 @@ func (s *Server) handleUIInfo(w http.ResponseWriter, r *http.Request) {
 func taskSummaryFromAgentTask(t *types.AgentTask, fallbackHarness string) TaskSummary {
 	harness := fallbackHarness
 	agentID := ""
+	role := ""
+	tainted := false
 	if t.Metadata != nil {
 		if h := t.Metadata["harness"]; h != "" {
 			harness = h
 		}
 		agentID = t.Metadata["agent_id"]
+		role = t.Metadata["role"]
+		tainted = t.Metadata["tainted"] == "true"
 	}
 	if agentID == "" {
 		agentID = harness
@@ -103,6 +111,10 @@ func taskSummaryFromAgentTask(t *types.AgentTask, fallbackHarness string) TaskSu
 		Status:      t.Status,
 		Harness:     harness,
 		AgentID:     agentID,
+		Role:        role,
+		Tainted:     tainted,
+		CostBudget:  parseTaskBudgetUSD(t),
+		SpentUSD:    parseTaskSpentUSD(t),
 		Prompt:      extractTaskPrompt(t.Input),
 		Input:       t.Input,
 		CreatedAt:   t.CreatedAt,

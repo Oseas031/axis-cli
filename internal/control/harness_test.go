@@ -71,6 +71,7 @@ func TestHarness_RegisterPersistAndExecuteCLI(t *testing.T) {
 		Kind:        "cli",
 		Command:     os.Args[0],
 		Args:        []string{"-test.run=^TestHelperCLIHarness$", "--", "--prompt", "{prompt}"},
+		EnvKeys:     []string{"GO_WANT_HARNESS_HELPER"},
 		Description: "test cli harness",
 	})
 	regReq := httptest.NewRequest(http.MethodPost, "/v1/harnesses", bytes.NewReader(regBody))
@@ -300,6 +301,7 @@ func TestHarness_WorktreeIsolationDiffAndCleanup(t *testing.T) {
 		Kind:    "cli",
 		Command: os.Args[0],
 		Args:    []string{"-test.run=^TestHelperCLIHarness$", "--", "--write-file", "wt-note.txt"},
+		EnvKeys: []string{"GO_WANT_HARNESS_HELPER"},
 	})
 	regReq := httptest.NewRequest(http.MethodPost, "/v1/harnesses", bytes.NewReader(regBody))
 	regRec := httptest.NewRecorder()

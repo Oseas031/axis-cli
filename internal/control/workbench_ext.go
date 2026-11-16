@@ -251,10 +251,12 @@ type Routine struct {
 }
 
 type PipelineStep struct {
-	Name    string `json:"name,omitempty"`
-	Harness string `json:"harness"`
-	Prompt  string `json:"prompt"`
-	Isolate bool   `json:"isolate,omitempty"`
+	Name       string  `json:"name,omitempty"`
+	Role       string  `json:"role,omitempty"`
+	Harness    string  `json:"harness"`
+	Prompt     string  `json:"prompt"`
+	Isolate    bool    `json:"isolate,omitempty"`
+	CostBudget float64 `json:"cost_budget,omitempty"`
 }
 
 type PipelineRun struct {
@@ -263,7 +265,10 @@ type PipelineRun struct {
 	Status      types.TaskStatus `json:"status"`
 	CurrentStep int              `json:"current_step"`
 	TotalSteps  int              `json:"total_steps"`
+	BudgetUSD   float64          `json:"budget_usd,omitempty"`
+	SpentUSD    float64          `json:"spent_usd,omitempty"`
 	StepTaskIDs []string         `json:"step_task_ids,omitempty"`
+	Handoffs    []HandoffRecord  `json:"handoffs,omitempty"`
 	Error       string           `json:"error,omitempty"`
 	CreatedAt   time.Time        `json:"created_at"`
 	CompletedAt *time.Time       `json:"completed_at,omitempty"`
@@ -550,6 +555,9 @@ func (s *Server) handlePipelines(w http.ResponseWriter, r *http.Request) {
 			if len(p.StepTaskIDs) > 0 {
 				cp.StepTaskIDs = append([]string(nil), p.StepTaskIDs...)
 			}
+			if len(p.Handoffs) > 0 {
+				cp.Handoffs = append([]HandoffRecord(nil), p.Handoffs...)
+			}
 			list = append(list, cp)
 		}
 		ext.mu.RUnlock()
@@ -558,9 +566,10 @@ func (s *Server) handlePipelines(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPost:
 		var req struct {
-			ID    string         `json:"id"`
-			Name  string         `json:"name"`
-			Steps []PipelineStep `json:"steps"`
+			ID        string         `json:"id"`
+			Name      string         `json:"name"`
+			BudgetUSD float64        `json:"budget_usd,omitempty"`
+			Steps     []PipelineStep `json:"steps"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, http.StatusBadRequest, "bad_request", "invalid pipeline payload", "")
@@ -584,6 +593,7 @@ func (s *Server) handlePipelines(w http.ResponseWriter, r *http.Request) {
 			Name:       name,
 			Status:     types.TaskStatusRunning,
 			TotalSteps: len(req.Steps),
+			BudgetUSD:  req.BudgetUSD,
 			CreatedAt:  now,
 		}
 		ext.mu.Lock()
@@ -592,7 +602,7 @@ func (s *Server) handlePipelines(w http.ResponseWriter, r *http.Request) {
 		ext.mu.Unlock()
 
 		s.appendEvent(TaskEvent{TaskID: id, EventType: "pipeline_started", Actor: "pipeline", Status: string(types.TaskStatusRunning), Message: fmt.Sprintf("pipeline %s started (%d steps)", name, len(req.Steps))})
-		go ext.executePipeline(id, req.Steps)
+		go ext.executePipeline(id, req.BudgetUSD, req.Steps)
 		writeJSON(w, http.StatusAccepted, resp)
 
 	default:
@@ -600,17 +610,35 @@ func (s *Server) handlePipelines(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (e *WorkbenchExtensions) executePipeline(pipeID string, steps []PipelineStep) {
+func (e *WorkbenchExtensions) executePipeline(pipeID string, pipeBudget float64, steps []PipelineStep) {
 	prevOut := ""
 	prevDiff := ""
+	prevHandoffJSON := ""
+	spentTotal := 0.0
 
 	for i, step := range steps {
+		if pipeBudget > 0 && spentTotal >= pipeBudget {
+			e.server.appendEvent(TaskEvent{TaskID: pipeID, EventType: "budget_exceeded", Actor: "pipeline", Status: string(types.TaskStatusFailed), Message: fmt.Sprintf("pipeline budget $%.4f exceeded (spent $%.4f)", pipeBudget, spentTotal)})
+			e.finishPipeline(pipeID, types.TaskStatusFailed, fmt.Sprintf("budget_exceeded: spent $%.4f >= limit $%.4f", spentTotal, pipeBudget))
+			return
+		}
+
+		roleSpec, hasRole := getRoleSpec(step.Role)
 		harnessID := strings.TrimSpace(step.Harness)
 		if harnessID == "" {
-			harnessID = defaultHarnessID
+			if hasRole && roleSpec.DefaultHarness != "" {
+				harnessID = roleSpec.DefaultHarness
+			} else {
+				harnessID = defaultHarnessID
+			}
 		}
+
 		prompt := strings.ReplaceAll(step.Prompt, "{{prev_output}}", prevOut)
 		prompt = strings.ReplaceAll(prompt, "{{prev_diff}}", prevDiff)
+		prompt = strings.ReplaceAll(prompt, "{{prev_handoff}}", prevHandoffJSON)
+		if hasRole && roleSpec.SystemPrompt != "" {
+			prompt = roleSpec.SystemPrompt + "\n\n" + prompt
+		}
 
 		taskID := fmt.Sprintf("%s-s%d", pipeID, i+1)
 		meta := map[string]string{
@@ -618,7 +646,10 @@ func (e *WorkbenchExtensions) executePipeline(pipeID string, steps []PipelineSte
 			"agent_id": harnessID,
 			"pipeline": pipeID,
 		}
-		if step.Isolate {
+		if hasRole {
+			meta["role"] = roleSpec.ID
+		}
+		if step.Isolate || (hasRole && roleSpec.Isolate) {
 			meta["isolate"] = "true"
 		}
 		task := &types.AgentTask{
@@ -626,6 +657,7 @@ func (e *WorkbenchExtensions) executePipeline(pipeID string, steps []PipelineSte
 			ContractID: "default",
 			Input:      map[string]any{"prompt": prompt},
 			Metadata:   meta,
+			CostBudget: step.CostBudget,
 			CreatedAt:  time.Now().UTC(),
 		}
 
@@ -651,6 +683,15 @@ func (e *WorkbenchExtensions) executePipeline(pipeID string, steps []PipelineSte
 		}
 
 		status, outText, diffText, errMsg := e.waitTaskCompletion(taskID, harnessID, 5*time.Minute)
+		stepCost := estimateCharCostUSD(prompt, outText)
+		spentTotal += stepCost
+
+		e.mu.Lock()
+		if p, ok := e.pipelines[pipeID]; ok {
+			p.SpentUSD = spentTotal
+		}
+		e.mu.Unlock()
+
 		if status != types.TaskStatusCompleted {
 			if errMsg == "" {
 				errMsg = fmt.Sprintf("step %d (%s) ended with %s", i+1, taskID, status)
@@ -658,6 +699,25 @@ func (e *WorkbenchExtensions) executePipeline(pipeID string, steps []PipelineSte
 			e.finishPipeline(pipeID, types.TaskStatusFailed, errMsg)
 			return
 		}
+
+		nextRole := ""
+		if i+1 < len(steps) {
+			nextRole = steps[i+1].Role
+		}
+		handoff, herr := buildTypedHandoff(step.Role, nextRole, taskID, outText, diffText)
+		if herr != nil {
+			e.finishPipeline(pipeID, types.TaskStatusFailed, herr.Error())
+			return
+		}
+		if b, merr := json.MarshalIndent(handoff, "", "  "); merr == nil {
+			prevHandoffJSON = string(b)
+		}
+		e.mu.Lock()
+		if p, ok := e.pipelines[pipeID]; ok {
+			p.Handoffs = append(p.Handoffs, handoff)
+		}
+		e.mu.Unlock()
+
 		prevOut = outText
 		prevDiff = diffText
 	}

@@ -856,5 +856,187 @@
         "at": "2026-08-26T01:35:42.2498692+08:00"
       }
     ]
+  },
+  {
+    "id": "vigil-2335ca",
+    "title": "安全层：CLI Harness 最小环境变量白名单 + 会话污点标记（Taint Flag 触发 human/gate 强制审批）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T17:45:53.7031057+08:00",
+    "completed_at": "2026-11-16T21:16:50.7932648+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:16:50.7932648+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-de9989",
+    "title": "编排层：Role Registry（coordinator/implementer/reviewer/test-runner）+ Typed Handoff 结构化交接校验",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T17:45:54.0830027+08:00",
+    "completed_at": "2026-11-16T21:16:50.2221472+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:16:50.2221472+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-4ce309",
+    "title": "编排闭环：Worktree 审查与一键合入主分支（Approve \u0026 Merge）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T17:45:54.5057744+08:00",
+    "completed_at": "2026-11-16T21:16:49.6935224+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:16:49.6935224+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-c211fe",
+    "title": "成本层：DAG 节点级 CostBudget 调用前硬拦截 + 工作台 UI 预算进度条",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T17:45:54.9486386+08:00",
+    "completed_at": "2026-11-16T21:16:51.3063753+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:16:51.3063753+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-caa067",
+    "title": "中控台视图：DAG 实时状态主视图（角色/Harness/预算/Diff/审批门禁节点拓扑与详情）",
+    "priority": "P2",
+    "status": "pending",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T17:45:55.3662301+08:00",
+    "history": []
+  },
+  {
+    "id": "vigil-eb20c9",
+    "title": "接入 DeepSeek Harness 连接（CLI / HTTP 适配与工作台预设模板）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T21:02:30.8952201+08:00",
+    "completed_at": "2026-11-16T21:16:51.8148743+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:16:51.8148743+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-1bbf59",
+    "title": "接入 WorkBuddy Harness 连接（CLI / HTTP 适配与工作台预设模板）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T21:03:35.703463+08:00",
+    "completed_at": "2026-11-16T21:16:52.3553726+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:16:52.3553726+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-98da98",
+    "title": "接入 Qoder Harness 连接（CLI / HTTP 适配与工作台预设模板）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T21:03:36.0522968+08:00",
+    "completed_at": "2026-11-16T21:16:52.9508643+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:16:52.9508643+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-7b21ce",
+    "title": "接入 ZCode Harness 连接（CLI / HTTP 适配与工作台预设模板）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T21:03:36.4020892+08:00",
+    "completed_at": "2026-11-16T21:16:53.464325+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:16:53.464325+08:00"
+      }
+    ]
   }
 ]

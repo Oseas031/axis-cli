@@ -98,3 +98,77 @@ func cleanupTaskWorktree(root, taskID string) error {
 	}
 	return os.RemoveAll(wtDir)
 }
+
+// mergeTaskWorktree applies tracked diffs and copies untracked files from the task's
+// isolated worktree into root, then removes the worktree. Returns the list of affected files.
+func mergeTaskWorktree(root, taskID string) ([]string, error) {
+	if !isGitRepo(root) {
+		return nil, fmt.Errorf("project root is not a git repository")
+	}
+	wtDir := filepath.Join(root, ".axis", "worktrees", sanitizePathToken(taskID))
+	if _, err := os.Stat(wtDir); err != nil {
+		return nil, fmt.Errorf("worktree for task %s not found", taskID)
+	}
+
+	var mergedFiles []string
+
+	// 1. Collect tracked changes and apply patch onto root
+	nameCmd := exec.Command("git", "-C", wtDir, "diff", "--name-only", "HEAD")
+	if nameOut, err := nameCmd.Output(); err == nil {
+		for _, line := range strings.Split(strings.TrimSpace(string(nameOut)), "\n") {
+			if f := strings.TrimSpace(line); f != "" {
+				mergedFiles = append(mergedFiles, f)
+			}
+		}
+	}
+
+	diffCmd := exec.Command("git", "-C", wtDir, "diff", "--binary", "--no-ext-diff", "HEAD")
+	patchBytes, err := diffCmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read worktree diff: %w", err)
+	}
+	if len(bytes.TrimSpace(patchBytes)) > 0 {
+		applyCmd := exec.Command("git", "-C", root, "apply", "--3way")
+		applyCmd.Stdin = bytes.NewReader(patchBytes)
+		var applyErr bytes.Buffer
+		applyCmd.Stderr = &applyErr
+		if err := applyCmd.Run(); err != nil {
+			return nil, fmt.Errorf("git apply failed: %v (%s)", err, strings.TrimSpace(applyErr.String()))
+		}
+	}
+
+	// 2. Copy untracked new files safely into root
+	untrackedCmd := exec.Command("git", "-C", wtDir, "ls-files", "--others", "--exclude-standard")
+	untrackedOut, err := untrackedCmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list untracked files: %w", err)
+	}
+	cleanRoot := filepath.Clean(root)
+	for _, rel := range strings.Split(strings.TrimSpace(string(untrackedOut)), "\n") {
+		rel = strings.TrimSpace(rel)
+		if rel == "" {
+			continue
+		}
+		src := filepath.Join(wtDir, filepath.FromSlash(rel))
+		dst := filepath.Join(cleanRoot, filepath.FromSlash(rel))
+		if !strings.HasPrefix(dst, cleanRoot+string(filepath.Separator)) {
+			return nil, fmt.Errorf("unsafe path in worktree: %s", rel)
+		}
+		data, rerr := os.ReadFile(src)
+		if rerr != nil {
+			return nil, rerr
+		}
+		if merr := os.MkdirAll(filepath.Dir(dst), 0o755); merr != nil {
+			return nil, merr
+		}
+		if werr := os.WriteFile(dst, data, 0o600); werr != nil {
+			return nil, werr
+		}
+		mergedFiles = append(mergedFiles, rel)
+	}
+
+	if err := cleanupTaskWorktree(root, taskID); err != nil {
+		return mergedFiles, fmt.Errorf("merged files but cleanup failed: %w", err)
+	}
+	return mergedFiles, nil
+}

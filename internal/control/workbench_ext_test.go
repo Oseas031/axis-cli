@@ -91,6 +91,7 @@ func TestWorkbenchExt_RoutinesAndMultiHarnessPipeline(t *testing.T) {
 		Kind:    "cli",
 		Command: os.Args[0],
 		Args:    []string{"-test.run=^TestHelperCLIHarness$", "--", "--prompt", "{prompt}"},
+		EnvKeys: []string{"GO_WANT_HARNESS_HELPER"},
 	})
 	regReq := httptest.NewRequest(http.MethodPost, "/v1/harnesses", bytes.NewReader(regBody))
 	regRec := httptest.NewRecorder()

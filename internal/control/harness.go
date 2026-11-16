@@ -2,6 +2,7 @@ package control
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -23,13 +24,15 @@ const defaultHarnessID = "axis-native"
 
 // HarnessSpec describes an execution harness registered in the control plane.
 // Builtin "axis-native" routes to the embedded Axis orchestrator; "cli" harnesses
-// spawn external coding/agent CLIs as managed subprocesses.
+// spawn external coding/agent CLIs; "http" harnesses forward tasks to HTTP endpoints.
 type HarnessSpec struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
-	Kind        string   `json:"kind"` // "native" | "cli"
+	Kind        string   `json:"kind"` // "native" | "cli" | "http"
 	Command     string   `json:"command,omitempty"`
 	Args        []string `json:"args,omitempty"`
+	Endpoint    string   `json:"endpoint,omitempty"`
+	EnvKeys     []string `json:"env_keys,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Builtin     bool     `json:"builtin,omitempty"`
 }
@@ -215,6 +218,7 @@ func (m *HarnessManager) Get(id string) (HarnessSpec, bool) {
 func (m *HarnessManager) Register(spec HarnessSpec) (HarnessSpec, error) {
 	spec.ID = strings.TrimSpace(spec.ID)
 	spec.Command = strings.TrimSpace(spec.Command)
+	spec.Endpoint = strings.TrimSpace(spec.Endpoint)
 	if spec.ID == "" || spec.ID == defaultHarnessID {
 		return HarnessSpec{}, fmt.Errorf("invalid harness id %q", spec.ID)
 	}
@@ -224,11 +228,17 @@ func (m *HarnessManager) Register(spec HarnessSpec) (HarnessSpec, error) {
 	if spec.Kind == "" {
 		spec.Kind = "cli"
 	}
-	if spec.Kind != "cli" {
-		return HarnessSpec{}, fmt.Errorf("unsupported harness kind %q (only \"cli\" can be registered)", spec.Kind)
-	}
-	if spec.Command == "" {
-		return HarnessSpec{}, fmt.Errorf("command is required for cli harness")
+	switch spec.Kind {
+	case "cli":
+		if spec.Command == "" {
+			return HarnessSpec{}, fmt.Errorf("command is required for cli harness")
+		}
+	case "http":
+		if !strings.HasPrefix(spec.Endpoint, "http://") && !strings.HasPrefix(spec.Endpoint, "https://") {
+			return HarnessSpec{}, fmt.Errorf("endpoint must start with http:// or https:// for http harness")
+		}
+	default:
+		return HarnessSpec{}, fmt.Errorf("unsupported harness kind %q (allowed: \"cli\", \"http\")", spec.Kind)
 	}
 	if spec.Name == "" {
 		spec.Name = spec.ID
@@ -308,6 +318,9 @@ func (m *HarnessManager) SubmitCLI(spec HarnessSpec, task *types.AgentTask) erro
 	if task == nil || task.TaskID == "" {
 		return fmt.Errorf("task is required")
 	}
+	if err := checkBudgetBeforeDispatch(task); err != nil {
+		return err
+	}
 	now := time.Now().UTC()
 	cp := *task
 	if cp.CreatedAt.IsZero() {
@@ -316,10 +329,19 @@ func (m *HarnessManager) SubmitCLI(spec HarnessSpec, task *types.AgentTask) erro
 	cp.Status = types.TaskStatusPending
 	if cp.Metadata == nil {
 		cp.Metadata = map[string]string{}
+	} else {
+		cloned := make(map[string]string, len(cp.Metadata))
+		for k, v := range cp.Metadata {
+			cloned[k] = v
+		}
+		cp.Metadata = cloned
 	}
 	cp.Metadata["harness"] = spec.ID
 	if cp.Metadata["agent_id"] == "" {
 		cp.Metadata["agent_id"] = spec.ID
+	}
+	if detectTaint(extractTaskPrompt(cp.Input)) {
+		cp.Metadata["tainted"] = "true"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -334,8 +356,93 @@ func (m *HarnessManager) SubmitCLI(spec HarnessSpec, task *types.AgentTask) erro
 	m.mu.Unlock()
 	m.saveSnapshot(&cp, nil)
 
-	go m.runCLITask(ctx, cancel, spec, cp.TaskID)
+	if cp.Metadata["tainted"] == "true" {
+		m.appendEvent(TaskEvent{
+			TaskID:    cp.TaskID,
+			EventType: "taint_marked",
+			Actor:     "security-gate",
+			AgentID:   cp.Metadata["agent_id"],
+			Status:    string(types.TaskStatusPending),
+			Message:   "task marked as tainted; sensitive actions require approval",
+		})
+	}
+
+	if spec.Kind == "http" {
+		go m.runHTTPTask(ctx, cancel, spec, cp.TaskID)
+	} else {
+		go m.runCLITask(ctx, cancel, spec, cp.TaskID)
+	}
 	return nil
+}
+
+func (m *HarnessManager) runHTTPTask(ctx context.Context, cancel context.CancelFunc, spec HarnessSpec, taskID string) {
+	defer func() {
+		cancel()
+		m.mu.Lock()
+		if mt2, ok := m.tasks[taskID]; ok {
+			mt2.cancel = nil
+		}
+		m.mu.Unlock()
+	}()
+
+	m.mu.Lock()
+	mt := m.tasks[taskID]
+	if mt == nil || mt.task == nil {
+		m.mu.Unlock()
+		return
+	}
+	started := time.Now().UTC()
+	mt.task.Status = types.TaskStatusRunning
+	mt.task.StartedAt = &started
+	prompt := extractTaskPrompt(mt.task.Input)
+	agentID := mt.task.Metadata["agent_id"]
+	meta := mt.task.Metadata
+	m.mu.Unlock()
+
+	m.appendEvent(TaskEvent{
+		TaskID:    taskID,
+		EventType: "harness_started",
+		Actor:     "harness-manager",
+		AgentID:   agentID,
+		Status:    string(types.TaskStatusRunning),
+		Message:   fmt.Sprintf("dispatched to http harness %s (%s)", spec.ID, spec.Endpoint),
+	})
+
+	bodyBytes, _ := json.Marshal(map[string]any{
+		"task_id":  taskID,
+		"prompt":   prompt,
+		"metadata": meta,
+	})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, spec.Endpoint, bytes.NewReader(bodyBytes))
+	if err != nil {
+		m.finishCLITask(taskID, agentID, spec, started, "", "", "", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: 5 * time.Minute}
+	resp, err := client.Do(req)
+	if err != nil {
+		m.finishCLITask(taskID, agentID, spec, started, "", "", "", err)
+		return
+	}
+	defer resp.Body.Close()
+	respRaw, _ := io.ReadAll(io.LimitReader(resp.Body, 1024*1024))
+	if resp.StatusCode >= 400 {
+		m.finishCLITask(taskID, agentID, spec, started, "", string(respRaw), "", fmt.Errorf("http harness returned %d", resp.StatusCode))
+		return
+	}
+	var parsed map[string]any
+	outText := strings.TrimSpace(string(respRaw))
+	if json.Unmarshal(respRaw, &parsed) == nil {
+		if txt, ok := parsed["text"].(string); ok && txt != "" {
+			outText = txt
+		} else if outMap, ok := parsed["output"].(map[string]any); ok {
+			if txt, ok := outMap["text"].(string); ok && txt != "" {
+				outText = txt
+			}
+		}
+	}
+	m.finishCLITask(taskID, agentID, spec, started, outText, "", "", nil)
 }
 
 func (m *HarnessManager) runCLITask(ctx context.Context, cancel context.CancelFunc, spec HarnessSpec, taskID string) {
@@ -410,14 +517,7 @@ func (m *HarnessManager) runCLITask(ctx context.Context, cancel context.CancelFu
 	} else {
 		cmd.Dir = m.root
 	}
-	env := append(os.Environ(),
-		"AXIS_TASK_ID="+taskID,
-		"AXIS_HARNESS_ID="+spec.ID,
-		"AXIS_PROJECT_ROOT="+m.root,
-	)
-	if isolatedWT != "" {
-		env = append(env, "AXIS_WORKTREE="+isolatedWT)
-	}
+	env := minimalCLIEnv(taskID, spec.ID, m.root, isolatedWT, spec.EnvKeys)
 	cmd.Env = env
 
 	if !usedPlaceholder && prompt != "" {
@@ -529,6 +629,21 @@ func (m *HarnessManager) finishCLITask(taskID, agentID string, spec HarnessSpec,
 	if mt, ok := m.tasks[taskID]; ok && mt.task != nil {
 		mt.task.Status = status
 		mt.task.CompletedAt = &completed
+		if mt.task.Metadata == nil {
+			mt.task.Metadata = map[string]string{}
+		}
+		if detectTaint(stdout) {
+			mt.task.Metadata["tainted"] = "true"
+		}
+		if mt.task.Metadata["tainted"] == "true" {
+			output["tainted"] = true
+		}
+		spent := parseTaskSpentUSD(mt.task) + estimateCharCostUSD(extractTaskPrompt(mt.task.Input), stdout)
+		mt.task.Metadata["spent_usd"] = fmt.Sprintf("%.5f", spent)
+		output["spent_usd"] = spent
+		if budget := parseTaskBudgetUSD(mt.task); budget > 0 {
+			output["cost_budget"] = budget
+		}
 		mt.result = &types.TaskResult{
 			TaskID:    taskID,
 			Status:    status,
@@ -580,6 +695,68 @@ func buildCLIArgs(template []string, prompt string) ([]string, bool) {
 		}
 	}
 	return out, used
+}
+
+// minimalCLIEnv builds a strictly allowlisted environment for external CLI subprocesses
+// so host API keys and secrets are never leaked automatically.
+func minimalCLIEnv(taskID, harnessID, root, isolatedWT string, extraKeys []string) []string {
+	allow := []string{
+		"PATH", "HOME", "USERPROFILE", "HOMEDRIVE", "HOMEPATH",
+		"TEMP", "TMP", "TMPDIR", "SYSTEMROOT", "COMSPEC", "WINDIR",
+		"LANG", "LC_ALL", "TERM", "GOPATH", "GOMODCACHE", "GOCACHE",
+		"GIT_EXEC_PATH",
+	}
+	allowSet := make(map[string]struct{}, len(allow)+len(extraKeys))
+	for _, k := range allow {
+		allowSet[strings.ToUpper(k)] = struct{}{}
+	}
+	for _, k := range extraKeys {
+		upper := strings.ToUpper(strings.TrimSpace(k))
+		if upper == "" || isSensitiveEnvName(upper) {
+			continue
+		}
+		allowSet[upper] = struct{}{}
+	}
+
+	env := make([]string, 0, len(allowSet)+4)
+	for _, kv := range os.Environ() {
+		idx := strings.IndexByte(kv, '=')
+		if idx <= 0 {
+			continue
+		}
+		key := strings.ToUpper(kv[:idx])
+		if _, ok := allowSet[key]; ok {
+			env = append(env, kv)
+		}
+	}
+	env = append(env,
+		"AXIS_TASK_ID="+taskID,
+		"AXIS_HARNESS_ID="+harnessID,
+		"AXIS_PROJECT_ROOT="+root,
+	)
+	if isolatedWT != "" {
+		env = append(env, "AXIS_WORKTREE="+isolatedWT)
+	}
+	return env
+}
+
+func isSensitiveEnvName(upperKey string) bool {
+	for _, kw := range []string{"KEY", "SECRET", "TOKEN", "PASSWORD", "PASSWD", "CREDENTIAL", "AUTH"} {
+		if strings.Contains(upperKey, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func detectTaint(text string) bool {
+	lower := strings.ToLower(text)
+	for _, marker := range []string{".env", "providers.json", "id_rsa", "private_key", "api_key"} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Server) ensureHarnesses() *HarnessManager {

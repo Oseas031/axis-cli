@@ -68,6 +68,7 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("/v1/events/stream", s.handleEventsStream)
 		mux.HandleFunc("/v1/ui/info", s.handleUIInfo)
 		mux.HandleFunc("/v1/harnesses", s.handleHarnesses)
+		mux.HandleFunc("/v1/roles", s.handleRoles)
 		mux.HandleFunc("/v1/skills", s.handleSkills)
 		mux.HandleFunc("/v1/memory", s.handleMemory)
 		mux.HandleFunc("/v1/routines", s.handleRoutines)
@@ -125,6 +126,10 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "bad_request", "task is required", "")
 		return
 	}
+	if err := checkBudgetBeforeDispatch(req.Task); err != nil {
+		writeError(w, http.StatusBadRequest, "budget_exceeded", err.Error(), "increase task cost_budget")
+		return
+	}
 	harnessID := ""
 	if req.Task.Metadata != nil {
 		harnessID = strings.TrimSpace(req.Task.Metadata["harness"])
@@ -170,6 +175,25 @@ func (s *Server) handleTaskStatus(w http.ResponseWriter, r *http.Request) {
 	prefix := "/v1/tasks/"
 	if !strings.HasPrefix(r.URL.Path, prefix) {
 		writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
+		return
+	}
+	if strings.HasSuffix(r.URL.Path, "/worktree/merge") && s.uiEnabled {
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")
+			return
+		}
+		taskID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, prefix), "/worktree/merge")
+		if taskID == "" || strings.Contains(taskID, "/") {
+			writeError(w, http.StatusNotFound, "not_found", "endpoint not found", "")
+			return
+		}
+		merged, err := mergeTaskWorktree(s.projectRoot(), taskID)
+		if err != nil {
+			writeError(w, http.StatusConflict, "merge_failed", err.Error(), "")
+			return
+		}
+		s.appendEvent(TaskEvent{TaskID: taskID, EventType: "worktree_merged", Actor: "local-control", Status: string(types.TaskStatusCompleted), Message: fmt.Sprintf("merged %d file(s) to main tree", len(merged))})
+		writeJSON(w, http.StatusOK, map[string]any{"task_id": taskID, "merged_files": merged})
 		return
 	}
 	if strings.HasSuffix(r.URL.Path, "/worktree/cleanup") && s.uiEnabled {
