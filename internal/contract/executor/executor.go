@@ -239,7 +239,8 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 			turnsSinceProgress = 0
 		}
 		if turn == maxTurns-1 {
-			req.SystemPrompt += "\nThis is your final turn. You must produce a final answer now."
+			req.Tools = nil
+			req.SystemPrompt += "\nThis is your final turn. Tool calling is disabled; you must produce a final answer now."
 		}
 		resp, err := p.Execute(ctx, req)
 		if err != nil {
