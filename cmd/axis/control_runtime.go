@@ -114,6 +114,7 @@ func runLocalRuntimeWithOpts(ctx context.Context, root string, out io.Writer, po
 	}
 	if withUI {
 		server.SetUIEnabled(true)
+		server.StartRoutines(ctx)
 		if dump, err := buildConfigDump(defaultApp); err == nil && dump != nil {
 			server.SetUIInfo(control.UIInfo{
 				Provider:        dump.Provider,

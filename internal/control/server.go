@@ -35,6 +35,7 @@ type Server struct {
 	uiEnabled bool
 	uiInfo    UIInfo
 	harnesses *HarnessManager
+	ext       *WorkbenchExtensions
 }
 
 func NewServer(runtime Runtime, record RuntimeRecord) *Server {
@@ -47,6 +48,11 @@ func NewServerWithEventLog(runtime Runtime, record RuntimeRecord, events *TaskEv
 
 // SetInboxAPI wires the human inbox endpoints (optional capability).
 func (s *Server) SetInboxAPI(inbox InboxAPI) { s.inbox = inbox }
+
+// StartRoutines starts the background periodic routine scheduler bound to ctx.
+func (s *Server) StartRoutines(ctx context.Context) {
+	s.ensureExt().StartRoutineLoop(ctx)
+}
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -62,6 +68,11 @@ func (s *Server) Handler() http.Handler {
 		mux.HandleFunc("/v1/events/stream", s.handleEventsStream)
 		mux.HandleFunc("/v1/ui/info", s.handleUIInfo)
 		mux.HandleFunc("/v1/harnesses", s.handleHarnesses)
+		mux.HandleFunc("/v1/skills", s.handleSkills)
+		mux.HandleFunc("/v1/memory", s.handleMemory)
+		mux.HandleFunc("/v1/routines", s.handleRoutines)
+		mux.HandleFunc("/v1/routines/", s.handleRoutineAction)
+		mux.HandleFunc("/v1/pipelines", s.handlePipelines)
 	}
 	return mux
 }

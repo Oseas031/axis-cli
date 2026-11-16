@@ -164,8 +164,11 @@ func (s *Server) handleTasksList(w http.ResponseWriter, r *http.Request) {
 	for _, item := range byID {
 		tasks = append(tasks, item)
 	}
-	sort.Slice(tasks, func(i, j int) bool {
-		return tasks[i].CreatedAt.After(tasks[j].CreatedAt)
+	sort.SliceStable(tasks, func(i, j int) bool {
+		if !tasks[i].CreatedAt.Equal(tasks[j].CreatedAt) {
+			return tasks[i].CreatedAt.After(tasks[j].CreatedAt)
+		}
+		return tasks[i].TaskID < tasks[j].TaskID
 	})
 	if len(tasks) > 50 {
 		tasks = tasks[:50]

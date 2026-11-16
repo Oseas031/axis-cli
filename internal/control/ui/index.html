@@ -639,6 +639,9 @@
       <div class="top-actions">
         <button id="btnLang" class="btn" type="button" title="Switch language / 切换语言">EN</button>
         <button id="btnNewTask" class="btn" type="button">+ New Task</button>
+        <button id="btnPipelines" class="btn" type="button" data-i18n="pipelinesBtn">Pipelines</button>
+        <button id="btnRoutines" class="btn" type="button" data-i18n="routinesBtn">Routines</button>
+        <button id="btnMemory" class="btn" type="button" data-i18n="memoryBtn">Memory</button>
         <button id="btnHarnesses" class="btn" type="button">
           <span data-i18n="harnessesBtn">Harnesses</span> <span id="harnessBadge" class="badge">1</span>
         </button>
@@ -732,6 +735,57 @@
           <div id="harnessList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </aside>
+
+      <aside id="routinesDrawer" class="drawer" aria-label="Routines">
+        <div class="drawer-head">
+          <span data-i18n="routinesBtn">Routines</span>
+          <button type="button" class="btn drawer-close" data-i18n="closeBtn">Close</button>
+        </div>
+        <div class="drawer-body">
+          <div class="form-grid">
+            <input id="rIdInput" type="text" placeholder="id (e.g. daily-check)">
+            <input id="rHarnessInput" type="text" value="axis-native" placeholder="harness (e.g. axis-native)">
+            <input id="rIntervalInput" type="text" value="1h" placeholder="interval (e.g. 30m, 1h)">
+            <input id="rPromptInput" type="text" placeholder="prompt">
+            <button id="btnAddRoutine" class="btn primary" type="button" data-i18n="saveBtn">Save</button>
+          </div>
+          <div id="routinesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </aside>
+
+      <aside id="memoryDrawer" class="drawer" aria-label="Working memory">
+        <div class="drawer-head">
+          <span data-i18n="memoryBtn">Memory</span>
+          <button type="button" class="btn drawer-close" data-i18n="closeBtn">Close</button>
+        </div>
+        <div class="drawer-body">
+          <div class="form-grid">
+            <input id="mTitleInput" type="text" placeholder="title">
+            <textarea id="mContentInput" rows="3" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:2px;background:var(--bg);" placeholder="content / imported memory"></textarea>
+            <button id="btnAddMemory" class="btn primary" type="button" data-i18n="saveBtn">Save</button>
+          </div>
+          <div id="memoryList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </aside>
+
+      <aside id="pipelinesDrawer" class="drawer" aria-label="Multi-harness pipelines">
+        <div class="drawer-head">
+          <span data-i18n="pipelinesBtn">Pipelines</span>
+          <button type="button" class="btn drawer-close" data-i18n="closeBtn">Close</button>
+        </div>
+        <div class="drawer-body">
+          <div class="form-grid">
+            <input id="pNameInput" type="text" placeholder="pipeline name (e.g. plan-and-code)">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Step 1 → Step 2 ({{prev_output}}, {{prev_diff}})</div>
+            <input id="pStep1Harness" type="text" value="axis-native" placeholder="step 1 harness">
+            <input id="pStep1Prompt" type="text" placeholder="step 1 prompt">
+            <input id="pStep2Harness" type="text" value="axis-native" placeholder="step 2 harness">
+            <input id="pStep2Prompt" type="text" value="Review and refine:\n{{prev_output}}" placeholder="step 2 prompt">
+            <button id="btnRunPipeline" class="btn primary" type="button" data-i18n="runPipelineBtn">Run Pipeline</button>
+          </div>
+          <div id="pipelinesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </aside>
     </div>
   </div>
 
@@ -796,7 +850,15 @@
         workspaceDiff: '工作区变更 Diff',
         cleanWorktree: '清理 Worktree',
         approvalRequired: '需要人工审批',
-        secretInputHint: '掩码安全输入'
+        secretInputHint: '掩码安全输入',
+        pipelinesBtn: '流水线',
+        routinesBtn: '例程',
+        memoryBtn: '记忆',
+        saveBtn: '保存',
+        runPipelineBtn: '运行流水线',
+        saveSkillBtn: '存为 Skill',
+        skillPromptName: '输入 Skill 名称（小写字母/短横线）：',
+        skillSaved: '已保存 Skill: '
       },
       'en': {
         langToggle: '中文',
@@ -857,7 +919,15 @@
         workspaceDiff: 'WORKSPACE DIFF',
         cleanWorktree: 'Clean Worktree',
         approvalRequired: 'APPROVAL REQUIRED',
-        secretInputHint: 'Masked secret input'
+        secretInputHint: 'Masked secret input',
+        pipelinesBtn: 'Pipelines',
+        routinesBtn: 'Routines',
+        memoryBtn: 'Memory',
+        saveBtn: 'Save',
+        runPipelineBtn: 'Run Pipeline',
+        saveSkillBtn: 'Save Skill',
+        skillPromptName: 'Skill name (lowercase/hyphens):',
+        skillSaved: 'Skill saved: '
       }
     };
 
@@ -1121,7 +1191,10 @@
           <div class="turn-block assistant">
             <div class="turn-label">
               <span>${esc(t('agentOutputLabel'))} (${esc(harnessName)})</span>
-              <button id="btnHandoff" type="button" class="btn" style="padding:1px 7px;font-size:10px;">${esc(t('handoffBtn'))}</button>
+              <span style="display:flex;gap:6px;">
+                <button id="btnSaveSkill" type="button" class="btn" style="padding:1px 7px;font-size:10px;">${esc(t('saveSkillBtn'))}</button>
+                <button id="btnHandoff" type="button" class="btn" style="padding:1px 7px;font-size:10px;">${esc(t('handoffBtn'))}</button>
+              </span>
             </div>
             <div class="turn-body">${esc(finalText)}</div>
           </div>
@@ -1177,6 +1250,28 @@
       const stopBtn = el('btnStopTask');
       if (stopBtn) {
         stopBtn.addEventListener('click', () => cancelTask(state.selectedTaskId));
+      }
+      const saveSkillBtn = el('btnSaveSkill');
+      if (saveSkillBtn && finalText) {
+        saveSkillBtn.addEventListener('click', async () => {
+          const name = window.prompt(t('skillPromptName'), (state.selectedTaskId || 'custom-skill').toLowerCase());
+          if (!name || !name.trim()) return;
+          try {
+            const saved = await fetchJSON('/v1/skills', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: name.trim(),
+                prompt: promptText || '',
+                harness: harnessName,
+                output_sample: finalText
+              })
+            });
+            alert(t('skillSaved') + saved.name);
+          } catch (err) {
+            alert(err.message);
+          }
+        });
       }
       const cleanWtBtn = el('btnCleanWT');
       if (cleanWtBtn) {
@@ -1532,22 +1627,143 @@
       renderTimeline();
       el('promptInput').focus();
     });
-    el('btnInbox').addEventListener('click', () => {
-      el('harnessDrawer').classList.remove('open');
-      el('inboxDrawer').classList.toggle('open');
-      loadInbox();
+    function toggleDrawer(id) {
+      const drawers = ['inboxDrawer', 'harnessDrawer', 'routinesDrawer', 'memoryDrawer', 'pipelinesDrawer'];
+      const target = el(id);
+      const willOpen = !target.classList.contains('open');
+      drawers.forEach((d) => {
+        const node = el(d);
+        if (node) node.classList.remove('open');
+      });
+      if (willOpen && target) target.classList.add('open');
+    }
+
+    async function loadRoutines() {
+      try {
+        const data = await fetchJSON('/v1/routines');
+        const items = Array.isArray(data.routines) ? data.routines : [];
+        el('routinesList').innerHTML = items.map((r) => `
+          <div class="inbox-card">
+            <div class="inbox-meta"><span><b>${esc(r.id)}</b> · ${esc(r.harness)} · ${esc(r.interval)}</span><span>${r.enabled ? 'on' : 'off'}</span></div>
+            <div class="inbox-question">${esc(r.prompt)}</div>
+            <div class="inbox-options">
+              <button type="button" class="btn r-run" data-id="${esc(r.id)}">Run</button>
+              <button type="button" class="btn r-tog" data-id="${esc(r.id)}">${r.enabled ? 'Disable' : 'Enable'}</button>
+              <button type="button" class="btn danger r-del" data-id="${esc(r.id)}">Del</button>
+            </div>
+          </div>
+        `).join('') || '<div style="color:var(--text-dim);font-size:12px;">No routines.</div>';
+        el('routinesList').querySelectorAll('.r-run').forEach((b) => b.addEventListener('click', async () => {
+          await fetchJSON(`/v1/routines/${encodeURIComponent(b.dataset.id)}/run`, { method: 'POST' });
+          await loadTasks();
+          await loadRoutines();
+        }));
+        el('routinesList').querySelectorAll('.r-tog').forEach((b) => b.addEventListener('click', async () => {
+          await fetchJSON(`/v1/routines/${encodeURIComponent(b.dataset.id)}/toggle`, { method: 'POST' });
+          await loadRoutines();
+        }));
+        el('routinesList').querySelectorAll('.r-del').forEach((b) => b.addEventListener('click', async () => {
+          await fetchJSON(`/v1/routines/${encodeURIComponent(b.dataset.id)}`, { method: 'DELETE' });
+          await loadRoutines();
+        }));
+      } catch (_) {}
+    }
+
+    async function loadMemory() {
+      try {
+        const data = await fetchJSON('/v1/memory');
+        const notes = Array.isArray(data.notes) ? data.notes : [];
+        el('memoryList').innerHTML = notes.map((n) => `
+          <div class="inbox-card">
+            <div class="inbox-meta"><span><b>${esc(n.title)}</b></span><button type="button" class="btn danger m-del" data-id="${esc(n.id)}" style="padding:1px 6px;font-size:10px;">Del</button></div>
+            <div class="inbox-question">${esc(n.content)}</div>
+          </div>
+        `).join('') || '<div style="color:var(--text-dim);font-size:12px;">No memory notes.</div>';
+        el('memoryList').querySelectorAll('.m-del').forEach((b) => b.addEventListener('click', async () => {
+          await fetchJSON(`/v1/memory?id=${encodeURIComponent(b.dataset.id)}`, { method: 'DELETE' });
+          await loadMemory();
+        }));
+      } catch (_) {}
+    }
+
+    async function loadPipelines() {
+      try {
+        const data = await fetchJSON('/v1/pipelines');
+        const list = Array.isArray(data.pipelines) ? data.pipelines : [];
+        el('pipelinesList').innerHTML = list.map((p) => `
+          <div class="inbox-card">
+            <div class="inbox-meta"><span><b>${esc(p.name)}</b> (${p.current_step}/${p.total_steps})</span><span>${esc(p.status)}</span></div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">${esc((p.step_task_ids || []).join(' → '))}</div>
+            ${p.error ? `<div style="font-family:var(--mono);font-size:11px;color:var(--err);">${esc(p.error)}</div>` : ''}
+          </div>
+        `).join('') || '<div style="color:var(--text-dim);font-size:12px;">No pipeline runs.</div>';
+      } catch (_) {}
+    }
+
+    el('btnInbox').addEventListener('click', () => { toggleDrawer('inboxDrawer'); loadInbox(); });
+    el('btnCloseInbox').addEventListener('click', () => el('inboxDrawer').classList.remove('open'));
+    el('btnHarnesses').addEventListener('click', () => { toggleDrawer('harnessDrawer'); loadHarnesses(); });
+    el('btnCloseHarnesses').addEventListener('click', () => el('harnessDrawer').classList.remove('open'));
+    el('btnRoutines').addEventListener('click', () => { toggleDrawer('routinesDrawer'); loadRoutines(); });
+    el('btnMemory').addEventListener('click', () => { toggleDrawer('memoryDrawer'); loadMemory(); });
+    el('btnPipelines').addEventListener('click', () => { toggleDrawer('pipelinesDrawer'); loadPipelines(); });
+    document.querySelectorAll('.drawer-close').forEach((b) => {
+      b.addEventListener('click', () => b.closest('.drawer').classList.remove('open'));
     });
-    el('btnCloseInbox').addEventListener('click', () => {
-      el('inboxDrawer').classList.remove('open');
+
+    el('btnAddRoutine').addEventListener('click', async () => {
+      const id = el('rIdInput').value.trim();
+      const harness = el('rHarnessInput').value.trim() || 'axis-native';
+      const interval = el('rIntervalInput').value.trim() || '1h';
+      const prompt = el('rPromptInput').value.trim();
+      if (!id || !prompt) return;
+      try {
+        await fetchJSON('/v1/routines', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name: id, harness, interval, prompt, enabled: true })
+        });
+        el('rIdInput').value = '';
+        el('rPromptInput').value = '';
+        await loadRoutines();
+      } catch (err) { alert(err.message); }
     });
-    el('btnHarnesses').addEventListener('click', () => {
-      el('inboxDrawer').classList.remove('open');
-      el('harnessDrawer').classList.toggle('open');
-      loadHarnesses();
+
+    el('btnAddMemory').addEventListener('click', async () => {
+      const title = el('mTitleInput').value.trim();
+      const content = el('mContentInput').value.trim();
+      if (!content) return;
+      try {
+        await fetchJSON('/v1/memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content, source: 'ui' })
+        });
+        el('mTitleInput').value = '';
+        el('mContentInput').value = '';
+        await loadMemory();
+      } catch (err) { alert(err.message); }
     });
-    el('btnCloseHarnesses').addEventListener('click', () => {
-      el('harnessDrawer').classList.remove('open');
+
+    el('btnRunPipeline').addEventListener('click', async () => {
+      const name = el('pNameInput').value.trim() || 'pipeline';
+      const s1p = el('pStep1Prompt').value.trim();
+      const s2p = el('pStep2Prompt').value.trim();
+      const steps = [];
+      if (s1p) steps.push({ harness: el('pStep1Harness').value.trim() || 'axis-native', prompt: s1p });
+      if (s2p) steps.push({ harness: el('pStep2Harness').value.trim() || 'axis-native', prompt: s2p });
+      if (!steps.length) return;
+      try {
+        await fetchJSON('/v1/pipelines', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, steps })
+        });
+        await loadPipelines();
+        await loadTasks();
+      } catch (err) { alert(err.message); }
     });
+
     el('btnAddHarness').addEventListener('click', registerHarness);
     el('btnLang').addEventListener('click', () => {
       state.lang = state.lang === 'zh-CN' ? 'en' : 'zh-CN';
