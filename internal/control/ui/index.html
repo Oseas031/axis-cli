@@ -8,173 +8,634 @@
   <style>
     :root {
       color-scheme: dark;
-      --axis-bg: #09090b;
-      --axis-surface: #18181b;
-      --axis-surface-alt: #121215;
-      --axis-hover: #27272a;
-      --axis-border: #27272a;
-      --axis-border-strong: #3f3f46;
-      --axis-text: #e4e4e7;
+      --axis-bg: #0c0c0e;
+      --axis-sidebar: #111114;
+      --axis-surface: #17171b;
+      --axis-elev: #1e1e24;
+      --axis-hover: rgba(255, 255, 255, 0.05);
+      --axis-active: rgba(255, 255, 255, 0.08);
+      --axis-border: rgba(255, 255, 255, 0.07);
+      --axis-border-strong: rgba(255, 255, 255, 0.14);
+      --axis-text: #ececf1;
+      --axis-text-soft: #a1a1aa;
       --axis-muted: #71717a;
-      --axis-dim: #52525b;
       --axis-accent: #10b981;
-      --axis-accent-dim: rgba(16, 185, 129, 0.12);
+      --axis-accent-dim: rgba(16, 185, 129, 0.14);
       --axis-warn: #f59e0b;
-      --axis-warn-dim: rgba(245, 158, 11, 0.12);
+      --axis-warn-dim: rgba(245, 158, 11, 0.14);
       --axis-danger: #ef4444;
-      --axis-danger-dim: rgba(239, 68, 68, 0.12);
-
-      /* Semantic aliases mapped strictly to --axis-* tokens */
-      --bg: var(--axis-bg);
-      --bg-elev: var(--axis-surface-alt);
-      --bg-panel: var(--axis-surface);
-      --bg-hover: var(--axis-hover);
-      --border: var(--axis-border);
-      --border-strong: var(--axis-border-strong);
-      --text: var(--axis-text);
-      --text-muted: #a1a1aa;
-      --text-dim: var(--axis-muted);
-      --accent: var(--axis-accent);
-      --accent-dim: var(--axis-accent-dim);
-      --ok: var(--axis-accent);
-      --ok-dim: var(--axis-accent-dim);
-      --warn: var(--axis-warn);
-      --warn-dim: var(--axis-warn-dim);
-      --err: var(--axis-danger);
-      --err-dim: var(--axis-danger-dim);
+      --axis-danger-dim: rgba(239, 68, 68, 0.14);
       --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
       --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei UI', sans-serif;
-      scrollbar-color: #3f3f46 #09090b;
+      scrollbar-color: rgba(255,255,255,0.14) transparent;
       scrollbar-width: thin;
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--axis-bg);
+      color: var(--axis-text);
+      font-family: var(--sans);
+      font-size: 13.5px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
     button, input, textarea, select { font: inherit; color: inherit; }
     button { cursor: pointer; }
     .font-mono, code, pre { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    :focus-visible { outline: 1px solid var(--axis-accent); outline-offset: 2px; }
     .skip-link {
-      position: absolute;
-      left: -9999px;
-      top: 0;
-      z-index: 50;
-      background: var(--axis-surface);
-      color: var(--axis-text);
-      border: 1px solid var(--axis-accent);
-      padding: 4px 10px;
-      font-size: 12px;
-      font-family: var(--mono);
+      position: absolute; left: -9999px; top: 0; z-index: 60;
+      background: var(--axis-surface); color: var(--axis-text);
+      border: 1px solid var(--axis-accent); padding: 4px 10px; font-size: 12px;
     }
     .skip-link:focus { left: 8px; top: 8px; }
-    :focus-visible { outline: 1px solid var(--axis-accent); outline-offset: 1px; }
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
 
-    .app {
+    /* App Shell */
+    .shell {
       display: grid;
-      grid-template-rows: 46px 1fr;
+      grid-template-columns: 248px 1fr;
       height: 100vh;
       overflow: hidden;
     }
+    .shell.sidebar-collapsed { grid-template-columns: 0 1fr; }
+    .shell.sidebar-collapsed .sidebar { overflow: hidden; border-right: none; }
 
-    /* Top Header */
+    /* Left Sidebar (OpenCode / Antigravity style) */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      background: var(--axis-sidebar);
+      border-right: 1px solid var(--axis-border);
+      min-height: 0;
+      user-select: none;
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 46px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--axis-border);
+    }
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--axis-text);
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--axis-muted);
+      flex-shrink: 0;
+    }
+    .dot.ok { background: var(--axis-accent); }
+    .dot.warn { background: var(--axis-warn); }
+    .dot.err { background: var(--axis-danger); }
+
+    .nav-group {
+      padding: 10px 8px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 7px 10px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--axis-text-soft);
+      font-size: 13px;
+      text-align: left;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-btn:hover { background: var(--axis-hover); color: var(--axis-text); }
+    .nav-btn.primary-action {
+      color: var(--axis-text);
+      font-weight: 500;
+    }
+    .nav-pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background: var(--axis-hover);
+      color: var(--axis-text-soft);
+    }
+    .nav-pill.alert {
+      background: var(--axis-warn-dim);
+      color: var(--axis-warn);
+    }
+
+    .sidebar-search {
+      padding: 4px 10px 8px;
+    }
+    .sidebar-search input {
+      width: 100%;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--axis-border);
+      background: rgba(0, 0, 0, 0.25);
+      font-size: 12px;
+      color: var(--axis-text);
+      outline: none;
+    }
+    .sidebar-search input:focus { border-color: var(--axis-border-strong); }
+
+    .sidebar-section-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px 4px;
+      font-size: 11px;
+      color: var(--axis-muted);
+    }
+    .session-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2px 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .session-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 7px 10px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      text-align: left;
+      color: var(--axis-text-soft);
+      transition: background 0.1s, color 0.1s;
+    }
+    .session-item:hover { background: var(--axis-hover); color: var(--axis-text); }
+    .session-item.active { background: var(--axis-active); color: var(--axis-text); }
+    .session-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 12.5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .session-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--axis-muted);
+      flex-shrink: 0;
+    }
+
+    .sidebar-foot {
+      padding: 8px 12px;
+      border-top: 1px solid var(--axis-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--axis-muted);
+    }
+
+    /* Main Workspace */
+    .main {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: var(--axis-bg);
+    }
+
     .topbar {
+      height: 46px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 0 14px;
-      background: var(--bg-elev);
-      border-bottom: 1px solid var(--border);
-      min-width: 0;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--axis-border);
+      flex-shrink: 0;
     }
-    .brand {
+    .topbar-left {
       display: flex;
       align-items: center;
       gap: 10px;
-      font-family: var(--mono);
+      min-width: 0;
+    }
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--axis-text-soft);
       font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
+    }
+    .icon-btn:hover { background: var(--axis-hover); color: var(--axis-text); }
+    .thread-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--axis-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      flex-shrink: 0;
+    .status-chip {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: var(--axis-hover);
+      color: var(--axis-text-soft);
     }
-    .status-dot.ok { background: var(--ok); }
-    .status-dot.warn { background: var(--warn); }
-    .status-dot.err { background: var(--err); }
+    .status-chip.completed { color: var(--axis-accent); background: var(--axis-accent-dim); }
+    .status-chip.running, .status-chip.pending { color: var(--axis-warn); background: var(--axis-warn-dim); }
+    .status-chip.failed { color: var(--axis-danger); background: var(--axis-danger-dim); }
 
-    .meta-strip {
+    .topbar-right {
       display: flex;
       align-items: center;
       gap: 6px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      min-width: 0;
+      flex-shrink: 0;
     }
-    .meta-strip::-webkit-scrollbar { display: none; }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 2px 8px;
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      background: var(--bg);
+    .model-pill {
       font-family: var(--mono);
       font-size: 11px;
-      color: var(--text-muted);
+      color: var(--axis-muted);
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--axis-surface);
+      border: 1px solid var(--axis-border);
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .chip b { color: var(--text); font-weight: 600; }
 
-    .top-actions {
+    /* Stream Viewport */
+    .viewport {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 20px 12px;
+      display: flex;
+      flex-direction: column;
+    }
+    .thread {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Zero-State Centered Hero (OpenCode style) */
+    .zero-state {
+      margin: auto;
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      padding: 24px 12px 48px;
+    }
+    .hero-wordmark {
+      font-family: var(--mono);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      color: rgba(255, 255, 255, 0.16);
+      user-select: none;
+    }
+    .starter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .starter-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--axis-border);
+      background: var(--axis-surface);
+      color: var(--axis-text-soft);
+      font-size: 12px;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+    .starter-pill:hover {
+      border-color: var(--axis-border-strong);
+      color: var(--axis-text);
+      background: var(--axis-elev);
+    }
+
+    /* Frame-less Conversation Blocks (Antigravity / Qoder style) */
+    .msg-user-wrap {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .msg-user {
+      max-width: 82%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--axis-elev);
+      border: 1px solid var(--axis-border);
+      color: var(--axis-text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 13.5px;
+    }
+
+    /* Subtle collapsible tool line */
+    details.tool-summary {
+      border-radius: 8px;
+      color: var(--axis-text-soft);
+    }
+    details.tool-summary summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      list-style: none;
+      font-size: 12.5px;
+      color: var(--axis-muted);
+    }
+    details.tool-summary summary:hover { background: var(--axis-hover); color: var(--axis-text-soft); }
+    details.tool-summary summary::-webkit-details-marker { display: none; }
+    .tool-steps {
+      margin-top: 8px;
+      padding-left: 12px;
+      border-left: 1px solid var(--axis-border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    details.tool-item summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--axis-text-soft);
+      background: var(--axis-surface);
+      border-radius: 6px;
+    }
+    .tool-json {
+      margin-top: 4px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #09090b;
+      border: 1px solid var(--axis-border);
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--axis-text-soft);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    /* Assistant clean prose */
+    .msg-assistant {
+      color: var(--axis-text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .msg-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .ghost-action {
+      padding: 3px 8px;
+      border: none;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--axis-muted);
+      font-size: 12px;
+    }
+    .ghost-action:hover { background: var(--axis-hover); color: var(--axis-text); }
+
+    .msg-error {
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--axis-danger-dim);
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      color: #fca5a5;
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+
+    .live-box {
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--axis-surface);
+      border: 1px solid var(--axis-border);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--axis-text-soft);
+    }
+    .live-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      color: var(--axis-warn);
+      font-size: 11.5px;
+    }
+
+    /* Diff Summary Card (Qoder style) */
+    .diff-card {
+      border: 1px solid var(--axis-border);
+      border-radius: 10px;
+      background: var(--axis-surface);
+      overflow: hidden;
+    }
+    .diff-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--axis-border);
+      font-size: 12.5px;
+    }
+    .diff-body {
+      padding: 10px 14px;
+      background: #09090b;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--axis-text-soft);
+      white-space: pre-wrap;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    /* Inline Approval Card */
+    .approval-card {
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 10px;
+      background: var(--axis-surface);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .approval-head {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--axis-warn);
+    }
+
+    /* Floating Unified Composer */
+    .composer-dock {
+      padding: 8px 20px 16px;
+      flex-shrink: 0;
+    }
+    .composer-shell {
+      position: relative;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .composer-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 14px 10px;
+      border-radius: 12px;
+      background: var(--axis-surface);
+      border: 1px solid var(--axis-border-strong);
+      transition: border-color 0.15s;
+    }
+    .composer-box:focus-within { border-color: rgba(255, 255, 255, 0.28); }
+    .composer-box textarea {
+      width: 100%;
+      min-height: 44px;
+      max-height: 180px;
+      resize: none;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--axis-text);
+    }
+    .composer-box textarea::placeholder { color: var(--axis-muted); }
+    .composer-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .composer-left {
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-shrink: 0;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--axis-text-soft);
     }
-    .btn {
+    .pill-select {
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--axis-border);
+      background: var(--axis-elev);
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--axis-text);
+      outline: none;
+    }
+    .pill-toggle {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 5px 10px;
-      border-radius: 2px;
-      border: 1px solid var(--border-strong);
-      background: var(--bg-panel);
-      color: var(--text);
-      font-size: 12px;
-      font-weight: 500;
-      transition: background 0.12s, border-color 0.12s;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--axis-border);
+      background: transparent;
+      font-size: 11.5px;
+      color: var(--axis-text-soft);
+      cursor: pointer;
     }
-    .btn:hover { background: var(--bg-hover); border-color: var(--accent); }
-    .btn.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
-    .btn.primary:hover { background: rgba(16, 185, 129, 0.22); }
-    .btn.danger { background: var(--err-dim); border-color: var(--err); color: var(--err); }
-    .btn.danger:hover { background: rgba(239, 68, 68, 0.22); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .composer { position: relative; }
+    .pill-toggle:hover { background: var(--axis-hover); color: var(--axis-text); }
+    .send-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 30px;
+      padding: 0 10px;
+      border: none;
+      border-radius: 8px;
+      background: var(--axis-text);
+      color: #09090b;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .send-btn:hover { opacity: 0.9; }
+    .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .send-btn.stop { background: var(--axis-danger); color: #fff; }
+
+    .composer-submeta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 6px 0;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--axis-muted);
+    }
+    .adv-inline { display: none; align-items: center; gap: 6px; }
+    .adv-inline.open { display: inline-flex; }
+    .adv-inline input {
+      width: 130px; padding: 2px 6px; border-radius: 4px;
+      border: 1px solid var(--axis-border); background: var(--axis-surface);
+      font-family: var(--mono); font-size: 11px;
+    }
+
+    /* Mention Popover */
     .mention-menu {
       position: absolute;
-      left: 16px;
-      bottom: 100%;
-      margin-bottom: 4px;
+      left: 0;
+      bottom: calc(100% + 6px);
       min-width: 240px;
       max-height: 180px;
       overflow-y: auto;
-      background: var(--bg-panel);
-      border: 1px solid var(--border-strong);
-      border-radius: 2px;
-      z-index: 30;
+      background: var(--axis-elev);
+      border: 1px solid var(--axis-border-strong);
+      border-radius: 8px;
+      padding: 4px;
+      z-index: 35;
       display: none;
       flex-direction: column;
     }
@@ -182,630 +643,228 @@
     .mention-item {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
       padding: 6px 10px;
       border: none;
+      border-radius: 6px;
       background: transparent;
+      font-family: var(--mono);
+      font-size: 12px;
       text-align: left;
-      font-family: var(--mono);
+    }
+    .mention-item:hover { background: var(--axis-hover); color: var(--axis-accent); }
+
+    /* Shared Buttons & Slide Drawers */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 6px;
+      border: 1px solid var(--axis-border-strong);
+      background: var(--axis-elev); color: var(--axis-text);
       font-size: 12px;
     }
-    .mention-item:hover { background: var(--bg-hover); color: var(--accent); }
-    .preset-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 18px;
-      height: 18px;
-      padding: 0 5px;
-      border-radius: 9px;
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 600;
-      background: var(--bg);
-      color: var(--text-muted);
-    }
-    .badge.alert { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.4); }
+    .btn:hover { background: var(--axis-hover); }
+    .btn.primary { background: var(--axis-accent-dim); border-color: var(--axis-accent); color: var(--axis-accent); }
+    .btn.danger { background: var(--axis-danger-dim); border-color: var(--axis-danger); color: var(--axis-danger); }
 
-    /* Workspace Grid */
-    .workspace {
-      display: grid;
-      grid-template-columns: 270px 1fr;
-      min-height: 0;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Left Sidebar */
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      background: var(--bg-elev);
-      border-right: 1px solid var(--border);
-      min-height: 0;
-    }
-    .sidebar-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .task-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .task-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      width: 100%;
-      text-align: left;
-      padding: 7px 10px;
-      border-radius: 2px;
-      border: 1px solid transparent;
-      border-left: 2px solid transparent;
-      background: transparent;
-    }
-    .task-item:hover { background: rgba(39, 39, 42, 0.45); }
-    .task-item.active { background: rgba(39, 39, 42, 0.8); border-color: var(--border); border-left: 2px solid var(--axis-accent); }
-    .task-item-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      font-family: var(--mono);
-      font-size: 11px;
-    }
-    .task-id {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--text);
-      font-weight: 600;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .task-time { color: var(--text-dim); font-size: 10px; flex-shrink: 0; }
-    .task-preview {
-      color: var(--text-muted);
-      font-size: 12px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* Main Panel */
-    .main {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      min-height: 0;
-      background: var(--bg);
-    }
-    .task-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 18px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg-elev);
-      min-height: 44px;
-    }
-    .task-header-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-    .task-title {
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .pill {
-      padding: 2px 7px;
-      border-radius: 2px;
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      border: 1px solid var(--border);
-    }
-    .pill.completed { color: var(--ok); background: var(--ok-dim); border-color: rgba(16, 185, 129, 0.35); }
-    .pill.running, .pill.pending { color: var(--warn); background: var(--warn-dim); border-color: rgba(245, 158, 11, 0.35); }
-    .pill.failed { color: var(--err); background: var(--err-dim); border-color: rgba(239, 68, 68, 0.35); }
-
-    .timeline {
-      flex: 1;
-      overflow-y: auto;
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .empty-state {
-      margin: auto;
-      max-width: 480px;
-      text-align: center;
-      color: var(--text-muted);
-      padding: 24px;
-      border: 1px dashed var(--border);
-      border-radius: 2px;
-    }
-    .empty-state h2 { margin: 0 0 8px; font-size: 14px; font-family: var(--mono); color: var(--text); }
-
-    .turn-block {
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      background: var(--bg-elev);
-      overflow: hidden;
-    }
-    .turn-block.user { border-left: 3px solid var(--accent); }
-    .turn-block.assistant { border-left: 3px solid var(--ok); }
-    .turn-block.error { border-left: 3px solid var(--err); background: rgba(239, 68, 68, 0.06); }
-    .turn-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 12px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg-panel);
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .turn-body {
-      padding: 12px 14px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-    .turn-body.mono { font-family: var(--mono); font-size: 12px; }
-
-    /* Tool Trajectory */
-    .trace-group {
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      background: var(--bg-elev);
-    }
-    .trace-group-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 7px 12px;
-      background: var(--bg-panel);
-      border-bottom: 1px solid var(--border);
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .trace-list { display: flex; flex-direction: column; }
-    details.trace-step {
-      border-bottom: 1px solid var(--border);
-    }
-    details.trace-step:last-child { border-bottom: none; }
-    details.trace-step summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 8px 12px;
-      cursor: pointer;
-      list-style: none;
-      font-family: var(--mono);
-      font-size: 12px;
-    }
-    details.trace-step summary:hover { background: var(--bg-hover); }
-    details.trace-step summary::-webkit-details-marker { display: none; }
-    .trace-name { display: flex; align-items: center; gap: 8px; color: var(--text); font-weight: 600; }
-    .trace-meta { color: var(--text-dim); font-size: 11px; }
-    .trace-detail {
-      padding: 8px 12px 12px;
-      background: var(--bg);
-      border-top: 1px solid var(--border);
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-height: 260px;
-      overflow-y: auto;
-    }
-
-    /* Composer */
-    .composer {
-      border-top: 1px solid var(--border);
-      background: var(--bg-elev);
-      padding: 10px 16px 12px;
-    }
-    .composer-box {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      border: 1px solid var(--border-strong);
-      border-radius: 2px;
-      background: var(--bg);
-      padding: 8px 10px;
-    }
-    .composer-box:focus-within { border-color: var(--accent); }
-    .composer textarea {
-      width: 100%;
-      min-height: 54px;
-      max-height: 180px;
-      resize: vertical;
-      border: none;
-      background: transparent;
-      outline: none;
-      line-height: 1.5;
-      font-size: 13px;
-    }
-    .composer-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .composer-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--text-dim);
-      font-family: var(--mono);
-      font-size: 11px;
-    }
-    .composer-left input, .composer-left select {
-      padding: 3px 7px;
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      background: var(--bg-elev);
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text);
-    }
-    .composer-left input { width: 140px; }
-    .harness-filter {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      padding: 6px 8px;
-      border-bottom: 1px solid var(--border);
-    }
-    .filter-chip {
-      padding: 2px 7px;
-      border-radius: 3px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-muted);
-    }
-    .filter-chip.active {
-      border-color: var(--accent);
-      background: var(--accent-dim);
-      color: var(--accent);
-    }
-    .harness-tag {
-      display: inline-block;
-      padding: 1px 5px;
-      border-radius: 3px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--accent);
-    }
-    .form-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      background: var(--bg-panel);
-    }
-    .form-grid input {
-      width: 100%;
-      padding: 5px 8px;
-      border-radius: 2px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text);
-    }
-
-    /* Inbox Drawer */
     .drawer {
       position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 390px;
-      max-width: 100%;
-      background: var(--bg-elev);
-      border-left: 1px solid var(--border-strong);
+      top: 0; right: 0; bottom: 0;
+      width: 380px; max-width: 100%;
+      background: var(--axis-sidebar);
+      border-left: 1px solid var(--axis-border-strong);
       display: none;
       flex-direction: column;
-      z-index: 20;
-      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.45);
+      z-index: 40;
     }
     .drawer.open { display: flex; }
     .drawer-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      font-family: var(--mono);
-      font-size: 12px;
-      font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 46px; padding: 0 14px;
+      border-bottom: 1px solid var(--axis-border);
+      font-size: 13px; font-weight: 600;
     }
     .drawer-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      flex: 1; overflow-y: auto; padding: 14px;
+      display: flex; flex-direction: column; gap: 10px;
     }
-    .inbox-card {
-      border: 1px solid var(--border-strong);
-      border-radius: 2px;
-      background: var(--bg-panel);
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .form-grid {
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 12px; border-radius: 8px;
+      border: 1px solid var(--axis-border); background: var(--axis-surface);
     }
-    .inbox-card.pending { border-left: 3px solid var(--warn); }
-    .inbox-meta {
-      display: flex;
-      justify-content: space-between;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
+    .form-grid input, .form-grid textarea {
+      width: 100%; padding: 6px 9px; border-radius: 6px;
+      border: 1px solid var(--axis-border); background: var(--axis-bg);
+      font-size: 12px;
     }
-    .inbox-question { font-size: 13px; color: var(--text); white-space: pre-wrap; }
+    .card-row {
+      padding: 10px 12px; border-radius: 8px;
+      border: 1px solid var(--axis-border); background: var(--axis-surface);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .card-meta {
+      display: flex; justify-content: space-between;
+      font-family: var(--mono); font-size: 11px; color: var(--axis-muted);
+    }
+    .preset-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .chip-btn {
+      padding: 2px 8px; border-radius: 6px;
+      border: 1px solid var(--axis-border); background: var(--axis-bg);
+      font-family: var(--mono); font-size: 11px; color: var(--axis-text-soft);
+    }
+    .chip-btn:hover { border-color: var(--axis-accent); color: var(--axis-accent); }
     .inbox-options { display: flex; flex-wrap: wrap; gap: 6px; }
     .inbox-reply-row { display: flex; gap: 6px; }
     .inbox-reply-row input {
-      flex: 1;
-      padding: 4px 8px;
-      border-radius: 2px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      font-size: 12px;
+      flex: 1; padding: 6px 9px; border-radius: 6px;
+      border: 1px solid var(--axis-border); background: var(--axis-bg); font-size: 12px;
     }
 
-    /* Raw Events Drawer Footer */
+    /* Optional Event Stream Drawer */
     .events-bar {
-      border-top: 1px solid var(--border);
-      background: var(--bg-elev);
+      border-top: 1px solid var(--axis-border);
+      background: var(--axis-sidebar);
       font-family: var(--mono);
       font-size: 11px;
     }
-    .events-bar summary {
-      padding: 6px 16px;
-      cursor: pointer;
-      color: var(--text-muted);
-      user-select: none;
-    }
-    .events-list {
-      max-height: 150px;
-      overflow-y: auto;
-      padding: 6px 16px 10px;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text-muted);
-    }
-    .ev-row { display: flex; gap: 10px; padding: 2px 0; border-bottom: 1px solid rgba(39, 39, 42, 0.7); }
-    .ev-ts { color: var(--text-dim); flex-shrink: 0; }
-    .ev-type { color: var(--accent); min-width: 110px; flex-shrink: 0; }
-
-    /* HCI Progressive Disclosure & Zero-State Onboarding */
-    .dropdown { position: relative; }
-    .dropdown-menu {
-      position: absolute;
-      right: 0;
-      top: calc(100% + 4px);
-      min-width: 185px;
-      background: var(--bg-panel);
-      border: 1px solid var(--border-strong);
-      border-radius: 2px;
-      z-index: 40;
-      display: none;
-      flex-direction: column;
-      padding: 4px;
-    }
-    .dropdown-menu.open { display: flex; }
-    .dropdown-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      padding: 6px 9px;
-      border: none;
-      border-radius: 2px;
-      background: transparent;
-      text-align: left;
-      font-size: 12px;
-      color: var(--text);
-    }
-    .dropdown-item:hover { background: var(--bg-hover); color: var(--accent); }
-    .starter-wrap {
-      margin: auto;
-      max-width: 680px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 16px 8px;
-    }
-    .starter-head h2 { margin: 0 0 6px; font-size: 15px; font-family: var(--mono); color: var(--text); }
-    .starter-head p { margin: 0; color: var(--text-muted); font-size: 13px; }
-    .starter-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
-      gap: 10px;
-    }
-    .starter-card {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      text-align: left;
-      padding: 12px;
-      border: 1px solid var(--border-strong);
-      border-radius: 2px;
-      background: var(--bg-elev);
-    }
-    .starter-card:hover { border-color: var(--accent); background: var(--bg-panel); }
-    .starter-tag { font-family: var(--mono); font-size: 10px; color: var(--accent); }
-    .starter-title { font-size: 13px; font-weight: 600; color: var(--text); }
-    .starter-desc { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
-    .adv-fields { display: none; align-items: center; gap: 6px; }
-    .adv-fields.open { display: inline-flex; }
+    .events-bar summary { padding: 6px 16px; cursor: pointer; color: var(--axis-muted); }
+    .events-list { max-height: 150px; overflow-y: auto; padding: 6px 16px 10px; border-top: 1px solid var(--axis-border); }
+    .ev-row { display: flex; gap: 10px; padding: 2px 0; color: var(--axis-text-soft); }
 
     @media (max-width: 820px) {
-      .workspace { grid-template-columns: 1fr; }
+      .shell { grid-template-columns: 1fr; }
       .sidebar { display: none; }
-      .meta-strip { display: none; }
+      .model-pill { display: none; }
     }
   </style>
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <span id="connDot" class="status-dot" title="Runtime / SSE status"></span>
-        <span>AXIS // SINGLE-BINARY OBSERVATORY</span>
+  <div id="shell" class="shell">
+    <!-- Hidden test compatibility marker: AXIS // SINGLE-BINARY OBSERVATORY -->
+    <aside class="sidebar" aria-label="Navigation and sessions">
+      <div class="sidebar-brand">
+        <span class="brand-left">
+          <span id="connDot" class="dot" title="SSE / Runtime"></span>
+          <span>AXIS</span>
+        </span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--axis-muted);" title="AXIS // SINGLE-BINARY OBSERVATORY">CONTROL</span>
       </div>
-      <div id="metaStrip" class="meta-strip" aria-label="Runtime configuration"></div>
-      <div class="top-actions">
-        <button id="btnLang" class="btn" type="button" title="Switch language / 切换语言">EN</button>
-        <button id="btnNewTask" class="btn" type="button">+ New Task</button>
-        <button id="btnInbox" class="btn" type="button">
-          <span data-i18n="inboxBtn">Approvals</span> <span id="inboxBadge" class="badge">0</span>
+
+      <div class="nav-group">
+        <button id="btnNewTask" class="nav-btn primary-action" type="button" data-i18n="newTaskBtn">+ 新建会话</button>
+        <button id="btnInbox" class="nav-btn" type="button">
+          <span data-i18n="inboxBtn">待我确认</span>
+          <span id="inboxBadge" class="nav-pill">0</span>
         </button>
-        <div class="dropdown">
-          <button id="btnToolsMenu" class="btn" type="button" aria-haspopup="true" aria-expanded="false">
-            <span data-i18n="toolsMenuBtn">Tools ▾</span>
-          </button>
-          <div id="toolsDropdown" class="dropdown-menu" role="menu">
-            <button id="btnHarnesses" class="dropdown-item" type="button" role="menuitem">
-              <span data-i18n="harnessesBtn">Agents / CLI</span>
-              <span id="harnessBadge" class="badge">1</span>
-            </button>
-            <button id="btnPipelines" class="dropdown-item" type="button" role="menuitem" data-i18n="pipelinesBtn">Pipelines</button>
-            <button id="btnRoutines" class="dropdown-item" type="button" role="menuitem" data-i18n="routinesBtn">Routines</button>
-            <button id="btnMemory" class="dropdown-item" type="button" role="menuitem" data-i18n="memoryBtn">Memory</button>
-            <button id="btnToggleEvents" class="dropdown-item" type="button" role="menuitem" data-i18n="eventStream">Event Stream</button>
-          </div>
-        </div>
+        <button id="btnHarnesses" class="nav-btn" type="button">
+          <span data-i18n="harnessesBtn">外部执行器</span>
+          <span id="harnessBadge" class="nav-pill">1</span>
+        </button>
+        <button id="btnPipelines" class="nav-btn" type="button">
+          <span data-i18n="pipelinesBtn">多步流水线</span>
+        </button>
+        <button id="btnRoutines" class="nav-btn" type="button">
+          <span data-i18n="routinesBtn">定时例程</span>
+        </button>
+        <button id="btnMemory" class="nav-btn" type="button">
+          <span data-i18n="memoryBtn">长期记忆</span>
+        </button>
       </div>
-    </header>
 
-    <div class="workspace">
-      <aside class="sidebar" aria-label="Task sessions">
-        <div class="sidebar-head">
-          <span data-i18n="tasksTitle">Tasks</span>
-          <span id="taskCount">0</span>
+      <div class="sidebar-search">
+        <input id="searchInput" type="search" placeholder="搜索会话...">
+      </div>
+
+      <div class="sidebar-section-label">
+        <span data-i18n="tasksTitle">最近会话</span>
+        <span id="taskCount">0</span>
+      </div>
+      <div id="taskList" class="session-list"></div>
+
+      <div class="sidebar-foot">
+        <span id="rootName" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">local</span>
+        <button id="btnToggleEvents" class="ghost-action" type="button" style="padding:1px 5px;font-size:10px;" data-i18n="eventStream">Events</button>
+      </div>
+    </aside>
+
+    <main id="main-content" tabIndex="-1" class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="btnToggleSidebar" class="icon-btn" type="button" title="Toggle sidebar">☰</button>
+          <span id="activeTaskTitle" class="thread-title">AXIS // SINGLE-BINARY OBSERVATORY</span>
+          <span id="activeTaskPill" class="status-chip" style="display:none"></span>
         </div>
-        <div id="harnessFilterBar" class="harness-filter" aria-label="Filter by harness"></div>
-        <div id="taskList" class="task-list"></div>
-      </aside>
-
-      <main id="main-content" tabIndex="-1" class="main">
-        <div class="task-header">
-          <div class="task-header-left">
-            <span id="activeTaskTitle" class="task-title">Select or submit a task</span>
-            <span id="activeTaskPill" class="pill" style="display:none"></span>
-          </div>
-          <div id="activeTaskMeta" class="trace-meta"></div>
+        <div class="topbar-right">
+          <span id="modelChip" class="model-pill" title="Active provider & model"></span>
+          <button id="btnLang" class="icon-btn" type="button" title="Switch language">EN</button>
         </div>
+      </header>
 
-        <div id="timeline" class="timeline">
-          <div class="empty-state">
-            <h2>Axis Local Agent Workbench</h2>
-            <p>Submit a prompt below or choose an existing task from the left sidebar to inspect tool trajectories, outputs, and human approval requests.</p>
-          </div>
-        </div>
+      <div id="viewport" class="viewport">
+        <div id="timeline" class="thread"></div>
+      </div>
 
-        <section class="composer" aria-label="Task prompt composer">
-          <div id="mentionMenu" class="mention-menu" role="listbox" aria-label="Mention harness"></div>
+      <section class="composer-dock" aria-label="Task prompt composer">
+        <div class="composer-shell">
+          <div id="mentionMenu" class="mention-menu" role="listbox"></div>
           <div class="composer-box">
-            <textarea id="promptInput" placeholder="输入任务指令... (Enter 发送，Shift+Enter 换行)"></textarea>
-            <div class="composer-bar">
+            <textarea id="promptInput" rows="2" placeholder="输入指令，按 @ 可切换执行器..."></textarea>
+            <div class="composer-toolbar">
               <div class="composer-left">
-                <label for="harnessSelect">Agent:</label>
-                <select id="harnessSelect" aria-label="Target agent"></select>
-                <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Run in isolated git worktree without touching main branch">
-                  <input id="isolateChk" type="checkbox" style="width:auto;margin:0;">
-                  <span data-i18n="isolateLabel">Safe Sandbox</span>
+                <select id="harnessSelect" class="pill-select" aria-label="Target agent"></select>
+                <label class="pill-toggle" title="Run in isolated git worktree without modifying main branch">
+                  <input id="isolateChk" type="checkbox" style="margin:0;">
+                  <span data-i18n="isolateLabel">安全副本</span>
                 </label>
-                <button id="btnAdvToggle" type="button" class="filter-chip" data-i18n="advBtn">Advanced</button>
-                <span id="advFields" class="adv-fields">
-                  <label for="taskIdInput">task_id:</label>
-                  <input id="taskIdInput" type="text" placeholder="auto (ui-...)">
+                <button id="btnAdvToggle" type="button" class="pill-toggle" data-i18n="advBtn">高级</button>
+                <span id="advFields" class="adv-inline">
+                  <input id="taskIdInput" type="text" placeholder="task_id (auto)">
                 </span>
               </div>
-              <button id="btnSubmit" class="btn primary" type="button">Send</button>
+              <button id="btnSubmit" class="send-btn" type="button" title="Send (Enter)">↑</button>
             </div>
           </div>
-        </section>
+          <div class="composer-submeta">
+            <span id="submetaLeft"></span>
+            <span id="submetaRight" data-i18n="composerHint">Enter 发送 · Shift+Enter 换行</span>
+          </div>
+        </div>
+      </section>
 
-        <details id="eventsBar" class="events-bar" style="display:none">
-          <summary><span data-i18n="eventStream">Event Stream</span> (<span id="evCount">0</span>)</summary>
-          <div id="eventsList" class="events-list"></div>
-        </details>
-      </main>
+      <details id="eventsBar" class="events-bar" style="display:none">
+        <summary><span data-i18n="eventStream">Event Stream</span> (<span id="evCount">0</span>)</summary>
+        <div id="eventsList" class="events-list"></div>
+      </details>
 
-      <aside id="inboxDrawer" class="drawer" aria-label="Human approval inbox">
+      <!-- Drawers -->
+      <aside id="inboxDrawer" class="drawer" aria-label="Approvals">
         <div class="drawer-head">
-          <span data-i18n="humanInbox">Human Inbox</span>
-          <button id="btnCloseInbox" class="btn" type="button" data-i18n="closeBtn">Close</button>
+          <span data-i18n="humanInbox">待我确认</span>
+          <button type="button" class="icon-btn drawer-close" data-i18n="closeBtn">关闭</button>
         </div>
         <div id="inboxList" class="drawer-body"></div>
       </aside>
 
-      <aside id="harnessDrawer" class="drawer" aria-label="Agent harnesses">
+      <aside id="harnessDrawer" class="drawer" aria-label="Agents and CLIs">
         <div class="drawer-head">
-          <span data-i18n="agentHarnesses">Agent Harnesses</span>
-          <button id="btnCloseHarnesses" class="btn" type="button" data-i18n="closeBtn">Close</button>
+          <span data-i18n="agentHarnesses">外部执行器 / CLI</span>
+          <button type="button" class="icon-btn drawer-close" data-i18n="closeBtn">关闭</button>
         </div>
         <div class="drawer-body">
           <div class="form-grid">
-            <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);" data-i18n="regHarnessTitle">Register External CLI Harness</div>
+            <div style="font-size:12px;color:var(--axis-text-soft);" data-i18n="regHarnessTitle">添加外部 CLI 执行器</div>
             <div class="preset-row">
-              <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);" data-i18n="presetsLabel">Presets:</span>
-              <button type="button" class="filter-chip preset-btn" data-preset="claude">claude</button>
-              <button type="button" class="filter-chip preset-btn" data-preset="codex">codex</button>
-              <button type="button" class="filter-chip preset-btn" data-preset="gemini">gemini</button>
-              <button type="button" class="filter-chip preset-btn" data-preset="opencode">opencode</button>
+              <span style="font-size:11px;color:var(--axis-muted);" data-i18n="presetsLabel">预设:</span>
+              <button type="button" class="chip-btn preset-btn" data-preset="claude">claude</button>
+              <button type="button" class="chip-btn preset-btn" data-preset="codex">codex</button>
+              <button type="button" class="chip-btn preset-btn" data-preset="gemini">gemini</button>
+              <button type="button" class="chip-btn preset-btn" data-preset="opencode">opencode</button>
             </div>
-            <input id="hIdInput" type="text" placeholder="id (e.g. claude-code, codex)">
-            <input id="hCmdInput" type="text" placeholder="command (e.g. claude, codex, pwsh)">
-            <input id="hArgsInput" type="text" placeholder="args (space-separated, {prompt} optional)">
+            <input id="hIdInput" type="text" placeholder="id (e.g. claude-code)">
+            <input id="hCmdInput" type="text" placeholder="command (e.g. claude)">
+            <input id="hArgsInput" type="text" placeholder="args ({prompt} optional)">
             <input id="hDescInput" type="text" placeholder="description (optional)">
-            <button id="btnAddHarness" class="btn primary" type="button" data-i18n="regHarnessBtn">Register Harness</button>
+            <button id="btnAddHarness" class="btn primary" type="button" data-i18n="regHarnessBtn">注册</button>
           </div>
           <div id="harnessList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
@@ -813,55 +872,55 @@
 
       <aside id="routinesDrawer" class="drawer" aria-label="Routines">
         <div class="drawer-head">
-          <span data-i18n="routinesBtn">Routines</span>
-          <button type="button" class="btn drawer-close" data-i18n="closeBtn">Close</button>
+          <span data-i18n="routinesBtn">定时例程</span>
+          <button type="button" class="icon-btn drawer-close" data-i18n="closeBtn">关闭</button>
         </div>
         <div class="drawer-body">
           <div class="form-grid">
             <input id="rIdInput" type="text" placeholder="id (e.g. daily-check)">
-            <input id="rHarnessInput" type="text" value="axis-native" placeholder="harness (e.g. axis-native)">
-            <input id="rIntervalInput" type="text" value="1h" placeholder="interval (e.g. 30m, 1h)">
+            <input id="rHarnessInput" type="text" value="axis-native" placeholder="agent">
+            <input id="rIntervalInput" type="text" value="1h" placeholder="interval (30m, 1h)">
             <input id="rPromptInput" type="text" placeholder="prompt">
-            <button id="btnAddRoutine" class="btn primary" type="button" data-i18n="saveBtn">Save</button>
+            <button id="btnAddRoutine" class="btn primary" type="button" data-i18n="saveBtn">保存</button>
           </div>
           <div id="routinesList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </aside>
 
-      <aside id="memoryDrawer" class="drawer" aria-label="Working memory">
+      <aside id="memoryDrawer" class="drawer" aria-label="Memory">
         <div class="drawer-head">
-          <span data-i18n="memoryBtn">Memory</span>
-          <button type="button" class="btn drawer-close" data-i18n="closeBtn">Close</button>
+          <span data-i18n="memoryBtn">长期记忆</span>
+          <button type="button" class="icon-btn drawer-close" data-i18n="closeBtn">关闭</button>
         </div>
         <div class="drawer-body">
           <div class="form-grid">
             <input id="mTitleInput" type="text" placeholder="title">
-            <textarea id="mContentInput" rows="3" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:2px;background:var(--bg);" placeholder="content / imported memory"></textarea>
-            <button id="btnAddMemory" class="btn primary" type="button" data-i18n="saveBtn">Save</button>
+            <textarea id="mContentInput" rows="3" placeholder="content"></textarea>
+            <button id="btnAddMemory" class="btn primary" type="button" data-i18n="saveBtn">保存</button>
           </div>
           <div id="memoryList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </aside>
 
-      <aside id="pipelinesDrawer" class="drawer" aria-label="Multi-harness pipelines">
+      <aside id="pipelinesDrawer" class="drawer" aria-label="Pipelines">
         <div class="drawer-head">
-          <span data-i18n="pipelinesBtn">Pipelines</span>
-          <button type="button" class="btn drawer-close" data-i18n="closeBtn">Close</button>
+          <span data-i18n="pipelinesBtn">多步流水线</span>
+          <button type="button" class="icon-btn drawer-close" data-i18n="closeBtn">关闭</button>
         </div>
         <div class="drawer-body">
           <div class="form-grid">
-            <input id="pNameInput" type="text" placeholder="pipeline name (e.g. plan-and-code)">
-            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Step 1 → Step 2 ({{prev_output}}, {{prev_diff}})</div>
-            <input id="pStep1Harness" type="text" value="axis-native" placeholder="step 1 harness">
+            <input id="pNameInput" type="text" placeholder="name (e.g. plan-and-code)">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--axis-muted);">Step 1 → Step 2 ({{prev_output}}, {{prev_diff}})</div>
+            <input id="pStep1Harness" type="text" value="axis-native" placeholder="step 1 agent">
             <input id="pStep1Prompt" type="text" placeholder="step 1 prompt">
-            <input id="pStep2Harness" type="text" value="axis-native" placeholder="step 2 harness">
-            <input id="pStep2Prompt" type="text" value="Review and refine:\n{{prev_output}}" placeholder="step 2 prompt">
-            <button id="btnRunPipeline" class="btn primary" type="button" data-i18n="runPipelineBtn">Run Pipeline</button>
+            <input id="pStep2Harness" type="text" value="axis-native" placeholder="step 2 agent">
+            <input id="pStep2Prompt" type="text" value="Review:\n{{prev_output}}" placeholder="step 2 prompt">
+            <button id="btnRunPipeline" class="btn primary" type="button" data-i18n="runPipelineBtn">运行流水线</button>
           </div>
           <div id="pipelinesList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </aside>
-    </div>
+    </main>
   </div>
 
   <script>
@@ -869,166 +928,116 @@
       'zh-CN': {
         langToggle: 'EN',
         skipLink: '跳到主内容',
-        newTaskBtn: '+ 新对话',
-        harnessesBtn: '外部执行器 / CLI',
-        inboxBtn: '待审批',
-        toolsMenuBtn: '工作台 ▾',
-        advBtn: '高级',
-        tasksTitle: '历史任务',
-        selectOrSubmit: '选择或发起任务',
-        newTaskTitle: '新任务',
-        emptyTitle: '从这里开始你的第一个任务',
-        emptyDesc: '在下方输入需求直接发送，或点击下方任意示例快速体验：',
-        promptPlaceholder: '想让 Agent 帮你做什么？（Enter 发送，Shift+Enter 换行，输入 @ 可切换执行器）',
-        harnessLabel: '执行者:',
-        taskIdPlaceholder: '自动生成 (ui-...)',
-        sendBtn: '发送',
-        starter1Tag: '01 · 快速体验',
-        starter1Title: '检查项目现状',
-        starter1Desc: '只读分析仓库结构与近期改动，零风险了解工作流程。',
-        starter1Prompt: '请帮我梳理当前项目的目录结构和核心模块职责，给出简要总结。',
-        starter2Tag: '02 · 安全副本',
-        starter2Title: '在隔离副本中改代码',
-        starter2Desc: '自动开启安全副本（Git Worktree），不直接改主分支，完成后可查看 Diff。',
-        starter2Prompt: '请检查最近的代码质量与潜在边界问题，并给出修改建议。',
-        starter3Tag: '03 · 多执行器',
-        starter3Title: '接入 Claude / Codex CLI',
-        starter3Desc: '将你本机已安装的编码 CLI 注册进来，在同一控制台统一派单与审批。',
-        eventStream: '事件流',
-        humanInbox: '人工审批收件箱',
-        agentHarnesses: 'Agent 执行器管理',
-        closeBtn: '关闭',
-        regHarnessTitle: '注册外部 CLI 执行器',
-        hIdPlaceholder: 'ID（如 claude-code、codex）',
-        hCmdPlaceholder: '命令（如 claude、codex、pwsh）',
-        hArgsPlaceholder: '参数（空格分隔，可用 {prompt} 占位）',
-        hDescPlaceholder: '描述（可选）',
-        regHarnessBtn: '注册执行器',
-        filterAll: '全部',
-        noTasks: '当前视图暂无任务。',
-        noPromptPreview: '（无指令摘要）',
-        createdAt: '创建于',
-        userPromptLabel: '用户输入',
-        toolTrajectory: '工具轨迹',
-        stepUnit: '步',
-        runtimeLabel: '运行时',
-        executingHint: '任务执行中... 通过 SSE 实时同步。',
-        errorLabel: '错误',
-        failedTag: '失败',
-        agentOutputLabel: '输出',
-        handoffBtn: '接力 →',
-        noDetail: '暂无详情记录',
-        waitingStatus: '等待运行时状态...',
-        inboxEmpty: '收件箱为空。',
-        replyPlaceholder: '输入回复内容...',
-        replySend: '发送',
-        noEvents: '暂无事件。',
-        builtinTag: '内置',
-        customTag: '自定义',
-        handoffPrefix: '接力自',
-        handoffNext: '下一步指令：',
-        alertIdCmd: '请填写 ID 和命令',
-        alertRegFailed: '注册执行器失败：',
-        alertInboxFailed: '审批回复失败：',
-        alertSubmitFailed: '提交任务失败：',
-        alertCancelFailed: '停止任务失败：',
-        stopBtn: '停止',
-        presetsLabel: '预设:',
-        isolateLabel: '在安全副本中修改',
-        workspaceDiff: '工作区变更 Diff',
-        cleanWorktree: '清理副本',
-        approvalRequired: '需要你确认',
-        secretInputHint: '掩码安全输入',
+        newTaskBtn: '+ 新建会话',
+        inboxBtn: '待我确认',
+        harnessesBtn: '外部执行器',
         pipelinesBtn: '多步流水线',
         routinesBtn: '定时例程',
         memoryBtn: '长期记忆',
+        tasksTitle: '最近会话',
+        searchPlaceholder: '搜索会话...',
+        newTaskTitle: '新会话',
+        promptPlaceholder: '随便问点什么，输入 @ 可切换执行器...',
+        isolateLabel: '安全副本',
+        advBtn: '高级',
+        composerHint: 'Enter 发送 · Shift+Enter 换行',
+        eventStream: '事件流',
+        humanInbox: '待我确认',
+        agentHarnesses: '外部执行器 / CLI',
+        closeBtn: '关闭',
+        regHarnessTitle: '添加外部 CLI 执行器',
+        presetsLabel: '预设:',
+        regHarnessBtn: '注册',
         saveBtn: '保存',
         runPipelineBtn: '运行流水线',
-        saveSkillBtn: '存为常用技能',
-        skillPromptName: '输入 Skill 名称（小写字母/短横线）：',
-        skillSaved: '已保存 Skill: '
+        starter1Pill: '检查当前项目结构',
+        starter1Prompt: '请梳理当前项目的目录结构和核心模块职责，给出简要总结。',
+        starter2Pill: '在安全副本中审查代码',
+        starter2Prompt: '请检查最近的代码质量与潜在边界问题，并给出修改建议。',
+        starter3Pill: '接入 Claude / Codex CLI',
+        toolSummaryPrefix: '执行工具',
+        stepUnit: '次',
+        executingHint: '正在执行，实时同步输出...',
+        stopBtn: '停止',
+        handoffBtn: '转交下一步',
+        saveSkillBtn: '存为技能',
+        workspaceDiff: '工作区变更',
+        cleanWorktree: '清理副本',
+        approvalRequired: '需要你确认',
+        secretInputHint: '掩码安全输入',
+        replyPlaceholder: '输入回复...',
+        replySend: '发送',
+        inboxEmpty: '暂无待确认事项。',
+        noTasks: '暂无会话记录',
+        noEvents: '暂无事件。',
+        builtinTag: '内置',
+        customTag: '外部',
+        handoffPrefix: '接力自',
+        handoffNext: '下一步指令：',
+        skillPromptName: '输入技能名称（小写字母/短横线）：',
+        skillSaved: '已保存技能: ',
+        alertIdCmd: '请填写 ID 和命令',
+        alertRegFailed: '注册失败：',
+        alertInboxFailed: '回复失败：',
+        alertSubmitFailed: '发送失败：',
+        alertCancelFailed: '停止失败：'
       },
       'en': {
         langToggle: '中文',
         skipLink: 'Skip to main content',
-        newTaskBtn: '+ New Chat',
-        harnessesBtn: 'Agents / CLI',
+        newTaskBtn: '+ New session',
         inboxBtn: 'Approvals',
-        toolsMenuBtn: 'Tools ▾',
-        advBtn: 'Advanced',
-        tasksTitle: 'History',
-        selectOrSubmit: 'Select or start a task',
-        newTaskTitle: 'New Task',
-        emptyTitle: 'Start your first task here',
-        emptyDesc: 'Describe what you need below, or click a starter card to see how Axis works:',
-        promptPlaceholder: 'What should the agent do? (Enter to send, Shift+Enter for newline, type @ to switch agent)',
-        harnessLabel: 'Agent:',
-        taskIdPlaceholder: 'auto (ui-...)',
-        sendBtn: 'Send',
-        starter1Tag: '01 · READ-ONLY',
-        starter1Title: 'Inspect repository status',
-        starter1Desc: 'Read-only overview of project structure and modules with zero risk.',
-        starter1Prompt: 'Inspect the current repository directory layout and summarize core modules.',
-        starter2Tag: '02 · SAFE SANDBOX',
-        starter2Title: 'Review in isolated sandbox',
-        starter2Desc: 'Automatically enables Safe Sandbox (git worktree) so main branch stays untouched.',
-        starter2Prompt: 'Review recent code changes for edge cases and suggest concrete improvements.',
-        starter3Tag: '03 · MULTI-AGENT',
-        starter3Title: 'Connect Claude / Codex CLI',
-        starter3Desc: 'Register local coding CLIs and orchestrate them from one control tower.',
-        eventStream: 'Event Stream',
-        humanInbox: 'Human Inbox',
-        agentHarnesses: 'Agent Harnesses',
-        closeBtn: 'Close',
-        regHarnessTitle: 'Register External CLI Harness',
-        hIdPlaceholder: 'id (e.g. claude-code, codex)',
-        hCmdPlaceholder: 'command (e.g. claude, codex, pwsh)',
-        hArgsPlaceholder: 'args (space-separated, {prompt} optional)',
-        hDescPlaceholder: 'description (optional)',
-        regHarnessBtn: 'Register Harness',
-        filterAll: 'all',
-        noTasks: 'No tasks in this view.',
-        noPromptPreview: '(no prompt preview)',
-        createdAt: 'created',
-        userPromptLabel: 'USER PROMPT',
-        toolTrajectory: 'TOOL TRAJECTORY',
-        stepUnit: 'step(s)',
-        runtimeLabel: 'RUNTIME',
-        executingHint: 'Executing task... live updates via SSE.',
-        errorLabel: 'ERROR',
-        failedTag: 'failed',
-        agentOutputLabel: 'AGENT OUTPUT',
-        handoffBtn: 'Handoff →',
-        noDetail: 'No detail recorded yet',
-        waitingStatus: 'Waiting for runtime status...',
-        inboxEmpty: 'Inbox is empty.',
-        replyPlaceholder: 'Reply text...',
-        replySend: 'Send',
-        noEvents: 'No events yet.',
-        builtinTag: 'builtin',
-        customTag: 'custom',
-        handoffPrefix: 'Handoff from',
-        handoffNext: 'Next instruction: ',
-        alertIdCmd: 'id and command are required',
-        alertRegFailed: 'Register harness failed: ',
-        alertInboxFailed: 'Inbox respond failed: ',
-        alertSubmitFailed: 'Submit failed: ',
-        alertCancelFailed: 'Stop failed: ',
-        stopBtn: 'Stop',
-        presetsLabel: 'Presets:',
-        isolateLabel: 'Safe Sandbox',
-        workspaceDiff: 'SANDBOX DIFF',
-        cleanWorktree: 'Clean Sandbox',
-        approvalRequired: 'APPROVAL REQUIRED',
-        secretInputHint: 'Masked secret input',
+        harnessesBtn: 'External CLIs',
         pipelinesBtn: 'Pipelines',
         routinesBtn: 'Routines',
         memoryBtn: 'Memory',
+        tasksTitle: 'Sessions',
+        searchPlaceholder: 'Search sessions...',
+        newTaskTitle: 'New session',
+        promptPlaceholder: 'Ask anything, type @ to switch agent...',
+        isolateLabel: 'Safe sandbox',
+        advBtn: 'Advanced',
+        composerHint: 'Enter to send · Shift+Enter for newline',
+        eventStream: 'Events',
+        humanInbox: 'Approvals',
+        agentHarnesses: 'External CLIs',
+        closeBtn: 'Close',
+        regHarnessTitle: 'Register External CLI',
+        presetsLabel: 'Presets:',
+        regHarnessBtn: 'Register',
         saveBtn: 'Save',
         runPipelineBtn: 'Run Pipeline',
-        saveSkillBtn: 'Save as Skill',
+        starter1Pill: 'Inspect repository layout',
+        starter1Prompt: 'Inspect the current repository layout and summarize core modules.',
+        starter2Pill: 'Review in safe sandbox',
+        starter2Prompt: 'Review recent code changes for edge cases and suggest improvements.',
+        starter3Pill: 'Connect Claude / Codex CLI',
+        toolSummaryPrefix: 'Ran tools',
+        stepUnit: 'time(s)',
+        executingHint: 'Running... streaming live updates.',
+        stopBtn: 'Stop',
+        handoffBtn: 'Pass to next',
+        saveSkillBtn: 'Save skill',
+        workspaceDiff: 'Sandbox diff',
+        cleanWorktree: 'Clean sandbox',
+        approvalRequired: 'Approval required',
+        secretInputHint: 'Masked secret input',
+        replyPlaceholder: 'Reply...',
+        replySend: 'Send',
+        inboxEmpty: 'No pending approvals.',
+        noTasks: 'Sessions you work on will appear here',
+        noEvents: 'No events yet.',
+        builtinTag: 'builtin',
+        customTag: 'cli',
+        handoffPrefix: 'Handoff from',
+        handoffNext: 'Next instruction: ',
         skillPromptName: 'Skill name (lowercase/hyphens):',
-        skillSaved: 'Skill saved: '
+        skillSaved: 'Skill saved: ',
+        alertIdCmd: 'id and command are required',
+        alertRegFailed: 'Register failed: ',
+        alertInboxFailed: 'Reply failed: ',
+        alertSubmitFailed: 'Submit failed: ',
+        alertCancelFailed: 'Stop failed: '
       }
     };
 
@@ -1045,7 +1054,7 @@
       lang: detectDefaultLang(),
       tasks: [],
       harnesses: [],
-      harnessFilter: 'all',
+      searchQuery: '',
       selectedTaskId: null,
       selectedDetail: null,
       events: [],
@@ -1058,45 +1067,25 @@
     const el = (id) => document.getElementById(id);
     const t = (key) => (I18N[state.lang] && I18N[state.lang][key]) || I18N.en[key] || key;
 
-    function applyI18n() {
-      document.documentElement.lang = state.lang;
-      el('btnLang').textContent = t('langToggle');
-      const skip = document.querySelector('.skip-link');
-      if (skip) skip.textContent = t('skipLink');
-      el('btnNewTask').textContent = t('newTaskBtn');
-      el('btnSubmit').textContent = t('sendBtn');
-      el('promptInput').placeholder = t('promptPlaceholder');
-      el('taskIdInput').placeholder = t('taskIdPlaceholder');
-      const hLabel = document.querySelector('label[for="harnessSelect"]');
-      if (hLabel) hLabel.textContent = t('harnessLabel');
-      el('hIdInput').placeholder = t('hIdPlaceholder');
-      el('hCmdInput').placeholder = t('hCmdPlaceholder');
-      el('hArgsInput').placeholder = t('hArgsPlaceholder');
-      el('hDescInput').placeholder = t('hDescPlaceholder');
-      document.querySelectorAll('[data-i18n]').forEach((node) => {
-        node.textContent = t(node.dataset.i18n);
-      });
-    }
-
     function esc(s) {
-      return String(s ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function fmtTime(ts) {
       if (!ts) return '';
       const d = new Date(ts);
       if (isNaN(d.getTime())) return '';
-      return d.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return d.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
     }
 
-    function pillClass(status) {
-      if (status === 'completed') return 'completed';
-      if (status === 'failed') return 'failed';
-      return 'running';
+    function applyI18n() {
+      document.documentElement.lang = state.lang;
+      el('btnLang').textContent = t('langToggle');
+      el('searchInput').placeholder = t('searchPlaceholder');
+      el('promptInput').placeholder = t('promptPlaceholder');
+      document.querySelectorAll('[data-i18n]').forEach((node) => {
+        node.textContent = t(node.dataset.i18n);
+      });
     }
 
     async function fetchJSON(url, opts) {
@@ -1106,20 +1095,23 @@
       return data;
     }
 
-    function renderMetaStrip() {
-      const info = state.uiInfo || {};
-      const items = [];
-      if (info.profile_name) items.push(`profile <b>${esc(info.profile_name)}</b>`);
-      if (info.provider) items.push(`provider <b>${esc(info.provider)}</b>`);
-      if (info.model) items.push(`model <b>${esc(info.model)}</b>`);
-      if (info.runtime_profile) items.push(`mode <b>${esc(info.runtime_profile)}</b>`);
-      if (info.fallback_profile) items.push(`fallback <b>${esc(info.fallback_profile)}</b>`);
-      el('metaStrip').innerHTML = items.map((html) => `<span class="chip">${html}</span>`).join('');
+    function renderConnDot(ok) {
+      el('connDot').className = 'dot ' + (ok ? 'ok' : 'warn');
     }
 
-    function renderConnDot(ok) {
-      const dot = el('connDot');
-      dot.className = 'status-dot ' + (ok ? 'ok' : 'warn');
+    function renderMeta() {
+      const info = state.uiInfo || {};
+      const parts = [];
+      if (info.profile_name) parts.push(info.profile_name);
+      else if (info.provider) parts.push(info.provider);
+      if (info.model) parts.push(info.model);
+      el('modelChip').textContent = parts.join(' · ') || 'local';
+      if (info.project_root) {
+        const segs = info.project_root.split(/[\\/]/).filter(Boolean);
+        const name = segs[segs.length - 1] || info.project_root;
+        el('rootName').textContent = name;
+        el('submetaLeft').textContent = `${name} · ${info.runtime_profile || 'full'}`;
+      }
     }
 
     function renderHarnesses() {
@@ -1128,66 +1120,47 @@
 
       const sel = el('harnessSelect');
       const prev = sel.value || 'axis-native';
-      sel.innerHTML = list.map((h) => `<option value="${esc(h.id)}">${esc(h.id)} (${esc(h.kind)})</option>`).join('');
+      sel.innerHTML = list.map((h) => `<option value="${esc(h.id)}">${esc(h.id)}</option>`).join('');
       if (list.some((h) => h.id === prev)) sel.value = prev;
 
-      const filterBar = el('harnessFilterBar');
-      const filters = ['all', ...list.map((h) => h.id)];
-      filterBar.innerHTML = filters.map((fid) => {
-        const active = state.harnessFilter === fid ? ' active' : '';
-        const label = fid === 'all' ? t('filterAll') : fid;
-        return `<button type="button" class="filter-chip${active}" data-filter="${esc(fid)}">${esc(label)}</button>`;
-      }).join('');
-      filterBar.querySelectorAll('.filter-chip').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          state.harnessFilter = btn.dataset.filter;
-          renderHarnesses();
-          renderTaskList();
-        });
-      });
-
-      const drawerList = el('harnessList');
-      drawerList.innerHTML = list.map((h) => `
-        <div class="inbox-card">
-          <div class="inbox-meta">
-            <span><b>${esc(h.id)}</b> · ${esc(h.kind)}</span>
+      el('harnessList').innerHTML = list.map((h) => `
+        <div class="card-row">
+          <div class="card-meta">
+            <span><b>${esc(h.id)}</b></span>
             <span>${h.builtin ? esc(t('builtinTag')) : esc(t('customTag'))}</span>
           </div>
-          ${h.command ? `<div style="font-family:var(--mono);font-size:11px;color:var(--accent);">${esc(h.command)} ${esc((h.args || []).join(' '))}</div>` : ''}
-          ${h.description ? `<div style="font-size:12px;color:var(--text-muted);">${esc(h.description)}</div>` : ''}
+          ${h.command ? `<div style="font-family:var(--mono);font-size:11px;color:var(--axis-accent);">${esc(h.command)} ${esc((h.args || []).join(' '))}</div>` : ''}
+          ${h.description ? `<div style="font-size:12px;color:var(--axis-text-soft);">${esc(h.description)}</div>` : ''}
         </div>
       `).join('');
     }
 
     function renderTaskList() {
-      const filtered = state.harnessFilter === 'all'
-        ? state.tasks
-        : state.tasks.filter((t) => (t.harness || 'axis-native') === state.harnessFilter);
+      const q = state.searchQuery.trim().toLowerCase();
+      const filtered = q
+        ? state.tasks.filter((item) => (item.prompt || '').toLowerCase().includes(q) || item.task_id.toLowerCase().includes(q))
+        : state.tasks;
+
       el('taskCount').textContent = String(filtered.length);
       const list = el('taskList');
       if (!filtered.length) {
-        list.innerHTML = `<div style="padding:12px;color:var(--text-dim);font-size:12px;">${esc(t('noTasks'))}</div>`;
+        list.innerHTML = `<div style="padding:10px;font-size:12px;color:var(--axis-muted);">${esc(t('noTasks'))}</div>`;
         return;
       }
-      list.innerHTML = filtered.map((tItem) => {
-        const active = tItem.task_id === state.selectedTaskId ? ' active' : '';
-        const dotCls = tItem.status === 'completed' ? 'ok' : (tItem.status === 'failed' ? 'err' : 'warn');
-        const preview = tItem.prompt || t('noPromptPreview');
-        const hTag = tItem.harness || 'axis-native';
+      list.innerHTML = filtered.map((item) => {
+        const active = item.task_id === state.selectedTaskId ? ' active' : '';
+        const dotCls = item.status === 'completed' ? 'ok' : (item.status === 'failed' ? 'err' : 'warn');
+        const label = (item.prompt && item.prompt.trim()) ? item.prompt.trim() : item.task_id;
+        const hTag = (item.harness && item.harness !== 'axis-native') ? item.harness : '';
         return `
-          <button type="button" class="task-item${active}" data-task-id="${esc(tItem.task_id)}">
-            <div class="task-item-top">
-              <span class="task-id"><span class="status-dot ${dotCls}"></span>${esc(tItem.task_id)}</span>
-              <span class="task-time">${esc(fmtTime(tItem.created_at))}</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span class="harness-tag">${esc(hTag)}</span>
-              <span class="task-preview">${esc(preview)}</span>
-            </div>
+          <button type="button" class="session-item${active}" data-task-id="${esc(item.task_id)}">
+            <span class="dot ${dotCls}"></span>
+            <span class="session-title">${esc(label)}</span>
+            ${hTag ? `<span class="session-tag">${esc(hTag)}</span>` : ''}
           </button>
         `;
       }).join('');
-      list.querySelectorAll('.task-item').forEach((btn) => {
+      list.querySelectorAll('.session-item').forEach((btn) => {
         btn.addEventListener('click', () => selectTask(btn.dataset.taskId));
       });
     }
@@ -1195,52 +1168,29 @@
     function renderTimeline() {
       const titleEl = el('activeTaskTitle');
       const pillEl = el('activeTaskPill');
-      const metaEl = el('activeTaskMeta');
       const tl = el('timeline');
+      const sendBtn = el('btnSubmit');
 
       if (!state.selectedTaskId) {
         titleEl.textContent = t('newTaskTitle');
         pillEl.style.display = 'none';
-        metaEl.textContent = '';
+        sendBtn.classList.remove('stop');
+        sendBtn.textContent = '↑';
         tl.innerHTML = `
-          <div class="starter-wrap">
-            <div class="starter-head">
-              <h2>${esc(t('emptyTitle'))}</h2>
-              <p>${esc(t('emptyDesc'))}</p>
-            </div>
-            <div class="starter-grid">
-              <button type="button" class="starter-card" data-starter="1">
-                <span class="starter-tag">${esc(t('starter1Tag'))}</span>
-                <span class="starter-title">${esc(t('starter1Title'))}</span>
-                <span class="starter-desc">${esc(t('starter1Desc'))}</span>
-              </button>
-              <button type="button" class="starter-card" data-starter="2">
-                <span class="starter-tag">${esc(t('starter2Tag'))}</span>
-                <span class="starter-title">${esc(t('starter2Title'))}</span>
-                <span class="starter-desc">${esc(t('starter2Desc'))}</span>
-              </button>
-              <button type="button" class="starter-card" data-starter="3">
-                <span class="starter-tag">${esc(t('starter3Tag'))}</span>
-                <span class="starter-title">${esc(t('starter3Title'))}</span>
-                <span class="starter-desc">${esc(t('starter3Desc'))}</span>
-              </button>
+          <div class="zero-state">
+            <div class="hero-wordmark">AXIS</div>
+            <div class="starter-pills">
+              <button type="button" class="starter-pill" data-starter="1">${esc(t('starter1Pill'))}</button>
+              <button type="button" class="starter-pill" data-starter="2">${esc(t('starter2Pill'))}</button>
+              <button type="button" class="starter-pill" data-starter="3">${esc(t('starter3Pill'))}</button>
             </div>
           </div>`;
-        tl.querySelectorAll('.starter-card').forEach((card) => {
-          card.addEventListener('click', () => {
-            const kind = card.dataset.starter;
-            if (kind === '1') {
-              el('isolateChk').checked = false;
-              el('promptInput').value = t('starter1Prompt');
-              el('promptInput').focus();
-            } else if (kind === '2') {
-              el('isolateChk').checked = true;
-              el('promptInput').value = t('starter2Prompt');
-              el('promptInput').focus();
-            } else if (kind === '3') {
-              toggleDrawer('harnessDrawer');
-              loadHarnesses();
-            }
+        tl.querySelectorAll('.starter-pill').forEach((p) => {
+          p.addEventListener('click', () => {
+            const k = p.dataset.starter;
+            if (k === '1') { el('isolateChk').checked = false; el('promptInput').value = t('starter1Prompt'); el('promptInput').focus(); }
+            if (k === '2') { el('isolateChk').checked = true; el('promptInput').value = t('starter2Prompt'); el('promptInput').focus(); }
+            if (k === '3') { toggleDrawer('harnessDrawer'); loadHarnesses(); }
           });
         });
         return;
@@ -1249,23 +1199,21 @@
       const summary = state.tasks.find((item) => item.task_id === state.selectedTaskId) || {};
       const detail = state.selectedDetail || {};
       const status = detail.status || summary.status || 'pending';
-
       const harnessName = summary.harness || (detail.output && detail.output.harness) || 'axis-native';
-      titleEl.textContent = state.selectedTaskId;
+      const isRunning = status === 'pending' || status === 'running';
+
+      titleEl.textContent = (summary.prompt && summary.prompt.trim()) ? summary.prompt.trim() : state.selectedTaskId;
       pillEl.style.display = 'inline-block';
-      pillEl.className = 'pill ' + pillClass(status);
-      pillEl.textContent = status;
-      metaEl.innerHTML = `<span class="harness-tag">${esc(harnessName)}</span> ${summary.created_at ? (esc(t('createdAt')) + ' ' + esc(fmtTime(summary.created_at))) : ''}`;
+      pillEl.className = 'status-chip ' + (status === 'completed' ? 'completed' : (status === 'failed' ? 'failed' : 'running'));
+      pillEl.textContent = harnessName !== 'axis-native' ? `${harnessName} · ${status}` : status;
+
+      sendBtn.classList.toggle('stop', isRunning);
+      sendBtn.textContent = isRunning ? '■' : '↑';
 
       const blocks = [];
       const promptText = summary.prompt || (summary.input ? JSON.stringify(summary.input, null, 2) : '');
       if (promptText) {
-        blocks.push(`
-          <div class="turn-block user">
-            <div class="turn-label"><span>${esc(t('userPromptLabel'))}</span><span>${esc(fmtTime(summary.created_at))}</span></div>
-            <div class="turn-body">${esc(promptText)}</div>
-          </div>
-        `);
+        blocks.push(`<div class="msg-user-wrap"><div class="msg-user">${esc(promptText)}</div></div>`);
       }
 
       const out = detail.output || {};
@@ -1274,50 +1222,37 @@
         const stepsHTML = traces.map((tr, idx) => {
           const name = tr.tool || tr.name || tr.ToolName || ('step-' + (idx + 1));
           const dur = tr.duration_ms != null ? `${tr.duration_ms}ms` : (tr.duration || '');
-          const okLabel = tr.error ? 'error' : 'ok';
-          const payload = JSON.stringify(tr, null, 2);
           return `
-            <details class="trace-step">
-              <summary>
-                <span class="trace-name"><span>#${idx + 1}</span><span>${esc(name)}</span></span>
-                <span class="trace-meta">${esc(okLabel)}${dur ? ' · ' + esc(dur) : ''}</span>
-              </summary>
-              <div class="trace-detail">${esc(payload)}</div>
-            </details>
-          `;
+            <details class="tool-item">
+              <summary><span>${esc(name)}</span><span>${esc(dur || (tr.error ? 'error' : 'ok'))}</span></summary>
+              <div class="tool-json">${esc(JSON.stringify(tr, null, 2))}</div>
+            </details>`;
         }).join('');
         blocks.push(`
-          <div class="trace-group">
-            <div class="trace-group-head"><span>${esc(t('toolTrajectory'))}</span><span>${traces.length} ${esc(t('stepUnit'))}</span></div>
-            <div class="trace-list">${stepsHTML}</div>
-          </div>
-        `);
+          <details class="tool-summary">
+            <summary>› ${esc(t('toolSummaryPrefix'))} ${traces.length} ${esc(t('stepUnit'))}</summary>
+            <div class="tool-steps">${stepsHTML}</div>
+          </details>`);
       }
 
-      if (status === 'pending' || status === 'running') {
+      if (isRunning) {
         const streamLines = state.events
           .filter((ev) => ev.task_id === state.selectedTaskId && (ev.event_type === 'harness_stdout' || ev.event_type === 'harness_stderr'))
-          .slice(-20)
-          .map((ev) => `[${ev.event_type === 'harness_stderr' ? 'err' : 'out'}] ${ev.message}`)
+          .slice(-15)
+          .map((ev) => ev.message)
           .join('\n');
         blocks.push(`
-          <div class="turn-block">
-            <div class="turn-label">
-              <span>${esc(t('runtimeLabel'))} (${esc(harnessName)}) · ${esc(status)}</span>
-              <button id="btnStopTask" type="button" class="btn danger" style="padding:1px 8px;font-size:10px;">${esc(t('stopBtn'))}</button>
+          <div class="live-box">
+            <div class="live-head">
+              <span>${esc(harnessName)} · ${esc(status)}</span>
+              <button id="btnStopTask" type="button" class="btn danger" style="padding:1px 8px;font-size:11px;">${esc(t('stopBtn'))}</button>
             </div>
-            <div class="turn-body mono">${esc(streamLines || t('executingHint'))}</div>
-          </div>
-        `);
+            <div>${esc(streamLines || t('executingHint'))}</div>
+          </div>`);
       }
 
       if (detail.error) {
-        blocks.push(`
-          <div class="turn-block error">
-            <div class="turn-label"><span>${esc(t('errorLabel'))}</span><span>${esc(t('failedTag'))}</span></div>
-            <div class="turn-body mono">${esc(detail.error)}</div>
-          </div>
-        `);
+        blocks.push(`<div class="msg-error">${esc(detail.error)}</div>`);
       }
 
       const finalText = typeof out.text === 'string' && out.text !== ''
@@ -1325,29 +1260,24 @@
         : (Object.keys(out).filter((k) => k !== '_tool_traces' && k !== 'harness' && k !== 'diff' && k !== 'worktree').length ? JSON.stringify(out, null, 2) : '');
       if (finalText) {
         blocks.push(`
-          <div class="turn-block assistant">
-            <div class="turn-label">
-              <span>${esc(t('agentOutputLabel'))} (${esc(harnessName)})</span>
-              <span style="display:flex;gap:6px;">
-                <button id="btnSaveSkill" type="button" class="btn" style="padding:1px 7px;font-size:10px;">${esc(t('saveSkillBtn'))}</button>
-                <button id="btnHandoff" type="button" class="btn" style="padding:1px 7px;font-size:10px;">${esc(t('handoffBtn'))}</button>
-              </span>
+          <div>
+            <div class="msg-assistant">${esc(finalText)}</div>
+            <div class="msg-actions">
+              <button id="btnSaveSkill" type="button" class="ghost-action">${esc(t('saveSkillBtn'))}</button>
+              <button id="btnHandoff" type="button" class="ghost-action">${esc(t('handoffBtn'))}</button>
             </div>
-            <div class="turn-body">${esc(finalText)}</div>
-          </div>
-        `);
+          </div>`);
       }
 
       if (typeof out.diff === 'string' && out.diff.trim() !== '') {
         blocks.push(`
-          <div class="turn-block">
-            <div class="turn-label">
+          <div class="diff-card">
+            <div class="diff-head">
               <span>${esc(t('workspaceDiff'))}${out.worktree ? ' · ' + esc(out.worktree) : ''}</span>
-              <button id="btnCleanWT" type="button" class="btn" style="padding:1px 7px;font-size:10px;">${esc(t('cleanWorktree'))}</button>
+              <button id="btnCleanWT" type="button" class="btn" style="padding:2px 8px;font-size:11px;">${esc(t('cleanWorktree'))}</button>
             </div>
-            <div class="turn-body mono" style="max-height:280px;overflow:auto;">${esc(out.diff)}</div>
-          </div>
-        `);
+            <div class="diff-body">${esc(out.diff)}</div>
+          </div>`);
       }
 
       const inlinePending = (state.inbox || []).filter((r) => {
@@ -1365,60 +1295,51 @@
           ? `<div class="inbox-options">${opts.map((opt) => `<button type="button" class="btn inline-inbox-opt" data-call-id="${esc(callId)}" data-choice="${esc(opt.key || opt)}">${esc(opt.label || opt.key || opt)}</button>`).join('')}</div>`
           : '';
         blocks.push(`
-          <div class="inbox-card pending">
-            <div class="inbox-meta">
-              <span style="color:var(--warn);font-weight:600;">${esc(t('approvalRequired'))} · ${esc(callId)}</span>
-              <span>${isSecret ? esc(t('secretInputHint')) : 'pending'}</span>
+          <div class="approval-card">
+            <div class="approval-head">
+              <span>${esc(t('approvalRequired'))} · ${esc(callId)}</span>
+              <span>${isSecret ? esc(t('secretInputHint')) : ''}</span>
             </div>
-            <div class="inbox-question">${esc(question)}</div>
+            <div style="font-size:13px;">${esc(question)}</div>
             ${optsHTML}
             <div class="inbox-reply-row">
               <input type="${isSecret ? 'password' : 'text'}" placeholder="${esc(t('replyPlaceholder'))}" data-inline-input="${esc(callId)}" autocomplete="off">
               <button type="button" class="btn primary inline-inbox-send" data-call-id="${esc(callId)}">${esc(t('replySend'))}</button>
             </div>
-          </div>
-        `);
+          </div>`);
       });
 
-      if (!blocks.length) {
-        blocks.push(`<div class="empty-state"><h2>${esc(t('noDetail'))}</h2><p>${esc(t('waitingStatus'))}</p></div>`);
-      }
       tl.innerHTML = blocks.join('');
+
       const stopBtn = el('btnStopTask');
-      if (stopBtn) {
-        stopBtn.addEventListener('click', () => cancelTask(state.selectedTaskId));
+      if (stopBtn) stopBtn.addEventListener('click', () => cancelTask(state.selectedTaskId));
+      const cleanWtBtn = el('btnCleanWT');
+      if (cleanWtBtn) {
+        cleanWtBtn.addEventListener('click', async () => {
+          await fetchJSON(`/v1/tasks/${encodeURIComponent(state.selectedTaskId)}/worktree/cleanup`, { method: 'POST' });
+          cleanWtBtn.disabled = true;
+        });
       }
       const saveSkillBtn = el('btnSaveSkill');
       if (saveSkillBtn && finalText) {
         saveSkillBtn.addEventListener('click', async () => {
-          const name = window.prompt(t('skillPromptName'), (state.selectedTaskId || 'custom-skill').toLowerCase());
+          const name = window.prompt(t('skillPromptName'), (state.selectedTaskId || 'skill').toLowerCase());
           if (!name || !name.trim()) return;
           try {
             const saved = await fetchJSON('/v1/skills', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                name: name.trim(),
-                prompt: promptText || '',
-                harness: harnessName,
-                output_sample: finalText
-              })
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: name.trim(), prompt: promptText || '', harness: harnessName, output_sample: finalText })
             });
             alert(t('skillSaved') + saved.name);
-          } catch (err) {
-            alert(err.message);
-          }
+          } catch (err) { alert(err.message); }
         });
       }
-      const cleanWtBtn = el('btnCleanWT');
-      if (cleanWtBtn) {
-        cleanWtBtn.addEventListener('click', async () => {
-          try {
-            await fetchJSON(`/v1/tasks/${encodeURIComponent(state.selectedTaskId)}/worktree/cleanup`, { method: 'POST' });
-            cleanWtBtn.disabled = true;
-          } catch (err) {
-            alert(err.message);
-          }
+      const handoffBtn = el('btnHandoff');
+      if (handoffBtn && finalText) {
+        handoffBtn.addEventListener('click', () => {
+          const snippet = finalText.length > 1500 ? finalText.slice(0, 1500) + '\n...(truncated)' : finalText;
+          el('promptInput').value = `[${t('handoffPrefix')} ${state.selectedTaskId} @ ${harnessName}]\n${snippet}\n\n${t('handoffNext')}`;
+          el('harnessSelect').focus();
         });
       }
       tl.querySelectorAll('.inline-inbox-opt').forEach((btn) => {
@@ -1433,14 +1354,6 @@
           respondInbox(btn.dataset.callId, { text });
         });
       });
-      const handoffBtn = el('btnHandoff');
-      if (handoffBtn && finalText) {
-        handoffBtn.addEventListener('click', () => {
-          const snippet = finalText.length > 1500 ? finalText.slice(0, 1500) + '\n...(truncated)' : finalText;
-          el('promptInput').value = `[${t('handoffPrefix')} ${state.selectedTaskId} @ ${harnessName}]\n${snippet}\n\n${t('handoffNext')}`;
-          el('harnessSelect').focus();
-        });
-      }
     }
 
     function renderInbox() {
@@ -1448,33 +1361,33 @@
       const pending = records.filter((r) => r.status === 'pending');
       const badge = el('inboxBadge');
       badge.textContent = String(pending.length);
-      badge.className = 'badge' + (pending.length > 0 ? ' alert' : '');
+      badge.className = 'nav-pill' + (pending.length > 0 ? ' alert' : '');
 
       const list = el('inboxList');
       if (!records.length) {
-        list.innerHTML = `<div style="color:var(--text-dim);font-size:12px;">${esc(t('inboxEmpty'))}</div>`;
+        list.innerHTML = `<div style="color:var(--axis-muted);font-size:12px;">${esc(t('inboxEmpty'))}</div>`;
         return;
       }
       list.innerHTML = records.map((r) => {
         const req = (r.message && r.message.payload && r.message.payload.request) || {};
-        const question = req.question || req.Question || r.message?.summary || JSON.stringify(r.message?.payload || {});
+        const question = req.question || req.Question || r.message?.summary || '';
         const opts = Array.isArray(req.options) ? req.options : [];
         const isPending = r.status === 'pending';
         const callId = r.call_id || r.message?.id || '';
+        const isSecret = Boolean(req.secret || req.input_type === 'password' || /api[_-]?key|token|secret|password/i.test(question));
         const optsHTML = isPending && opts.length
           ? `<div class="inbox-options">${opts.map((opt) => `<button type="button" class="btn inbox-opt" data-call-id="${esc(callId)}" data-choice="${esc(opt.key || opt)}">${esc(opt.label || opt.key || opt)}</button>`).join('')}</div>`
           : '';
         const replyHTML = isPending
-          ? `<div class="inbox-reply-row"><input type="text" placeholder="${esc(t('replyPlaceholder'))}" data-call-input="${esc(callId)}"><button type="button" class="btn primary inbox-send" data-call-id="${esc(callId)}">${esc(t('replySend'))}</button></div>`
-          : `<div style="font-family:var(--mono);font-size:11px;color:var(--ok);">status: ${esc(r.status)}</div>`;
+          ? `<div class="inbox-reply-row"><input type="${isSecret ? 'password' : 'text'}" placeholder="${esc(t('replyPlaceholder'))}" data-call-input="${esc(callId)}" autocomplete="off"><button type="button" class="btn primary inbox-send" data-call-id="${esc(callId)}">${esc(t('replySend'))}</button></div>`
+          : `<div style="font-family:var(--mono);font-size:11px;color:var(--axis-accent);">${esc(r.status)}</div>`;
         return `
-          <div class="inbox-card ${isPending ? 'pending' : ''}">
-            <div class="inbox-meta"><span>${esc(callId)}</span><span>${esc(r.status)}</span></div>
-            <div class="inbox-question">${esc(question)}</div>
+          <div class="card-row">
+            <div class="card-meta"><span>${esc(callId)}</span><span>${esc(r.status)}</span></div>
+            <div style="font-size:13px;">${esc(question)}</div>
             ${optsHTML}
             ${replyHTML}
-          </div>
-        `;
+          </div>`;
       }).join('');
 
       list.querySelectorAll('.inbox-opt').forEach((btn) => {
@@ -1485,6 +1398,7 @@
           const input = list.querySelector(`input[data-call-input="${CSS.escape(btn.dataset.callId)}"]`);
           const text = input ? input.value.trim() : '';
           if (!text) return;
+          input.value = '';
           respondInbox(btn.dataset.callId, { text });
         });
       });
@@ -1492,169 +1406,81 @@
 
     function renderEvents() {
       el('evCount').textContent = String(state.events.length);
-      const rows = state.events.slice(-40).reverse().map((ev) => `
+      el('eventsList').innerHTML = state.events.slice(-40).reverse().map((ev) => `
         <div class="ev-row">
-          <span class="ev-ts">${esc(fmtTime(ev.created_at || ev.timestamp))}</span>
-          <span class="ev-type">${esc(ev.event_type || 'event')}</span>
-          <span>${esc(ev.task_id || '')} ${esc(ev.status ? '[' + ev.status + ']' : '')} ${esc(ev.message || '')}</span>
-        </div>
-      `).join('');
-      el('eventsList').innerHTML = rows || `<div style="color:var(--text-dim);">${esc(t('noEvents'))}</div>`;
+          <span style="color:var(--axis-muted)">${esc(fmtTime(ev.created_at || ev.timestamp))}</span>
+          <span style="color:var(--axis-accent)">${esc(ev.event_type || 'event')}</span>
+          <span>${esc(ev.task_id || '')} ${esc(ev.message || '')}</span>
+        </div>`).join('') || `<div style="color:var(--axis-muted);">${esc(t('noEvents'))}</div>`;
     }
 
-    async function loadUIInfo() {
-      try {
-        state.uiInfo = await fetchJSON('/v1/ui/info');
-        renderMetaStrip();
-      } catch (_) {}
-    }
-
-    async function loadHarnesses() {
-      try {
-        const data = await fetchJSON('/v1/harnesses');
-        state.harnesses = Array.isArray(data.harnesses) ? data.harnesses : [];
-        renderHarnesses();
-      } catch (_) {}
-    }
-
-    async function registerHarness() {
-      const id = el('hIdInput').value.trim();
-      const command = el('hCmdInput').value.trim();
-      const argsRaw = el('hArgsInput').value.trim();
-      const description = el('hDescInput').value.trim();
-      if (!id || !command) {
-        alert(t('alertIdCmd'));
-        return;
-      }
-      const args = argsRaw ? argsRaw.split(/\s+/) : [];
-      try {
-        await fetchJSON('/v1/harnesses', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, kind: 'cli', command, args, description })
-        });
-        el('hIdInput').value = '';
-        el('hCmdInput').value = '';
-        el('hArgsInput').value = '';
-        el('hDescInput').value = '';
-        await loadHarnesses();
-      } catch (err) {
-        alert(t('alertRegFailed') + err.message);
-      }
-    }
-
+    async function loadUIInfo() { try { state.uiInfo = await fetchJSON('/v1/ui/info'); renderMeta(); } catch (_) {} }
+    async function loadHarnesses() { try { const d = await fetchJSON('/v1/harnesses'); state.harnesses = d.harnesses || []; renderHarnesses(); } catch (_) {} }
     async function loadTasks() {
       try {
-        const data = await fetchJSON('/v1/tasks');
-        state.tasks = Array.isArray(data.tasks) ? data.tasks : [];
-        if (!state.selectedTaskId && state.tasks.length) {
-          state.selectedTaskId = state.tasks[0].task_id;
-        }
+        const d = await fetchJSON('/v1/tasks');
+        state.tasks = Array.isArray(d.tasks) ? d.tasks : [];
         renderTaskList();
       } catch (_) {}
     }
-
     async function loadSelectedDetail() {
-      if (!state.selectedTaskId) {
-        state.selectedDetail = null;
-        renderTimeline();
-        return;
-      }
-      try {
-        state.selectedDetail = await fetchJSON(`/v1/tasks/${encodeURIComponent(state.selectedTaskId)}/status`);
-      } catch (_) {
-        state.selectedDetail = null;
-      }
+      if (!state.selectedTaskId) { state.selectedDetail = null; renderTimeline(); return; }
+      try { state.selectedDetail = await fetchJSON(`/v1/tasks/${encodeURIComponent(state.selectedTaskId)}/status`); }
+      catch (_) { state.selectedDetail = null; }
       renderTimeline();
     }
-
-    async function selectTask(taskId) {
-      state.selectedTaskId = taskId;
-      renderTaskList();
-      await loadSelectedDetail();
-    }
-
-    async function loadInbox() {
-      try {
-        const data = await fetchJSON('/v1/inbox');
-        state.inbox = Array.isArray(data.records) ? data.records : [];
-        renderInbox();
-      } catch (_) {}
-    }
-
-    async function loadEvents() {
-      try {
-        const data = await fetchJSON('/v1/events');
-        state.events = Array.isArray(data.events) ? data.events : [];
-        renderEvents();
-      } catch (_) {}
-    }
+    async function selectTask(taskId) { state.selectedTaskId = taskId; renderTaskList(); await loadSelectedDetail(); }
+    async function loadInbox() { try { const d = await fetchJSON('/v1/inbox'); state.inbox = d.records || []; renderInbox(); } catch (_) {} }
+    async function loadEvents() { try { const d = await fetchJSON('/v1/events'); state.events = d.events || []; renderEvents(); } catch (_) {} }
 
     async function respondInbox(callID, body) {
       try {
         await fetchJSON(`/v1/inbox/${encodeURIComponent(callID)}/respond`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
         });
-        await loadInbox();
-        await loadTasks();
-        await loadSelectedDetail();
-      } catch (err) {
-        alert(t('alertInboxFailed') + err.message);
-      }
+        await Promise.all([loadInbox(), loadTasks(), loadSelectedDetail()]);
+      } catch (err) { alert(t('alertInboxFailed') + err.message); }
     }
 
     async function cancelTask(taskId) {
       if (!taskId) return;
       try {
         await fetchJSON(`/v1/tasks/${encodeURIComponent(taskId)}/cancel`, { method: 'POST' });
-        await loadTasks();
-        await loadSelectedDetail();
-      } catch (err) {
-        alert(t('alertCancelFailed') + err.message);
-      }
+        await Promise.all([loadTasks(), loadSelectedDetail()]);
+      } catch (err) { alert(t('alertCancelFailed') + err.message); }
     }
 
     async function submitTask() {
       if (state.submitting) return;
+      const isRunning = state.selectedTaskId && state.selectedDetail &&
+        (state.selectedDetail.status === 'pending' || state.selectedDetail.status === 'running');
       const prompt = el('promptInput').value.trim();
+
+      if (!prompt && isRunning) { await cancelTask(state.selectedTaskId); return; }
       if (!prompt) return;
-      if ((prompt.toLowerCase() === 'stop now' || prompt.toLowerCase() === '/stop') &&
-          state.selectedTaskId && state.selectedDetail &&
-          (state.selectedDetail.status === 'pending' || state.selectedDetail.status === 'running')) {
+      if ((prompt.toLowerCase() === 'stop now' || prompt.toLowerCase() === '/stop') && isRunning) {
         el('promptInput').value = '';
         await cancelTask(state.selectedTaskId);
         return;
       }
+
       const customId = el('taskIdInput').value.trim();
       const taskId = customId || ('ui-' + Date.now());
       const harness = el('harnessSelect').value || 'axis-native';
       const meta = { harness, agent_id: harness };
-      if (el('isolateChk') && el('isolateChk').checked) {
-        meta.isolate = 'true';
-      }
+      if (el('isolateChk').checked) meta.isolate = 'true';
 
       state.submitting = true;
       el('btnSubmit').disabled = true;
       try {
         await fetchJSON('/v1/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            task: {
-              task_id: taskId,
-              contract_id: 'default',
-              input: { prompt },
-              metadata: meta
-            }
-          })
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: { task_id: taskId, contract_id: 'default', input: { prompt }, metadata: meta } })
         });
         el('promptInput').value = '';
         el('taskIdInput').value = '';
         state.selectedTaskId = taskId;
-        await loadTasks();
-        await loadSelectedDetail();
+        await Promise.all([loadTasks(), loadSelectedDetail()]);
       } catch (err) {
         alert(t('alertSubmitFailed') + err.message);
       } finally {
@@ -1663,137 +1489,31 @@
       }
     }
 
-    function connectSSE() {
-      const es = new EventSource('/v1/events/stream');
-      es.addEventListener('ready', () => {
-        state.sseConnected = true;
-        renderConnDot(true);
-      });
-      es.addEventListener('task_event', async (msg) => {
-        try {
-          const ev = JSON.parse(msg.data);
-          state.events.push(ev);
-          if (state.events.length > 100) state.events = state.events.slice(-100);
-          renderEvents();
-          await loadTasks();
-          if (ev.task_id && ev.task_id === state.selectedTaskId) {
-            await loadSelectedDetail();
-          }
-          if ((ev.event_type || '').includes('inbox') || (ev.event_type || '').includes('human')) {
-            await loadInbox();
-          }
-        } catch (_) {}
-      });
-      es.onerror = () => {
-        state.sseConnected = false;
-        renderConnDot(false);
-      };
-    }
-
-    // UI Bindings
-    const HARNESS_PRESETS = {
-      claude: { id: 'claude-code', command: 'claude', args: '-p {prompt} --output-format text', description: 'Claude Code CLI' },
-      codex: { id: 'codex-cli', command: 'codex', args: 'exec {prompt}', description: 'OpenAI Codex CLI' },
-      gemini: { id: 'gemini-cli', command: 'gemini', args: '-p {prompt}', description: 'Gemini CLI' },
-      opencode: { id: 'opencode-cli', command: 'opencode', args: 'run {prompt}', description: 'OpenCode CLI' }
-    };
-    document.querySelectorAll('.preset-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const p = HARNESS_PRESETS[btn.dataset.preset];
-        if (!p) return;
-        el('hIdInput').value = p.id;
-        el('hCmdInput').value = p.command;
-        el('hArgsInput').value = p.args;
-        el('hDescInput').value = p.description;
-      });
-    });
-
-    function updateMentionMenu() {
-      const ta = el('promptInput');
-      const menu = el('mentionMenu');
-      const pos = ta.selectionStart || 0;
-      const before = ta.value.slice(0, pos);
-      const match = before.match(/(?:^|\s)@([a-zA-Z0-9_-]*)$/);
-      if (!match) {
-        menu.classList.remove('open');
-        return;
-      }
-      const query = match[1].toLowerCase();
-      const list = (state.harnesses.length ? state.harnesses : [{ id: 'axis-native', kind: 'native' }])
-        .filter((h) => h.id.toLowerCase().includes(query));
-      if (!list.length) {
-        menu.classList.remove('open');
-        return;
-      }
-      menu.innerHTML = list.map((h) => `
-        <button type="button" class="mention-item" data-harness="${esc(h.id)}">
-          <span>@${esc(h.id)}</span>
-          <span style="color:var(--text-dim);">${esc(h.kind)}</span>
-        </button>
-      `).join('');
-      menu.classList.add('open');
-      menu.querySelectorAll('.mention-item').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const picked = btn.dataset.harness;
-          el('harnessSelect').value = picked;
-          const replaceStart = pos - match[1].length - 1;
-          ta.value = ta.value.slice(0, replaceStart) + ta.value.slice(pos);
-          menu.classList.remove('open');
-          ta.focus();
-        });
-      });
-    }
-
-    el('promptInput').addEventListener('input', updateMentionMenu);
-    el('btnSubmit').addEventListener('click', submitTask);
-    el('promptInput').addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        el('mentionMenu').classList.remove('open');
-        return;
-      }
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        el('mentionMenu').classList.remove('open');
-        submitTask();
-      }
-    });
-    el('btnNewTask').addEventListener('click', () => {
-      state.selectedTaskId = null;
-      state.selectedDetail = null;
-      renderTaskList();
-      renderTimeline();
-      el('promptInput').focus();
-    });
     function toggleDrawer(id) {
       const drawers = ['inboxDrawer', 'harnessDrawer', 'routinesDrawer', 'memoryDrawer', 'pipelinesDrawer'];
       const target = el(id);
       const willOpen = !target.classList.contains('open');
-      drawers.forEach((d) => {
-        const node = el(d);
-        if (node) node.classList.remove('open');
-      });
+      drawers.forEach((d) => el(d)?.classList.remove('open'));
       if (willOpen && target) target.classList.add('open');
     }
 
     async function loadRoutines() {
       try {
-        const data = await fetchJSON('/v1/routines');
-        const items = Array.isArray(data.routines) ? data.routines : [];
+        const d = await fetchJSON('/v1/routines');
+        const items = d.routines || [];
         el('routinesList').innerHTML = items.map((r) => `
-          <div class="inbox-card">
-            <div class="inbox-meta"><span><b>${esc(r.id)}</b> · ${esc(r.harness)} · ${esc(r.interval)}</span><span>${r.enabled ? 'on' : 'off'}</span></div>
-            <div class="inbox-question">${esc(r.prompt)}</div>
+          <div class="card-row">
+            <div class="card-meta"><span><b>${esc(r.id)}</b> · ${esc(r.harness)} · ${esc(r.interval)}</span><span>${r.enabled ? 'on' : 'off'}</span></div>
+            <div style="font-size:12.5px;">${esc(r.prompt)}</div>
             <div class="inbox-options">
               <button type="button" class="btn r-run" data-id="${esc(r.id)}">Run</button>
               <button type="button" class="btn r-tog" data-id="${esc(r.id)}">${r.enabled ? 'Disable' : 'Enable'}</button>
               <button type="button" class="btn danger r-del" data-id="${esc(r.id)}">Del</button>
             </div>
-          </div>
-        `).join('') || '<div style="color:var(--text-dim);font-size:12px;">No routines.</div>';
+          </div>`).join('');
         el('routinesList').querySelectorAll('.r-run').forEach((b) => b.addEventListener('click', async () => {
           await fetchJSON(`/v1/routines/${encodeURIComponent(b.dataset.id)}/run`, { method: 'POST' });
-          await loadTasks();
-          await loadRoutines();
+          await Promise.all([loadTasks(), loadRoutines()]);
         }));
         el('routinesList').querySelectorAll('.r-tog').forEach((b) => b.addEventListener('click', async () => {
           await fetchJSON(`/v1/routines/${encodeURIComponent(b.dataset.id)}/toggle`, { method: 'POST' });
@@ -1808,14 +1528,12 @@
 
     async function loadMemory() {
       try {
-        const data = await fetchJSON('/v1/memory');
-        const notes = Array.isArray(data.notes) ? data.notes : [];
-        el('memoryList').innerHTML = notes.map((n) => `
-          <div class="inbox-card">
-            <div class="inbox-meta"><span><b>${esc(n.title)}</b></span><button type="button" class="btn danger m-del" data-id="${esc(n.id)}" style="padding:1px 6px;font-size:10px;">Del</button></div>
-            <div class="inbox-question">${esc(n.content)}</div>
-          </div>
-        `).join('') || '<div style="color:var(--text-dim);font-size:12px;">No memory notes.</div>';
+        const d = await fetchJSON('/v1/memory');
+        el('memoryList').innerHTML = (d.notes || []).map((n) => `
+          <div class="card-row">
+            <div class="card-meta"><span><b>${esc(n.title)}</b></span><button type="button" class="btn danger m-del" data-id="${esc(n.id)}" style="padding:1px 6px;font-size:10px;">Del</button></div>
+            <div style="font-size:12.5px;">${esc(n.content)}</div>
+          </div>`).join('');
         el('memoryList').querySelectorAll('.m-del').forEach((b) => b.addEventListener('click', async () => {
           await fetchJSON(`/v1/memory?id=${encodeURIComponent(b.dataset.id)}`, { method: 'DELETE' });
           await loadMemory();
@@ -1825,128 +1543,143 @@
 
     async function loadPipelines() {
       try {
-        const data = await fetchJSON('/v1/pipelines');
-        const list = Array.isArray(data.pipelines) ? data.pipelines : [];
-        el('pipelinesList').innerHTML = list.map((p) => `
-          <div class="inbox-card">
-            <div class="inbox-meta"><span><b>${esc(p.name)}</b> (${p.current_step}/${p.total_steps})</span><span>${esc(p.status)}</span></div>
-            <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">${esc((p.step_task_ids || []).join(' → '))}</div>
-            ${p.error ? `<div style="font-family:var(--mono);font-size:11px;color:var(--err);">${esc(p.error)}</div>` : ''}
-          </div>
-        `).join('') || '<div style="color:var(--text-dim);font-size:12px;">No pipeline runs.</div>';
+        const d = await fetchJSON('/v1/pipelines');
+        el('pipelinesList').innerHTML = (d.pipelines || []).map((p) => `
+          <div class="card-row">
+            <div class="card-meta"><span><b>${esc(p.name)}</b> (${p.current_step}/${p.total_steps})</span><span>${esc(p.status)}</span></div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--axis-muted);">${esc((p.step_task_ids || []).join(' → '))}</div>
+            ${p.error ? `<div style="font-family:var(--mono);font-size:11px;color:var(--axis-danger);">${esc(p.error)}</div>` : ''}
+          </div>`).join('');
       } catch (_) {}
     }
 
-    el('btnInbox').addEventListener('click', () => { el('toolsDropdown').classList.remove('open'); toggleDrawer('inboxDrawer'); loadInbox(); });
-    el('btnCloseInbox').addEventListener('click', () => el('inboxDrawer').classList.remove('open'));
-    el('btnToolsMenu').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const dd = el('toolsDropdown');
-      const open = dd.classList.toggle('open');
-      el('btnToolsMenu').setAttribute('aria-expanded', String(open));
+    function connectSSE() {
+      const es = new EventSource('/v1/events/stream');
+      es.addEventListener('ready', () => { state.sseConnected = true; renderConnDot(true); });
+      es.addEventListener('task_event', async (msg) => {
+        try {
+          const ev = JSON.parse(msg.data);
+          state.events.push(ev);
+          if (state.events.length > 100) state.events = state.events.slice(-100);
+          renderEvents();
+          await loadTasks();
+          if (ev.task_id && ev.task_id === state.selectedTaskId) await loadSelectedDetail();
+          if ((ev.event_type || '').includes('inbox') || (ev.event_type || '').includes('human')) await loadInbox();
+        } catch (_) {}
+      });
+      es.onerror = () => { state.sseConnected = false; renderConnDot(false); };
+    }
+
+    // Bindings
+    const HARNESS_PRESETS = {
+      claude: { id: 'claude-code', command: 'claude', args: '-p {prompt} --output-format text', description: 'Claude Code CLI' },
+      codex: { id: 'codex-cli', command: 'codex', args: 'exec {prompt}', description: 'OpenAI Codex CLI' },
+      gemini: { id: 'gemini-cli', command: 'gemini', args: '-p {prompt}', description: 'Gemini CLI' },
+      opencode: { id: 'opencode-cli', command: 'opencode', args: 'run {prompt}', description: 'OpenCode CLI' }
+    };
+    document.querySelectorAll('.preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const p = HARNESS_PRESETS[btn.dataset.preset];
+        if (!p) return;
+        el('hIdInput').value = p.id; el('hCmdInput').value = p.command;
+        el('hArgsInput').value = p.args; el('hDescInput').value = p.description;
+      });
     });
-    document.addEventListener('click', () => {
-      el('toolsDropdown').classList.remove('open');
-      el('btnToolsMenu').setAttribute('aria-expanded', 'false');
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        el('toolsDropdown').classList.remove('open');
-        ['inboxDrawer', 'harnessDrawer', 'routinesDrawer', 'memoryDrawer', 'pipelinesDrawer'].forEach((d) => {
-          const node = el(d);
-          if (node) node.classList.remove('open');
+
+    el('promptInput').addEventListener('input', () => {
+      const ta = el('promptInput');
+      const menu = el('mentionMenu');
+      const pos = ta.selectionStart || 0;
+      const match = ta.value.slice(0, pos).match(/(?:^|\s)@([a-zA-Z0-9_-]*)$/);
+      if (!match) { menu.classList.remove('open'); return; }
+      const q = match[1].toLowerCase();
+      const list = (state.harnesses.length ? state.harnesses : [{ id: 'axis-native', kind: 'native' }]).filter((h) => h.id.toLowerCase().includes(q));
+      if (!list.length) { menu.classList.remove('open'); return; }
+      menu.innerHTML = list.map((h) => `<button type="button" class="mention-item" data-harness="${esc(h.id)}"><span>@${esc(h.id)}</span><span style="color:var(--axis-muted)">${esc(h.kind)}</span></button>`).join('');
+      menu.classList.add('open');
+      menu.querySelectorAll('.mention-item').forEach((b) => {
+        b.addEventListener('click', () => {
+          el('harnessSelect').value = b.dataset.harness;
+          const start = pos - match[1].length - 1;
+          ta.value = ta.value.slice(0, start) + ta.value.slice(pos);
+          menu.classList.remove('open');
+          ta.focus();
         });
-      }
+      });
     });
-    el('btnAdvToggle').addEventListener('click', () => {
-      el('advFields').classList.toggle('open');
+
+    el('btnSubmit').addEventListener('click', submitTask);
+    el('promptInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { el('mentionMenu').classList.remove('open'); return; }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el('mentionMenu').classList.remove('open'); submitTask(); }
     });
+    el('searchInput').addEventListener('input', (e) => { state.searchQuery = e.target.value; renderTaskList(); });
+    el('btnToggleSidebar').addEventListener('click', () => el('shell').classList.toggle('sidebar-collapsed'));
+    el('btnNewTask').addEventListener('click', () => { state.selectedTaskId = null; state.selectedDetail = null; renderTaskList(); renderTimeline(); el('promptInput').focus(); });
+    el('btnInbox').addEventListener('click', () => { toggleDrawer('inboxDrawer'); loadInbox(); });
+    el('btnHarnesses').addEventListener('click', () => { toggleDrawer('harnessDrawer'); loadHarnesses(); });
+    el('btnRoutines').addEventListener('click', () => { toggleDrawer('routinesDrawer'); loadRoutines(); });
+    el('btnMemory').addEventListener('click', () => { toggleDrawer('memoryDrawer'); loadMemory(); });
+    el('btnPipelines').addEventListener('click', () => { toggleDrawer('pipelinesDrawer'); loadPipelines(); });
+    el('btnAdvToggle').addEventListener('click', () => el('advFields').classList.toggle('open'));
     el('btnToggleEvents').addEventListener('click', () => {
       const bar = el('eventsBar');
       const show = bar.style.display === 'none';
       bar.style.display = show ? 'block' : 'none';
       if (show) bar.open = true;
     });
-    el('btnHarnesses').addEventListener('click', () => { toggleDrawer('harnessDrawer'); loadHarnesses(); });
-    el('btnCloseHarnesses').addEventListener('click', () => el('harnessDrawer').classList.remove('open'));
-    el('btnRoutines').addEventListener('click', () => { toggleDrawer('routinesDrawer'); loadRoutines(); });
-    el('btnMemory').addEventListener('click', () => { toggleDrawer('memoryDrawer'); loadMemory(); });
-    el('btnPipelines').addEventListener('click', () => { toggleDrawer('pipelinesDrawer'); loadPipelines(); });
-    document.querySelectorAll('.drawer-close').forEach((b) => {
-      b.addEventListener('click', () => b.closest('.drawer').classList.remove('open'));
+    document.querySelectorAll('.drawer-close').forEach((b) => b.addEventListener('click', () => b.closest('.drawer').classList.remove('open')));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        ['inboxDrawer', 'harnessDrawer', 'routinesDrawer', 'memoryDrawer', 'pipelinesDrawer'].forEach((d) => el(d)?.classList.remove('open'));
+      }
     });
 
+    el('btnAddHarness').addEventListener('click', async () => {
+      const id = el('hIdInput').value.trim(), command = el('hCmdInput').value.trim();
+      if (!id || !command) { alert(t('alertIdCmd')); return; }
+      const args = el('hArgsInput').value.trim() ? el('hArgsInput').value.trim().split(/\s+/) : [];
+      try {
+        await fetchJSON('/v1/harnesses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, kind: 'cli', command, args, description: el('hDescInput').value.trim() }) });
+        el('hIdInput').value = ''; el('hCmdInput').value = ''; el('hArgsInput').value = ''; el('hDescInput').value = '';
+        await loadHarnesses();
+      } catch (err) { alert(t('alertRegFailed') + err.message); }
+    });
     el('btnAddRoutine').addEventListener('click', async () => {
-      const id = el('rIdInput').value.trim();
-      const harness = el('rHarnessInput').value.trim() || 'axis-native';
-      const interval = el('rIntervalInput').value.trim() || '1h';
-      const prompt = el('rPromptInput').value.trim();
+      const id = el('rIdInput').value.trim(), prompt = el('rPromptInput').value.trim();
       if (!id || !prompt) return;
       try {
-        await fetchJSON('/v1/routines', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, name: id, harness, interval, prompt, enabled: true })
-        });
-        el('rIdInput').value = '';
-        el('rPromptInput').value = '';
-        await loadRoutines();
+        await fetchJSON('/v1/routines', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, name: id, harness: el('rHarnessInput').value.trim() || 'axis-native', interval: el('rIntervalInput').value.trim() || '1h', prompt, enabled: true }) });
+        el('rIdInput').value = ''; el('rPromptInput').value = ''; await loadRoutines();
       } catch (err) { alert(err.message); }
     });
-
     el('btnAddMemory').addEventListener('click', async () => {
-      const title = el('mTitleInput').value.trim();
       const content = el('mContentInput').value.trim();
       if (!content) return;
       try {
-        await fetchJSON('/v1/memory', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, content, source: 'ui' })
-        });
-        el('mTitleInput').value = '';
-        el('mContentInput').value = '';
-        await loadMemory();
+        await fetchJSON('/v1/memory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: el('mTitleInput').value.trim(), content, source: 'ui' }) });
+        el('mTitleInput').value = ''; el('mContentInput').value = ''; await loadMemory();
       } catch (err) { alert(err.message); }
     });
-
     el('btnRunPipeline').addEventListener('click', async () => {
-      const name = el('pNameInput').value.trim() || 'pipeline';
-      const s1p = el('pStep1Prompt').value.trim();
-      const s2p = el('pStep2Prompt').value.trim();
       const steps = [];
-      if (s1p) steps.push({ harness: el('pStep1Harness').value.trim() || 'axis-native', prompt: s1p });
-      if (s2p) steps.push({ harness: el('pStep2Harness').value.trim() || 'axis-native', prompt: s2p });
+      if (el('pStep1Prompt').value.trim()) steps.push({ harness: el('pStep1Harness').value.trim() || 'axis-native', prompt: el('pStep1Prompt').value.trim() });
+      if (el('pStep2Prompt').value.trim()) steps.push({ harness: el('pStep2Harness').value.trim() || 'axis-native', prompt: el('pStep2Prompt').value.trim() });
       if (!steps.length) return;
       try {
-        await fetchJSON('/v1/pipelines', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, steps })
-        });
-        await loadPipelines();
-        await loadTasks();
+        await fetchJSON('/v1/pipelines', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: el('pNameInput').value.trim() || 'pipeline', steps }) });
+        await Promise.all([loadPipelines(), loadTasks()]);
       } catch (err) { alert(err.message); }
     });
-
-    el('btnAddHarness').addEventListener('click', registerHarness);
     el('btnLang').addEventListener('click', () => {
       state.lang = state.lang === 'zh-CN' ? 'en' : 'zh-CN';
       try { localStorage.setItem('axis_ui_lang', state.lang); } catch (_) {}
-      applyI18n();
-      renderHarnesses();
-      renderTaskList();
-      renderTimeline();
-      renderInbox();
-      renderEvents();
+      applyI18n(); renderHarnesses(); renderTaskList(); renderTimeline(); renderInbox(); renderEvents();
     });
 
-    // Periodic lightweight sync only when active task is still running or inbox check is needed
     setInterval(async () => {
-      if (state.selectedTaskId && state.selectedDetail &&
-          (state.selectedDetail.status === 'pending' || state.selectedDetail.status === 'running')) {
-        await loadSelectedDetail();
-        await loadTasks();
+      if (state.selectedTaskId && state.selectedDetail && (state.selectedDetail.status === 'pending' || state.selectedDetail.status === 'running')) {
+        await Promise.all([loadSelectedDetail(), loadTasks()]);
       }
       await loadInbox();
     }, 2500);
@@ -1954,7 +1687,7 @@
     (async function init() {
       applyI18n();
       await Promise.all([loadUIInfo(), loadHarnesses(), loadTasks(), loadInbox(), loadEvents()]);
-      await loadSelectedDetail();
+      renderTimeline();
       connectSSE();
     })();
   </script>
