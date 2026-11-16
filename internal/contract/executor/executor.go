@@ -197,7 +197,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 	turnsSinceProgress := 0
 	maxTurns := e.maxTurns
 	if maxTurns == 0 {
-		maxTurns = 10
+		maxTurns = 25
 	}
 	consecutiveErrors := 0
 	circuitBreakerThreshold := e.circuitBreakerThreshold

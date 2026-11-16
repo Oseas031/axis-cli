@@ -26,6 +26,7 @@ type UIInfo struct {
 	FallbackProfile string `json:"fallback_profile,omitempty"`
 	HasAPIKey       bool   `json:"has_api_key"`
 	ProjectRoot     string `json:"project_root,omitempty"`
+	IsGitRepo       bool   `json:"is_git_repo"`
 }
 
 // TaskLister is an optional extension of Runtime for listing known tasks in the UI.
@@ -86,6 +87,9 @@ func (s *Server) handleUIInfo(w http.ResponseWriter, r *http.Request) {
 	info := s.uiInfo
 	if info.ProjectRoot == "" {
 		info.ProjectRoot = s.record.ProjectRoot
+	}
+	if info.ProjectRoot != "" {
+		info.IsGitRepo = isGitRepo(info.ProjectRoot)
 	}
 	writeJSON(w, http.StatusOK, info)
 }
