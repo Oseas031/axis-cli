@@ -95,6 +95,7 @@ type Orchestrator struct {
 	loopDone           chan struct{} // Closed by Start goroutine after runTaskLoop + wg.Wait finish
 	taskCancelMu       sync.Mutex
 	taskCancels        map[string]context.CancelFunc
+	liveObserver       func(taskID, eventType, message string)
 }
 
 // NewOrchestrator creates a new orchestrator with the given options.
@@ -267,6 +268,11 @@ func (o *Orchestrator) markOrphanedTasks() {
 // confirmation park instead of failing (human-agent-scheduling spec D2).
 func (o *Orchestrator) SetHumanGate(g dispatcher.HumanGate) {
 	o.dispatcher.SetHumanGate(g)
+}
+
+// SetLiveEventObserver sets a callback to stream real-time thinking/tool events per task.
+func (o *Orchestrator) SetLiveEventObserver(fn func(taskID, eventType, message string)) {
+	o.liveObserver = fn
 }
 
 // SubmitTask submits a task to the orchestrator after admission validation.

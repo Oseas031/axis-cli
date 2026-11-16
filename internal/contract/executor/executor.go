@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/axis-cli/axis/internal/model/provider"
@@ -190,7 +191,33 @@ func (e *ContractExecutorImpl) Execute(ctx context.Context, contractID string, i
 	}, nil
 }
 
-// executeMultiTurn runs a multi-turn tool-calling loop with a maximum of 10 turns.
+// LiveEventFunc receives real-time thinking and tool-call updates during multi-turn execution.
+type LiveEventFunc func(eventType, message string)
+
+type liveEventCtxKey struct{}
+
+// WithLiveEventObserver attaches a real-time observer to ctx for streaming updates.
+func WithLiveEventObserver(ctx context.Context, fn LiveEventFunc) context.Context {
+	if fn == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, liveEventCtxKey{}, fn)
+}
+
+func emitLiveEvent(ctx context.Context, eventType, message string) {
+	if ctx == nil {
+		return
+	}
+	if fn, ok := ctx.Value(liveEventCtxKey{}).(LiveEventFunc); ok && fn != nil {
+		trimmed := strings.TrimSpace(message)
+		if len(trimmed) > 220 {
+			trimmed = trimmed[:220] + "..."
+		}
+		fn(eventType, trimmed)
+	}
+}
+
+// executeMultiTurn runs a multi-turn tool-calling loop with a maximum of 25 turns.
 // It implements a circuit breaker that aborts after 5 consecutive tool errors.
 func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.ModelProvider, tr *tool.Registry, req *provider.ModelRequest, contractID string) (*types.ExecutionResult, error) {
 	var history []types.ModelMessage
@@ -222,6 +249,11 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 		}
 
 		if len(resp.ToolCalls) > 0 {
+			if resp.Output != nil {
+				if txt, ok := resp.Output["text"].(string); ok && strings.TrimSpace(txt) != "" {
+					emitLiveEvent(ctx, "agent_thinking", txt)
+				}
+			}
 			assistantMsg := types.ModelMessage{
 				Role:      "assistant",
 				ToolCalls: resp.ToolCalls,
@@ -229,6 +261,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 			history = append(history, assistantMsg)
 
 			for _, tc := range resp.ToolCalls {
+				emitLiveEvent(ctx, "tool_call", fmt.Sprintf("calling %s", tc.Name))
 				toolImpl, ok := tr.Get(tc.Name)
 				if !ok {
 					history = append(history, types.ModelMessage{
@@ -261,6 +294,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 				}
 				result, execErr := toolImpl.Execute(ctx, tc.Input)
 				if execErr != nil {
+					emitLiveEvent(ctx, "tool_result", fmt.Sprintf("%s -> error: %v", tc.Name, execErr))
 					history = append(history, types.ModelMessage{
 						Role:       "tool",
 						ToolCallID: tc.ID,
@@ -276,6 +310,7 @@ func (e *ContractExecutorImpl) executeMultiTurn(ctx context.Context, p provider.
 				}
 				// Successful execution resets the error counter
 				consecutiveErrors = 0
+				emitLiveEvent(ctx, "tool_result", fmt.Sprintf("%s -> ok", tc.Name))
 				content, marshalErr := safeMarshal(result)
 				if marshalErr != nil {
 					history = append(history, types.ModelMessage{

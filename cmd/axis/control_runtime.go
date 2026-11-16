@@ -109,6 +109,16 @@ func runLocalRuntimeWithOpts(ctx context.Context, root string, out io.Writer, po
 	degradeExpiredRequests(out)
 
 	server := control.NewServerWithEventLog(runtimeOrch, record, eventLog)
+	runtimeOrch.SetLiveEventObserver(func(taskID, eventType, message string) {
+		_ = eventLog.Append(control.TaskEvent{
+			TaskID:    taskID,
+			EventType: eventType,
+			Actor:     "axis-native",
+			AgentID:   "axis-native",
+			Status:    "running",
+			Message:   message,
+		})
+	})
 	if g := getHumanGate(); g != nil {
 		server.SetInboxAPI(inboxAPIBridge{g: g})
 	}

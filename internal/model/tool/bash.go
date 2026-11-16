@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -112,9 +113,8 @@ func (t *BashTool) Execute(ctx context.Context, input map[string]any) (map[strin
 	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	// #nosec G204
-	cmd := exec.CommandContext(timeoutCtx, "bash", "-c", cmdStr)
+	cmd := buildShellCommand(timeoutCtx, cmdStr)
 	cmd.Dir = cwd
-	// Inject Windows tool paths so Agent can find go, git, etc. without guessing
 	cmd.Env = enrichedEnv()
 	output, execErr := cmd.CombinedOutput()
 	exitCode := 0
@@ -136,7 +136,7 @@ func (t *BashTool) Execute(ctx context.Context, input map[string]any) (map[strin
 	}
 	return map[string]any{
 		"command":          cmdStr,
-		"cwd":              toWSLPath(cwd),
+		"cwd":              cwd,
 		"stdout":           string(output),
 		"exit_code":        exitCode,
 		"duration_ms":      time.Since(start).Milliseconds(),
@@ -145,8 +145,6 @@ func (t *BashTool) Execute(ctx context.Context, input map[string]any) (map[strin
 	}, nil
 }
 
-// toWSLPath converts a Windows path (C:\foo\bar) to a WSL-compatible path (/mnt/c/foo/bar).
-// If the path is already POSIX or empty, it is returned unchanged.
 func toWSLPath(p string) string {
 	if len(p) >= 2 && p[1] == ':' && ((p[0] >= 'A' && p[0] <= 'Z') || (p[0] >= 'a' && p[0] <= 'z')) {
 		drive := strings.ToLower(string(p[0]))
@@ -156,17 +154,26 @@ func toWSLPath(p string) string {
 	return p
 }
 
-// enrichedEnv returns the current environment with additional tool paths appended.
-// On Windows/WSL, this ensures go, git, cmd.exe etc. are discoverable.
+func buildShellCommand(ctx context.Context, cmdStr string) *exec.Cmd {
+	if runtime.GOOS != "windows" {
+		return exec.CommandContext(ctx, "bash", "-c", cmdStr)
+	}
+	for _, candidate := range []string{"pwsh", "powershell.exe"} {
+		if p, err := exec.LookPath(candidate); err == nil {
+			return exec.CommandContext(ctx, p, "-NoProfile", "-NonInteractive", "-Command", cmdStr)
+		}
+	}
+	return exec.CommandContext(ctx, "cmd.exe", "/c", cmdStr)
+}
+
 func enrichedEnv() []string {
 	env := os.Environ()
-	// Additional paths for common Windows tools accessible from WSL/bash
+	if runtime.GOOS == "windows" {
+		return env
+	}
 	extraPaths := []string{
 		"/usr/local/go/bin",
 		"/usr/local/bin",
-		"/mnt/c/Program Files/Go/bin",
-		"/mnt/c/Windows/System32",
-		"/mnt/c/Windows",
 	}
 	for i, e := range env {
 		if strings.HasPrefix(e, "PATH=") {
@@ -174,7 +181,6 @@ func enrichedEnv() []string {
 			return env
 		}
 	}
-	// No PATH found, create one
 	env = append(env, "PATH=/usr/local/bin:/usr/bin:/bin:"+strings.Join(extraPaths, ":"))
 	return env
 }

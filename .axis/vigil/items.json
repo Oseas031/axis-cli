@@ -1038,5 +1038,68 @@
         "at": "2026-11-16T21:16:53.464325+08:00"
       }
     ]
+  },
+  {
+    "id": "vigil-5c0c42",
+    "title": "观测性Issue：axis-native 运行期间未流式输出模型思考内容与实时工具调用轨迹（仅在终态一次性返回 _tool_traces）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T21:37:47.1108434+08:00",
+    "completed_at": "2026-11-16T21:52:02.0439181+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:52:02.0439181+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-d1b87f",
+    "title": "权限档位Issue：模型初始权限与工具能力受限（Windows BashTool依赖WSL失败/无list_dir），建议分为三档：工作区内修改 / 完全权限 / 自动审查",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T21:41:54.9817201+08:00",
+    "completed_at": "2026-11-16T21:52:02.4740306+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:52:02.4740306+08:00"
+      }
+    ]
+  },
+  {
+    "id": "vigil-3c30fd",
+    "title": "前端渲染Issue：模型输出内容在 Harness 工作台内缺少 Markdown 渲染（标题/表格/代码块目前仅按纯文本展示）",
+    "priority": "P1",
+    "status": "completed",
+    "tags": null,
+    "origin": {
+      "type": "",
+      "ref": ""
+    },
+    "depends_on": null,
+    "created_at": "2026-11-16T21:41:55.3666646+08:00",
+    "completed_at": "2026-11-16T21:52:02.8936624+08:00",
+    "history": [
+      {
+        "from": "pending",
+        "to": "completed",
+        "at": "2026-11-16T21:52:02.8936624+08:00"
+      }
+    ]
   }
 ]

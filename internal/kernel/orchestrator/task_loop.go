@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	"github.com/axis-cli/axis/internal/types"
 )
 
@@ -133,6 +134,13 @@ func (o *Orchestrator) executeTask(ctx context.Context, task *types.AgentTask) {
 				var cancel context.CancelFunc
 				execCtx, cancel = context.WithTimeout(taskCtx, time.Duration(timeoutMs)*time.Millisecond)
 				defer cancel()
+			}
+			if o.liveObserver != nil {
+				tid := task.TaskID
+				obs := o.liveObserver
+				execCtx = contractexec.WithLiveEventObserver(execCtx, func(evType, msg string) {
+					obs(tid, evType, msg)
+				})
 			}
 			return o.dispatcher.Dispatch(execCtx, task)
 		}()

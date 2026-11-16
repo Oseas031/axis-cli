@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	contractexec "github.com/axis-cli/axis/internal/contract/executor"
 	"github.com/axis-cli/axis/internal/memory/horizon"
@@ -30,6 +31,14 @@ func BuildToolRegistry(root string, filter []string) *tool.Registry {
 			allowedDirs = append(allowedDirs, desktopDir)
 		}
 	}
+	readDirs := append([]string(nil), allowedDirs...)
+	if extraRead := strings.TrimSpace(os.Getenv("AXIS_ALLOW_READ_DIRS")); extraRead != "" {
+		for _, p := range filepath.SplitList(extraRead) {
+			if p = strings.TrimSpace(p); p != "" {
+				readDirs = append(readDirs, p)
+			}
+		}
+	}
 
 	// Build filter set for O(1) lookup
 	allowed := make(map[string]bool, len(filter))
@@ -47,7 +56,9 @@ func BuildToolRegistry(root string, filter []string) *tool.Registry {
 	all := []entry{
 		{tool.NewBashTool(), []string{string(tool.ScopeSubprocess)}},
 		{tool.NewVerifyBashTool(), []string{string(tool.ScopeSubprocess)}},
-		{tool.NewFileReadTool(allowedDirs), []string{string(tool.ScopeFilesystemRead)}},
+		{tool.NewFileReadTool(readDirs), []string{string(tool.ScopeFilesystemRead)}},
+		{tool.NewListDirTool(readDirs), []string{string(tool.ScopeFilesystemRead)}},
+		{tool.NewGrepSearchTool(readDirs), []string{string(tool.ScopeFilesystemRead)}},
 		{tool.NewFileWriteTool(allowedDirs), []string{string(tool.ScopeFilesystemWrite)}},
 		{tool.NewHTTPClientTool([]string{"localhost", "127.0.0.1"}), []string{string(tool.ScopeNetwork)}},
 	}
