@@ -620,6 +620,69 @@
     .ev-ts { color: var(--text-dim); flex-shrink: 0; }
     .ev-type { color: var(--accent); min-width: 110px; flex-shrink: 0; }
 
+    /* HCI Progressive Disclosure & Zero-State Onboarding */
+    .dropdown { position: relative; }
+    .dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 4px);
+      min-width: 185px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-strong);
+      border-radius: 2px;
+      z-index: 40;
+      display: none;
+      flex-direction: column;
+      padding: 4px;
+    }
+    .dropdown-menu.open { display: flex; }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 6px 9px;
+      border: none;
+      border-radius: 2px;
+      background: transparent;
+      text-align: left;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .dropdown-item:hover { background: var(--bg-hover); color: var(--accent); }
+    .starter-wrap {
+      margin: auto;
+      max-width: 680px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 16px 8px;
+    }
+    .starter-head h2 { margin: 0 0 6px; font-size: 15px; font-family: var(--mono); color: var(--text); }
+    .starter-head p { margin: 0; color: var(--text-muted); font-size: 13px; }
+    .starter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      gap: 10px;
+    }
+    .starter-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: left;
+      padding: 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 2px;
+      background: var(--bg-elev);
+    }
+    .starter-card:hover { border-color: var(--accent); background: var(--bg-panel); }
+    .starter-tag { font-family: var(--mono); font-size: 10px; color: var(--accent); }
+    .starter-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .starter-desc { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+    .adv-fields { display: none; align-items: center; gap: 6px; }
+    .adv-fields.open { display: inline-flex; }
+
     @media (max-width: 820px) {
       .workspace { grid-template-columns: 1fr; }
       .sidebar { display: none; }
@@ -639,15 +702,24 @@
       <div class="top-actions">
         <button id="btnLang" class="btn" type="button" title="Switch language / 切换语言">EN</button>
         <button id="btnNewTask" class="btn" type="button">+ New Task</button>
-        <button id="btnPipelines" class="btn" type="button" data-i18n="pipelinesBtn">Pipelines</button>
-        <button id="btnRoutines" class="btn" type="button" data-i18n="routinesBtn">Routines</button>
-        <button id="btnMemory" class="btn" type="button" data-i18n="memoryBtn">Memory</button>
-        <button id="btnHarnesses" class="btn" type="button">
-          <span data-i18n="harnessesBtn">Harnesses</span> <span id="harnessBadge" class="badge">1</span>
-        </button>
         <button id="btnInbox" class="btn" type="button">
-          <span data-i18n="inboxBtn">Inbox</span> <span id="inboxBadge" class="badge">0</span>
+          <span data-i18n="inboxBtn">Approvals</span> <span id="inboxBadge" class="badge">0</span>
         </button>
+        <div class="dropdown">
+          <button id="btnToolsMenu" class="btn" type="button" aria-haspopup="true" aria-expanded="false">
+            <span data-i18n="toolsMenuBtn">Tools ▾</span>
+          </button>
+          <div id="toolsDropdown" class="dropdown-menu" role="menu">
+            <button id="btnHarnesses" class="dropdown-item" type="button" role="menuitem">
+              <span data-i18n="harnessesBtn">Agents / CLI</span>
+              <span id="harnessBadge" class="badge">1</span>
+            </button>
+            <button id="btnPipelines" class="dropdown-item" type="button" role="menuitem" data-i18n="pipelinesBtn">Pipelines</button>
+            <button id="btnRoutines" class="dropdown-item" type="button" role="menuitem" data-i18n="routinesBtn">Routines</button>
+            <button id="btnMemory" class="dropdown-item" type="button" role="menuitem" data-i18n="memoryBtn">Memory</button>
+            <button id="btnToggleEvents" class="dropdown-item" type="button" role="menuitem" data-i18n="eventStream">Event Stream</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -683,21 +755,24 @@
             <textarea id="promptInput" placeholder="输入任务指令... (Enter 发送，Shift+Enter 换行)"></textarea>
             <div class="composer-bar">
               <div class="composer-left">
-                <label for="harnessSelect">harness:</label>
-                <select id="harnessSelect" aria-label="Target harness"></select>
-                <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+                <label for="harnessSelect">Agent:</label>
+                <select id="harnessSelect" aria-label="Target agent"></select>
+                <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Run in isolated git worktree without touching main branch">
                   <input id="isolateChk" type="checkbox" style="width:auto;margin:0;">
-                  <span data-i18n="isolateLabel">isolate worktree</span>
+                  <span data-i18n="isolateLabel">Safe Sandbox</span>
                 </label>
-                <label for="taskIdInput">task_id:</label>
-                <input id="taskIdInput" type="text" placeholder="auto (ui-...)">
+                <button id="btnAdvToggle" type="button" class="filter-chip" data-i18n="advBtn">Advanced</button>
+                <span id="advFields" class="adv-fields">
+                  <label for="taskIdInput">task_id:</label>
+                  <input id="taskIdInput" type="text" placeholder="auto (ui-...)">
+                </span>
               </div>
-              <button id="btnSubmit" class="btn primary" type="button">Send Task</button>
+              <button id="btnSubmit" class="btn primary" type="button">Send</button>
             </div>
           </div>
         </section>
 
-        <details class="events-bar">
+        <details id="eventsBar" class="events-bar" style="display:none">
           <summary><span data-i18n="eventStream">Event Stream</span> (<span id="evCount">0</span>)</summary>
           <div id="eventsList" class="events-list"></div>
         </details>
@@ -794,18 +869,31 @@
       'zh-CN': {
         langToggle: 'EN',
         skipLink: '跳到主内容',
-        newTaskBtn: '+ 新建任务',
-        harnessesBtn: '执行器',
-        inboxBtn: '收件箱',
-        tasksTitle: '任务列表',
-        selectOrSubmit: '选择或提交任务',
-        newTaskTitle: '新建任务',
-        emptyTitle: 'Axis 多 Agent 控制台',
-        emptyDesc: '在下方输入指令并选择目标 Harness，或从左侧选择历史任务查看工具轨迹、实时输出与人工审批。',
-        promptPlaceholder: '输入任务指令...（Enter 发送，Shift+Enter 换行）',
-        harnessLabel: '执行器:',
+        newTaskBtn: '+ 新对话',
+        harnessesBtn: '外部执行器 / CLI',
+        inboxBtn: '待审批',
+        toolsMenuBtn: '工作台 ▾',
+        advBtn: '高级',
+        tasksTitle: '历史任务',
+        selectOrSubmit: '选择或发起任务',
+        newTaskTitle: '新任务',
+        emptyTitle: '从这里开始你的第一个任务',
+        emptyDesc: '在下方输入需求直接发送，或点击下方任意示例快速体验：',
+        promptPlaceholder: '想让 Agent 帮你做什么？（Enter 发送，Shift+Enter 换行，输入 @ 可切换执行器）',
+        harnessLabel: '执行者:',
         taskIdPlaceholder: '自动生成 (ui-...)',
-        sendBtn: '发送任务',
+        sendBtn: '发送',
+        starter1Tag: '01 · 快速体验',
+        starter1Title: '检查项目现状',
+        starter1Desc: '只读分析仓库结构与近期改动，零风险了解工作流程。',
+        starter1Prompt: '请帮我梳理当前项目的目录结构和核心模块职责，给出简要总结。',
+        starter2Tag: '02 · 安全副本',
+        starter2Title: '在隔离副本中改代码',
+        starter2Desc: '自动开启安全副本（Git Worktree），不直接改主分支，完成后可查看 Diff。',
+        starter2Prompt: '请检查最近的代码质量与潜在边界问题，并给出修改建议。',
+        starter3Tag: '03 · 多执行器',
+        starter3Title: '接入 Claude / Codex CLI',
+        starter3Desc: '将你本机已安装的编码 CLI 注册进来，在同一控制台统一派单与审批。',
         eventStream: '事件流',
         humanInbox: '人工审批收件箱',
         agentHarnesses: 'Agent 执行器管理',
@@ -846,35 +934,48 @@
         alertCancelFailed: '停止任务失败：',
         stopBtn: '停止',
         presetsLabel: '预设:',
-        isolateLabel: '隔离工作区',
+        isolateLabel: '在安全副本中修改',
         workspaceDiff: '工作区变更 Diff',
-        cleanWorktree: '清理 Worktree',
-        approvalRequired: '需要人工审批',
+        cleanWorktree: '清理副本',
+        approvalRequired: '需要你确认',
         secretInputHint: '掩码安全输入',
-        pipelinesBtn: '流水线',
-        routinesBtn: '例程',
-        memoryBtn: '记忆',
+        pipelinesBtn: '多步流水线',
+        routinesBtn: '定时例程',
+        memoryBtn: '长期记忆',
         saveBtn: '保存',
         runPipelineBtn: '运行流水线',
-        saveSkillBtn: '存为 Skill',
+        saveSkillBtn: '存为常用技能',
         skillPromptName: '输入 Skill 名称（小写字母/短横线）：',
         skillSaved: '已保存 Skill: '
       },
       'en': {
         langToggle: '中文',
         skipLink: 'Skip to main content',
-        newTaskBtn: '+ New Task',
-        harnessesBtn: 'Harnesses',
-        inboxBtn: 'Inbox',
-        tasksTitle: 'Tasks',
-        selectOrSubmit: 'Select or submit a task',
+        newTaskBtn: '+ New Chat',
+        harnessesBtn: 'Agents / CLI',
+        inboxBtn: 'Approvals',
+        toolsMenuBtn: 'Tools ▾',
+        advBtn: 'Advanced',
+        tasksTitle: 'History',
+        selectOrSubmit: 'Select or start a task',
         newTaskTitle: 'New Task',
-        emptyTitle: 'Axis Local Agent Workbench',
-        emptyDesc: 'Submit a prompt below and choose a target harness, or pick an existing task from the left sidebar to inspect trajectories, live logs, and human approvals.',
-        promptPlaceholder: 'Enter task prompt... (Enter to send, Shift+Enter for newline)',
-        harnessLabel: 'harness:',
+        emptyTitle: 'Start your first task here',
+        emptyDesc: 'Describe what you need below, or click a starter card to see how Axis works:',
+        promptPlaceholder: 'What should the agent do? (Enter to send, Shift+Enter for newline, type @ to switch agent)',
+        harnessLabel: 'Agent:',
         taskIdPlaceholder: 'auto (ui-...)',
-        sendBtn: 'Send Task',
+        sendBtn: 'Send',
+        starter1Tag: '01 · READ-ONLY',
+        starter1Title: 'Inspect repository status',
+        starter1Desc: 'Read-only overview of project structure and modules with zero risk.',
+        starter1Prompt: 'Inspect the current repository directory layout and summarize core modules.',
+        starter2Tag: '02 · SAFE SANDBOX',
+        starter2Title: 'Review in isolated sandbox',
+        starter2Desc: 'Automatically enables Safe Sandbox (git worktree) so main branch stays untouched.',
+        starter2Prompt: 'Review recent code changes for edge cases and suggest concrete improvements.',
+        starter3Tag: '03 · MULTI-AGENT',
+        starter3Title: 'Connect Claude / Codex CLI',
+        starter3Desc: 'Register local coding CLIs and orchestrate them from one control tower.',
         eventStream: 'Event Stream',
         humanInbox: 'Human Inbox',
         agentHarnesses: 'Agent Harnesses',
@@ -915,9 +1016,9 @@
         alertCancelFailed: 'Stop failed: ',
         stopBtn: 'Stop',
         presetsLabel: 'Presets:',
-        isolateLabel: 'isolate worktree',
-        workspaceDiff: 'WORKSPACE DIFF',
-        cleanWorktree: 'Clean Worktree',
+        isolateLabel: 'Safe Sandbox',
+        workspaceDiff: 'SANDBOX DIFF',
+        cleanWorktree: 'Clean Sandbox',
         approvalRequired: 'APPROVAL REQUIRED',
         secretInputHint: 'Masked secret input',
         pipelinesBtn: 'Pipelines',
@@ -925,7 +1026,7 @@
         memoryBtn: 'Memory',
         saveBtn: 'Save',
         runPipelineBtn: 'Run Pipeline',
-        saveSkillBtn: 'Save Skill',
+        saveSkillBtn: 'Save as Skill',
         skillPromptName: 'Skill name (lowercase/hyphens):',
         skillSaved: 'Skill saved: '
       }
@@ -1102,10 +1203,46 @@
         pillEl.style.display = 'none';
         metaEl.textContent = '';
         tl.innerHTML = `
-          <div class="empty-state">
-            <h2>${esc(t('emptyTitle'))}</h2>
-            <p>${esc(t('emptyDesc'))}</p>
+          <div class="starter-wrap">
+            <div class="starter-head">
+              <h2>${esc(t('emptyTitle'))}</h2>
+              <p>${esc(t('emptyDesc'))}</p>
+            </div>
+            <div class="starter-grid">
+              <button type="button" class="starter-card" data-starter="1">
+                <span class="starter-tag">${esc(t('starter1Tag'))}</span>
+                <span class="starter-title">${esc(t('starter1Title'))}</span>
+                <span class="starter-desc">${esc(t('starter1Desc'))}</span>
+              </button>
+              <button type="button" class="starter-card" data-starter="2">
+                <span class="starter-tag">${esc(t('starter2Tag'))}</span>
+                <span class="starter-title">${esc(t('starter2Title'))}</span>
+                <span class="starter-desc">${esc(t('starter2Desc'))}</span>
+              </button>
+              <button type="button" class="starter-card" data-starter="3">
+                <span class="starter-tag">${esc(t('starter3Tag'))}</span>
+                <span class="starter-title">${esc(t('starter3Title'))}</span>
+                <span class="starter-desc">${esc(t('starter3Desc'))}</span>
+              </button>
+            </div>
           </div>`;
+        tl.querySelectorAll('.starter-card').forEach((card) => {
+          card.addEventListener('click', () => {
+            const kind = card.dataset.starter;
+            if (kind === '1') {
+              el('isolateChk').checked = false;
+              el('promptInput').value = t('starter1Prompt');
+              el('promptInput').focus();
+            } else if (kind === '2') {
+              el('isolateChk').checked = true;
+              el('promptInput').value = t('starter2Prompt');
+              el('promptInput').focus();
+            } else if (kind === '3') {
+              toggleDrawer('harnessDrawer');
+              loadHarnesses();
+            }
+          });
+        });
         return;
       }
 
@@ -1700,8 +1837,36 @@
       } catch (_) {}
     }
 
-    el('btnInbox').addEventListener('click', () => { toggleDrawer('inboxDrawer'); loadInbox(); });
+    el('btnInbox').addEventListener('click', () => { el('toolsDropdown').classList.remove('open'); toggleDrawer('inboxDrawer'); loadInbox(); });
     el('btnCloseInbox').addEventListener('click', () => el('inboxDrawer').classList.remove('open'));
+    el('btnToolsMenu').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dd = el('toolsDropdown');
+      const open = dd.classList.toggle('open');
+      el('btnToolsMenu').setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', () => {
+      el('toolsDropdown').classList.remove('open');
+      el('btnToolsMenu').setAttribute('aria-expanded', 'false');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        el('toolsDropdown').classList.remove('open');
+        ['inboxDrawer', 'harnessDrawer', 'routinesDrawer', 'memoryDrawer', 'pipelinesDrawer'].forEach((d) => {
+          const node = el(d);
+          if (node) node.classList.remove('open');
+        });
+      }
+    });
+    el('btnAdvToggle').addEventListener('click', () => {
+      el('advFields').classList.toggle('open');
+    });
+    el('btnToggleEvents').addEventListener('click', () => {
+      const bar = el('eventsBar');
+      const show = bar.style.display === 'none';
+      bar.style.display = show ? 'block' : 'none';
+      if (show) bar.open = true;
+    });
     el('btnHarnesses').addEventListener('click', () => { toggleDrawer('harnessDrawer'); loadHarnesses(); });
     el('btnCloseHarnesses').addEventListener('click', () => el('harnessDrawer').classList.remove('open'));
     el('btnRoutines').addEventListener('click', () => { toggleDrawer('routinesDrawer'); loadRoutines(); });
